@@ -1,0 +1,7 @@
+# API v6 Configuration for Demir Yumruk 2.0 (Blue/Green Deployment)
+[api]
+version = "v6"
+endpoint = "wss://stream.binance.com:9443/ws/v6"
+
+[trading]
+max_positions = 100

@@ -1,0 +1,7 @@
+# API v5 Configuration for Demir Yumruk 2.0
+[api]
+version = "v5"
+endpoint = "wss://stream.binance.com:9443/ws"
+
+[trading]
+max_positions = 100

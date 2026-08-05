@@ -1,0 +1,20 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: demir-yumruk-network-partition
+  namespace: default
+spec:
+  action: partition
+  mode: all
+  selector:
+    labelSelectors:
+      app: demir-yumruk
+  direction: both
+  target:
+    selector:
+      labelSelectors:
+        app: redis-cluster
+    mode: all
+  duration: '10s'
+  scheduler:
+    cron: '@every 5m'

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demir-yumruk-core
+  labels:
+    app: demir-yumruk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demir-yumruk
+  template:
+    metadata:
+      labels:
+        app: demir-yumruk
+      annotations:
+        # Require cgroups v2 resource management
+        kubernetes.io/cgroup-version: "v2"
+    spec:
+      containers:
+      - name: core
+        image: demir-yumruk/core:latest
+        resources:
+          limits:
+            cpu: "4"
+            memory: "4Gi"
+          requests:
+            cpu: "4"
+            memory: "4Gi"
+        securityContext:
+          capabilities:
+            add:
+              - SYS_NICE # Required for SCHED_FIFO real-time thread scheduling
+        env:
+          - name: RUST_LOG
+            value: "info"

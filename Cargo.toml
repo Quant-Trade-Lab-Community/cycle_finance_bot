@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "core",
+    "adapter",
+    "risk-worker",
+    "cold-starter",
+    "cold-storage",
+    "os-utils",
+]
+resolver = "2"

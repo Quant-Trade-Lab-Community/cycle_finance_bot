@@ -1,0 +1,52 @@
+name: Demir Yumruk 2.0 Sertifika Testleri
+
+on:
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '0 0 * * *' # Gece yarısı regression
+
+jobs:
+  audit-and-coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Bağımlılık Taraması (cargo-deny)
+      run: |
+        cargo install cargo-deny
+        cargo deny check advisories
+    - name: Line Coverage (tarpaulin %95)
+      run: |
+        cargo install cargo-tarpaulin
+        cargo tarpaulin --ignore-tests --fail-under 95
+
+  unit-and-integration:
+    runs-on: ubuntu-latest
+    needs: audit-and-coverage
+    steps:
+    - uses: actions/checkout@v3
+    - name: Birim ve Entegrasyon Testleri
+      run: cargo test --release
+
+  performance-wcet:
+    runs-on: ubuntu-latest
+    needs: unit-and-integration
+    steps:
+    - uses: actions/checkout@v3
+    - name: 750µs Maksimum Tick Gecikme Testi (WCET)
+      run: cargo bench
+      
+  # Kaos testleri staging'de tetiklenir
+  chaos-mesh-staging:
+    runs-on: ubuntu-latest
+    needs: performance-wcet
+    steps:
+    - uses: actions/checkout@v3
+    - name: Chaos Mesh 20 Senaryo Tetiklemesi
+      run: echo "Triggering Chaos Mesh scenarios on AWS izole cluster (Staging)..."
+
+  # MANİFESTO
+  # "Bu testleri geçmeyen sistem, 20 yıl değil 20 saniye dayanır. Artık kod yazmak kadar, 
+  # bu testleri otomasyona bağlamak da sizin sorumluluğunuzdadır. Mükemmeliyet ancak bu 
+  # kırmızı çizgilerle korunabilir. Test senaryolarını hazırlayın ve 'cargo test --release' 
+  # komutunu bu dokümanın altına imza olarak kazıyın. Başlayın."

@@ -1,0 +1,17 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: demir-yumruk-dns-failure
+  namespace: default
+spec:
+  action: error
+  mode: all
+  selector:
+    labelSelectors:
+      app: demir-yumruk
+  patterns:
+    - api.binance.com
+    - stream.binance.com
+  duration: '5m'
+  scheduler:
+    cron: '@every 30m'
