@@ -30,6 +30,24 @@ async fn main() {
         db::start_db_writer(db_rx);
     });
 
+    // Execution (Emir İletim) Thread'ini başlat (Lock-Free kuyruk ile)
+    let (order_tx, order_rx) = flume::bounded(10_000);
+    thread::spawn(move || {
+        // Çevre değişkenlerini yükle
+        let _ = dotenvy::dotenv();
+        let api_key = std::env::var("BINANCE_API_KEY").unwrap_or_else(|_| "DUMMY_KEY".to_string());
+        let secret_key = std::env::var("BINANCE_SECRET_KEY").unwrap_or_else(|_| "DUMMY_SECRET".to_string());
+        
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+            
+        rt.block_on(async {
+            execution_engine::start_execution_engine(order_rx, api_key, secret_key).await;
+        });
+    });
+
     thread::spawn(move || {
         set_rt_thread_priority(99);
 

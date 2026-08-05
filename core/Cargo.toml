@@ -17,8 +17,10 @@ futures-util = "0.3"
 cold-storage = { path = "../cold-storage" }
 adapter = { path = "../adapter" }
 os-utils = { path = "../os-utils" }
+execution-engine = { path = "../execution-engine" }
 sha3 = "0.10"
 rusqlite = { version = "0.31.0", features = ["bundled"] }
+dotenvy = "0.15"
 
 [dev-dependencies]
 criterion = "0.4"

@@ -5,6 +5,6 @@ members = [
     "risk-worker",
     "cold-starter",
     "cold-storage",
-    "os-utils",
+    "os-utils", "execution-engine",
 ]
 resolver = "2"
