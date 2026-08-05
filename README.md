@@ -1,6 +1,6 @@
-# Demir Yumruk 2.0 - High Frequency Trading (HFT) Engine
+# Iron Fist 2.0 - High Frequency Trading (HFT) Engine
 
-Demir Yumruk 2.0 is an ultra-low latency, zero-allocation High Frequency Trading (HFT) and Market Data ingestion engine built in Rust. It is designed to consume, parse, and persist massive amounts of cryptocurrency market data with extreme efficiency.
+Iron Fist 2.0 is an ultra-low latency, zero-allocation High Frequency Trading (HFT) and Market Data ingestion engine built in Rust. It is designed to consume, parse, and persist massive amounts of cryptocurrency market data with extreme efficiency.
 
 ## 🚀 Core Architecture & Features
 
@@ -54,9 +54,9 @@ cargo run -p core --release
 
 **Expected Output:**
 ```text
-Demir Yumruk 2.0 Core Initialization...
+Iron Fist 2.0 Core Initialization...
 Binance WS: Fetching active USDT Spot pairs from REST API...
-Demir Yumruk: Allocating 101 MB Ring Buffer (160000 elements)...
+Iron Fist: Allocating 101 MB Ring Buffer (160000 elements)...
 Binance WS: Found 958 active USDT Spot pairs.
 Binance WS [Chunk 1]: Successfully connected.
 ...
