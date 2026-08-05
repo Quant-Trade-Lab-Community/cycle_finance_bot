@@ -30,6 +30,8 @@ async fn main() {
         db::start_db_writer(db_rx);
     });
 
+    let db_tx_exec = db_tx.clone();
+    
     // Execution (Emir İletim) Thread'ini başlat (Lock-Free kuyruk ile)
     let (order_tx, order_rx) = flume::bounded(10_000);
     thread::spawn(move || {
@@ -43,7 +45,31 @@ async fn main() {
             .build()
             .unwrap();
             
+        let db_tx_clone = db_tx_exec;
+        
         rt.block_on(async {
+            // Arka planda periyodik olarak Open Interest (Açık Pozisyon) yoklayıcısı başlat
+            tokio::spawn(async move {
+                let client = reqwest::Client::new();
+                let symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"];
+                loop {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
+                    for sym in &symbols {
+                        if let Ok(resp) = client.get(&format!("https://fapi.binance.com/fapi/v1/openInterest?symbol={}", sym)).send().await {
+                            if let Ok(json) = resp.json::<serde_json::Value>().await {
+                                if let Some(oi_str) = json.get("openInterest").and_then(|v| v.as_str()) {
+                                    if let Ok(oi) = oi_str.parse::<f64>() {
+                                        let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64;
+                                        let event = ring_buffer::OwnedEvent::new_open_interest(sym, oi, timestamp);
+                                        let _ = db_tx_clone.try_send(event);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
             execution_engine::start_execution_engine(order_rx, api_key, secret_key).await;
         });
     });

@@ -5,7 +5,11 @@ pub enum EventType {
     Orderbook { 
         bids: [(f64, f64); 20], 
         asks: [(f64, f64); 20] 
-    }
+    },
+    Liquidation { side: u8, price: f64, quantity: f64, timestamp: u64 },
+    FundingRate { mark_price: f64, funding_rate: f64, next_funding_time: u64 },
+    BookTicker { best_bid_price: f64, best_bid_qty: f64, best_ask_price: f64, best_ask_qty: f64 },
+    OpenInterest { open_interest: f64, timestamp: u64 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -37,6 +41,54 @@ impl OwnedEvent {
         Self {
             symbol,
             payload: EventType::Orderbook { bids, asks },
+        }
+    }
+
+    #[inline(always)]
+    pub fn new_liquidation(sym: &str, side: u8, price: f64, quantity: f64, timestamp: u64) -> Self {
+        let mut symbol = [0u8; 16];
+        let bytes = sym.as_bytes();
+        let len = bytes.len().min(16);
+        symbol[..len].copy_from_slice(&bytes[..len]);
+        Self {
+            symbol,
+            payload: EventType::Liquidation { side, price, quantity, timestamp },
+        }
+    }
+
+    #[inline(always)]
+    pub fn new_funding_rate(sym: &str, mark_price: f64, funding_rate: f64, next_funding_time: u64) -> Self {
+        let mut symbol = [0u8; 16];
+        let bytes = sym.as_bytes();
+        let len = bytes.len().min(16);
+        symbol[..len].copy_from_slice(&bytes[..len]);
+        Self {
+            symbol,
+            payload: EventType::FundingRate { mark_price, funding_rate, next_funding_time },
+        }
+    }
+
+    #[inline(always)]
+    pub fn new_bookticker(sym: &str, best_bid_price: f64, best_bid_qty: f64, best_ask_price: f64, best_ask_qty: f64) -> Self {
+        let mut symbol = [0u8; 16];
+        let bytes = sym.as_bytes();
+        let len = bytes.len().min(16);
+        symbol[..len].copy_from_slice(&bytes[..len]);
+        Self {
+            symbol,
+            payload: EventType::BookTicker { best_bid_price, best_bid_qty, best_ask_price, best_ask_qty },
+        }
+    }
+
+    #[inline(always)]
+    pub fn new_open_interest(sym: &str, open_interest: f64, timestamp: u64) -> Self {
+        let mut symbol = [0u8; 16];
+        let bytes = sym.as_bytes();
+        let len = bytes.len().min(16);
+        symbol[..len].copy_from_slice(&bytes[..len]);
+        Self {
+            symbol,
+            payload: EventType::OpenInterest { open_interest, timestamp },
         }
     }
 }

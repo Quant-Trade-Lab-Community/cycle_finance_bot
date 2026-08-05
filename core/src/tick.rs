@@ -49,6 +49,28 @@ impl EventParser {
             }
             
             Some(OwnedEvent::new_orderbook(symbol, bids, asks))
+        } else if stream.ends_with("@forceOrder") {
+            let o = data.get("o")?;
+            let symbol = o.get("s")?.as_str()?;
+            let side_str = o.get("S")?.as_str()?;
+            let side = if side_str == "BUY" { 0 } else { 1 };
+            let price = o.get("p")?.as_str()?.parse::<f64>().ok()?;
+            let quantity = o.get("q")?.as_str()?.parse::<f64>().ok()?;
+            let timestamp = o.get("T")?.as_u64()?;
+            Some(OwnedEvent::new_liquidation(symbol, side, price, quantity, timestamp))
+        } else if stream.ends_with("@markPrice") {
+            let symbol = data.get("s")?.as_str()?;
+            let mark_price = data.get("p")?.as_str()?.parse::<f64>().ok()?;
+            let funding_rate = data.get("r")?.as_str()?.parse::<f64>().ok().unwrap_or(0.0);
+            let next_funding_time = data.get("T")?.as_u64().unwrap_or(0);
+            Some(OwnedEvent::new_funding_rate(symbol, mark_price, funding_rate, next_funding_time))
+        } else if stream.ends_with("@bookTicker") {
+            let symbol = data.get("s")?.as_str()?;
+            let best_bid_price = data.get("b")?.as_str()?.parse::<f64>().ok()?;
+            let best_bid_qty = data.get("B")?.as_str()?.parse::<f64>().ok()?;
+            let best_ask_price = data.get("a")?.as_str()?.parse::<f64>().ok()?;
+            let best_ask_qty = data.get("A")?.as_str()?.parse::<f64>().ok()?;
+            Some(OwnedEvent::new_bookticker(symbol, best_bid_price, best_bid_qty, best_ask_price, best_ask_qty))
         } else {
             None
         }

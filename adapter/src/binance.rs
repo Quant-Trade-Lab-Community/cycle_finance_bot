@@ -4,8 +4,8 @@ use flume::Sender;
 use serde_json::{Value, json};
 
 async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    println!("Binance WS: Fetching active USDT Spot pairs from REST API...");
-    let url = "https://api.binance.com/api/v3/exchangeInfo";
+    println!("Binance WS: Fetching active USDT Futures pairs from REST API...");
+    let url = "https://fapi.binance.com/fapi/v1/exchangeInfo";
     let resp = reqwest::get(url).await?.json::<Value>().await?;
     
     let mut pairs = Vec::new();
@@ -20,17 +20,20 @@ async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Erro
                     let sym = symbol.to_lowercase();
                     pairs.push(format!("{}@trade", sym));
                     pairs.push(format!("{}@depth20@100ms", sym));
+                    pairs.push(format!("{}@forceOrder", sym));
+                    pairs.push(format!("{}@markPrice", sym));
+                    pairs.push(format!("{}@bookTicker", sym));
                 }
             }
         }
     }
     
-    println!("Binance WS: Found {} active USDT Spot pairs.", pairs.len());
+    println!("Binance WS: Found {} streams for USDT Futures pairs.", pairs.len());
     Ok(pairs)
 }
 
 async fn start_ws_chunk(tx: Sender<Vec<u8>>, chunk: Vec<String>, chunk_id: usize) {
-    let ws_url = "wss://stream.binance.com:9443/stream";
+    let ws_url = "wss://fstream.binance.com/stream";
     
     println!("Binance WS [Chunk {}]: Connecting ({} streams)...", chunk_id, chunk.len());
 
