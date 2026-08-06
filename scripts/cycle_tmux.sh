@@ -82,7 +82,11 @@ help-cycle() {
   echo -e "\n\${Y}━━━  📈 KORElASYON TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\${N}"
   echo -e "  \${C}correlation-start\${N}    HEIUSDT korelasyon analizini başlat"
 
-  echo -e "\n\${Y}━━━  🗄️  VERİTABANI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\${N}"
+  echo -e "\n\${Y}━━━  📊 İZLEME SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\${N}"
+  echo -e "  \${C}monitor-start\${N}        Servis izleme panelini başlat (Ctrl+B → 1 ile git)"
+  echo -e "  \${DIM}  → CPU%, RAM, GPU%, VRAM%, Ring Buffer durumu gösterir\${N}"
+
+  echo -e "\n\${Y}━━━  🗄️  VERİTABANI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\${N}"
   echo -e "  \${C}db-trades\${N}            Son 20 işlemi göster"
   echo -e "  \${C}db-size\${N}              Veritabanı boyutu"
 
@@ -156,12 +160,24 @@ alert-reload() { pkill -x alert-service 2>/dev/null; sleep 1; cd \"\$CYCLE_ROOT\
 db-trades() { sqlite3 \"\$CYCLE_ROOT/market_data.db\" \"SELECT id,symbol,side,entry_price,pnl FROM trades ORDER BY id DESC LIMIT 20\" 2>/dev/null || echo 'DB boş veya bulunamadı.'; }
 db-size()   { du -sh \"\$CYCLE_ROOT/market_data.db\" 2>/dev/null; }
 
+# ── İzleme servisi ─────────────────────────────────────────
+monitor-start() {
+  if tmux has-session -t cycle 2>/dev/null; then
+    tmux select-window -t cycle:1 2>/dev/null || {
+      tmux new-window -t cycle:1 -n '📊 Monitor'
+      tmux send-keys -t cycle:1 \"\$CYCLE_ROOT/scripts/monitor.sh\" Enter
+    }
+  else
+    \"\$CYCLE_ROOT/scripts/monitor.sh\"
+  fi
+}
+
 export -f help-cycle cycle-start cycle-kill cycle-status cycle-build cycle-build-full
 export -f data-live data-backtest data-log
 export -f paper-health paper-balance paper-positions paper-orders paper-history paper-metrics paper-log paper-buy paper-sell paper-cli
 export -f strategy-start correlation-start
 export -f alert-list alert-reload
-export -f db-trades db-size
+export -f db-trades db-size monitor-start
 ENVEOF
 
   chmod +x /tmp/cycle_env.sh
@@ -287,6 +303,16 @@ generate_cycle_env "$ROOT" "$PAPER_API_ADDR" "$PAPER_ADMIN_USER" "$PAPER_ADMIN_P
 # Panel 4: Shell (genel komut satırı)
 tmux send-keys -t "$SESSION:0.4" "source /tmp/cycle_env.sh && cd $ROOT && help-cycle" Enter
 
+# ── Window 1: MONITOR (ayrı sekme) ───────────────────────
+tmux new-window -t "$SESSION:1" -n "📊 Monitor"
+tmux send-keys -t "$SESSION:1" "
+echo ''
+echo '📊  SERVİS İZLEME PANELİ BAŞLATIYOR...'
+sleep 2
+$ROOT/scripts/monitor.sh
+" Enter
+tmux select-pane -t "$SESSION:1" -T "📊 Monitor"
+
 # ── tmux mouse ve görsel ayarları ────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" pane-border-status top
@@ -295,9 +321,11 @@ tmux set-option -t "$SESSION" status-style "bg=colour235,fg=colour250"
 tmux set-option -t "$SESSION" pane-active-border-style "fg=colour39"
 tmux set-option -t "$SESSION" pane-border-style "fg=colour238"
 tmux set-option -t "$SESSION" status-left " 🏛️  #[bold]Cycle Finance#[nobold] | "
-tmux set-option -t "$SESSION" status-right " %H:%M:%S | %d.%m.%Y "
+tmux set-option -t "$SESSION" status-right " Ctrl+B → 0:Terminal  1:Monitor | %H:%M:%S "
 tmux set-option -t "$SESSION" status-interval 1
 
-# ── Shell paneline odaklan ve bağlan ─────────────────────
+# ── Ana pencereye (terminal) dön ve bağlan ───────────────
+tmux select-window -t "$SESSION:0"
 tmux select-pane -t "$SESSION:0.4"
 tmux attach-session -t "$SESSION"
+
