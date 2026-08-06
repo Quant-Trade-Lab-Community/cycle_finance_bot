@@ -1,34 +1,24 @@
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use flume::Sender;
-use serde_json::{Value, json};
+use serde_json::json;
 
-async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    println!("Binance WS: Fetching active USDT Futures pairs from REST API...");
-    let url = "https://fapi.binance.com/fapi/v1/exchangeInfo";
-    let resp = reqwest::get(url).await?.json::<Value>().await?;
+async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
+    println!("Binance WS: Limiting subscriptions to specific symbols...");
     
+    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "heiusdt"];
     let mut pairs = Vec::new();
-    if let Some(symbols) = resp.get("symbols").and_then(|s| s.as_array()) {
-        for s in symbols {
-            if let (Some(quote), Some(status), Some(symbol)) = (
-                s.get("quoteAsset").and_then(|v| v.as_str()),
-                s.get("status").and_then(|v| v.as_str()),
-                s.get("symbol").and_then(|v| v.as_str()),
-            ) {
-                if quote == "USDT" && status == "TRADING" {
-                    let sym = symbol.to_lowercase();
-                    pairs.push(format!("{}@trade", sym));
-                    pairs.push(format!("{}@depth20@100ms", sym));
-                    pairs.push(format!("{}@forceOrder", sym));
-                    pairs.push(format!("{}@markPrice", sym));
-                    pairs.push(format!("{}@bookTicker", sym));
-                }
-            }
-        }
+    
+    for sym in target_symbols {
+        pairs.push(format!("{}@trade", sym));
+        pairs.push(format!("{}@depth20@100ms", sym));
+        pairs.push(format!("{}@forceOrder", sym));
+        pairs.push(format!("{}@markPrice@1s", sym));
+        pairs.push(format!("{}@ticker", sym));
+        pairs.push(format!("{}@bookTicker", sym));
     }
     
-    println!("Binance WS: Found {} streams for USDT Futures pairs.", pairs.len());
+    println!("Binance WS: Found {} streams for targeted Futures pairs.", pairs.len());
     Ok(pairs)
 }
 
@@ -87,6 +77,9 @@ pub async fn start_binance_ws_client(tx: Sender<Vec<u8>>) {
                 handles.push(tokio::spawn(async move {
                     start_ws_chunk(tx_clone, chunk, i + 1).await;
                 }));
+                // Binance's DDoS firewall (WAF) blocks the IP if we open too many WS connections simultaneously.
+                // Add a small delay between opening chunks.
+                tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
             }
             
             for handle in handles {

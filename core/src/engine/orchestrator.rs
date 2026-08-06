@@ -3,10 +3,7 @@ use crate::memory::ring_buffer::GenerationalRingBuffer;
 use crate::strategy::trait_def::{Strategy, Signal};
 use crate::risk::engine::RiskEngine;
 use crate::timer::tsc::TscTimer;
-use crossbeam_channel::{Sender, Receiver};
-use crate::rpc::metrics_collector::SharedMetrics;
-use std::sync::Arc;
-use crate::rpc::server::AdminCommand;
+use crossbeam_channel::Sender;
 
 #[derive(PartialEq)]
 enum StrategyState {
@@ -24,8 +21,6 @@ pub struct TitaniumOrchestrator {
     strategies: Vec<ShardedStrategy>,
     risk_manager: RiskEngine,
     gateway_tx: Sender<Signal>,
-    metrics: Arc<SharedMetrics>,
-    cmd_rx: Receiver<AdminCommand>,
 }
 
 impl TitaniumOrchestrator {
@@ -33,8 +28,6 @@ impl TitaniumOrchestrator {
         strategies: Vec<Box<dyn Strategy>>,
         risk_manager: RiskEngine,
         gateway_tx: Sender<Signal>,
-        metrics: Arc<SharedMetrics>,
-        cmd_rx: Receiver<AdminCommand>
     ) -> Self {
         let sharded = strategies.into_iter().map(|s| ShardedStrategy {
             strategy: s,
@@ -45,37 +38,22 @@ impl TitaniumOrchestrator {
             strategies: sharded,
             risk_manager,
             gateway_tx,
-            metrics,
-            cmd_rx,
         }
     }
 
     pub fn run_spin_loop(&mut self, ring_buffer: &GenerationalRingBuffer) {
-        println!("TitaniumOrchestrator: Entering spin loop...");
+        println!("TitaniumOrchestrator: Entering spin loop (Headless)...");
         
         let mut head: u64 = 0;
         let timer = TscTimer::new();
         let mut last_timer_tick = timer.elapsed_ns();
 
         loop {
-            // Check Admin Commands (Lock-Free)
-            if let Ok(cmd) = self.cmd_rx.try_recv() {
-                if cmd.cmd == "drain" || cmd.cmd == "kill" {
-                    println!("TitaniumOrchestrator: KILL SWITCH ACTIVATED! Draining strategies...");
-                    for shard in &mut self.strategies {
-                        if shard.state == StrategyState::Active {
-                            shard.state = StrategyState::Draining;
-                        }
-                    }
-                }
-            }
-
             let current_seq = ring_buffer.get_head(); // Acquire
 
             while head < current_seq {
                 if let Some(slot) = ring_buffer.read_slot(head) {
                     let frame_id = slot.seq;
-                    let start_tsc = TscTimer::read_tsc();
                     
                     for shard in &mut self.strategies {
                         if shard.state == StrategyState::Active {
@@ -103,11 +81,6 @@ impl TitaniumOrchestrator {
                             }
                         }
                     }
-                    
-                    let elapsed_tsc = TscTimer::read_tsc() - start_tsc;
-                    // Approximate ns (Assuming 3GHz)
-                    let elapsed_ns = (elapsed_tsc as f64 / 3.0) as u64;
-                    self.metrics.p99_latency_ns.store(elapsed_ns, std::sync::atomic::Ordering::Release);
                 }
                 head += 1;
             }

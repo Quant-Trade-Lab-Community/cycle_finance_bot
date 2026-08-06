@@ -1,8 +1,9 @@
 use std::sync::atomic::{AtomicU64, Ordering};
-use crate::hal::memory::allocate_huge_buffer;
 use std::ptr;
+use std::ffi::CString;
+use libc::{shm_open, ftruncate, mmap, O_CREAT, O_RDWR, PROT_READ, PROT_WRITE, MAP_SHARED};
+use std::os::unix::io::FromRawFd;
 
-// 256 byte slot ensures it aligns nicely with cache lines (4x64 bytes)
 #[derive(Debug, Clone, Copy)]
 #[repr(C, align(64))]
 pub struct MarketDataSlot {
@@ -11,62 +12,112 @@ pub struct MarketDataSlot {
     pub data: [u8; 246], // Total 256 bytes (8 + 2 + 246)
 }
 
-pub struct GenerationalRingBuffer {
-    buffer: Vec<MarketDataSlot>, // Pre-allocated vector
-    capacity: usize,
-    head: AtomicU64,
-    tail: AtomicU64,
+#[repr(C)]
+pub struct SharedHeader {
+    pub head: AtomicU64,
+    pub tail: AtomicU64,
+    pub capacity: u64,
 }
+
+pub struct GenerationalRingBuffer {
+    // Keep mmap alive. If it drops, memory unmaps.
+    mmap: memmap2::MmapMut,
+    header: *mut SharedHeader,
+    slots: *mut MarketDataSlot,
+    capacity: usize,
+}
+
+// Ensure Send/Sync for crossbeam threading
+unsafe impl Send for GenerationalRingBuffer {}
+unsafe impl Sync for GenerationalRingBuffer {}
 
 impl GenerationalRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        // We use our HAL allocator (currently just falls back to Vec with page touching)
-        // But we cast it into our specific Slot structures.
-        // For simplicity in Rust without unsafe transmutes of the whole buffer, 
-        // we'll just initialize a Vec of MarketDataSlot directly.
-        let mut buffer = Vec::with_capacity(capacity);
-        for _ in 0..capacity {
-            buffer.push(MarketDataSlot { seq: 0, len: 0, data: [0; 246] });
-        }
+        let name = CString::new("/demir_yumruk_ring").unwrap();
+        
+        let header_size = std::mem::size_of::<SharedHeader>();
+        // Align to 64 bytes
+        let header_aligned = (header_size + 63) & !63;
+        
+        let slot_size = std::mem::size_of::<MarketDataSlot>();
+        let total_size = header_aligned + (capacity * slot_size);
 
-        Self {
-            buffer,
-            capacity,
-            head: AtomicU64::new(0),
-            tail: AtomicU64::new(0),
+        unsafe {
+            // Create or open the POSIX shared memory object
+            let fd = shm_open(name.as_ptr(), O_CREAT | O_RDWR, 0o666);
+            if fd < 0 {
+                panic!("Failed to shm_open");
+            }
+
+            // Set the size of the shared memory object
+            if ftruncate(fd, total_size as i64) < 0 {
+                panic!("Failed to ftruncate");
+            }
+
+            // Map the shared memory into our process space
+            let mut file = std::fs::File::from_raw_fd(fd);
+            let mut mmap = memmap2::MmapOptions::new()
+                .len(total_size)
+                .map_mut(&file)
+                .expect("Failed to mmap shared memory");
+
+            let header = mmap.as_mut_ptr() as *mut SharedHeader;
+            let slots = mmap.as_mut_ptr().add(header_aligned) as *mut MarketDataSlot;
+
+            // Only initialize if we are the ones who created it (head == 0).
+            // A more robust way is to use a magic number, but for this HFT demo, 
+            // if head is 0 we assume it's fresh.
+            if (*header).capacity == 0 {
+                (*header).head.store(0, Ordering::SeqCst);
+                (*header).tail.store(0, Ordering::SeqCst);
+                (*header).capacity = capacity as u64;
+                
+                // Zero out the slots just in case
+                ptr::write_bytes(slots, 0, capacity);
+            }
+
+            let real_cap = (*header).capacity as usize;
+
+            Self {
+                mmap,
+                header,
+                slots,
+                capacity: real_cap,
+            }
         }
     }
 
     #[inline(always)]
     pub fn push(&self, data: &[u8]) {
-        let seq = self.head.load(Ordering::Relaxed);
-        let index = (seq % self.capacity as u64) as usize;
-        
-        let len = if data.len() > 246 { 246 } else { data.len() as u16 };
-
         unsafe {
-            let slot_ptr = self.buffer.as_ptr().add(index) as *mut MarketDataSlot;
+            let seq = (*self.header).head.load(Ordering::Relaxed);
+            let index = (seq % self.capacity as u64) as usize;
+            
+            let len = if data.len() > 246 { 246 } else { data.len() as u16 };
+
+            let slot_ptr = self.slots.add(index);
             (*slot_ptr).seq = seq;
             (*slot_ptr).len = len;
             ptr::copy_nonoverlapping(data.as_ptr(), (*slot_ptr).data.as_mut_ptr(), len as usize);
-        }
 
-        // Release order ensures all writes to the slot are visible before head is incremented
-        self.head.store(seq + 1, Ordering::Release);
+            // Release order ensures all writes to the slot are visible before head is incremented
+            (*self.header).head.store(seq + 1, Ordering::Release);
+        }
     }
 
     #[inline(always)]
     pub fn get_head(&self) -> u64 {
-        self.head.load(Ordering::Acquire)
+        unsafe {
+            (*self.header).head.load(Ordering::Acquire)
+        }
     }
 
     #[inline(always)]
     pub fn read_slot(&self, seq: u64) -> Option<MarketDataSlot> {
         let index = (seq % self.capacity as u64) as usize;
         
-        // Unsafe block for raw pointer reading without bounds checking overhead in hot path
         let slot = unsafe {
-            let slot_ptr = self.buffer.as_ptr().add(index);
+            let slot_ptr = self.slots.add(index);
             *slot_ptr
         };
 
