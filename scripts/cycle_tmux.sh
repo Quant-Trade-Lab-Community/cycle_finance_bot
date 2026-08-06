@@ -194,15 +194,54 @@ PAPER_ADMIN_PASS="${PAPER_ADMIN_PASS:-changeme123}"
 PAPER_INITIAL_USDT="${PAPER_INITIAL_USDT:-100000}"
 ALERT_CONFIG="${ALERT_CONFIG:-$ROOT/alerts.toml}"
 
-# ── Alt komutlar ───────────────────────────────────────────
+# ── Alt komutlar ────────────────────────────────────────────
+full_cleanup() {
+  echo "🧹 Temizleniyor..."
+  # 1. tmux session'u kapat
+  tmux kill-session -t "$SESSION" 2>/dev/null && echo "  ✔ tmux session kapatildı" || echo "  - tmux session yoktu"
+
+  # 2. Tüm Cycle servislerini sonlandır
+  for proc in core paper-service alert-service; do
+    if pgrep -x "$proc" &>/dev/null; then
+      pkill -TERM -x "$proc" 2>/dev/null
+      sleep 0.5
+      pkill -KILL -x "$proc" 2>/dev/null || true
+      echo "  ✔ $proc durduruldu"
+    fi
+  done
+
+  # 3. Ring buffer dosyalarını temizle
+  for f in /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders; do
+    [ -f "$f" ] && rm -f "$f" && echo "  ✔ $f silindi" || true
+  done
+
+  # 4. paper_wal (isteğe bağlı — state sıfırlamak istersen)
+  # rm -rf "$ROOT/paper_wal"
+
+  echo "✅ Temizlik tamamlandı."
+}
+
 case "${1:-}" in
   kill)
-    tmux kill-session -t "$SESSION" 2>/dev/null && echo "✅ Session '$SESSION' kapatıldı." || echo "⚠️  Session bulunamadı."
+    full_cleanup
     exit 0
     ;;
   status)
-    tmux list-panes -t "$SESSION" -F "#{pane_index}: #{pane_title} [#{pane_pid}] #{pane_current_command}" 2>/dev/null \
-      || echo "⚠️  '$SESSION' session'ı çalışmıyor."
+    echo "=== tmux Panelleri ==="
+    tmux list-panes -t "$SESSION" -F "  #{pane_index}: #{pane_title} [pid:#{pane_pid}] #{pane_current_command}" 2>/dev/null \
+      || echo "  ⚠️  '$SESSION' session'ı çalışmıyor."
+    echo ""
+    echo "=== Çalışan Servisler ==="
+    for proc in core paper-service alert-service; do
+      pid=$(pgrep -x "$proc" | head -1)
+      if [ -n "$pid" ]; then
+        mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+        cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+        echo "  ✔ $proc  [pid:$pid]  CPU:${cpu}%  RAM:${mem}"
+      else
+        echo "  ✘ $proc  (durdurulmuş)"
+      fi
+    done
     exit 0
     ;;
   attach)
@@ -223,8 +262,19 @@ echo "🔨 Derleniyor..."
 cd "$ROOT"
 cargo build -p core -p paper-service -p alert-service 2>&1 | tail -5
 
-# ── Eski ring buffer'ları temizle ─────────────────────────
+# ── Tam temizlik (her başlatmadan önce) ───────────────────────
+echo "🧹 Eski süreçler temizleniyor..."
+for proc in core paper-service alert-service; do
+  if pgrep -x "$proc" &>/dev/null; then
+    pkill -TERM -x "$proc" 2>/dev/null || true
+    sleep 0.5
+    pkill -KILL -x "$proc" 2>/dev/null || true
+    echo "  ✔ $proc durduruldu"
+  fi
+done
 rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+echo "  ✔ Ring buffer'lar temizlendi"
+sleep 1
 
 # ── Session oluştur ───────────────────────────────────────
 tmux new-session -d -s "$SESSION" -x 220 -y 50
