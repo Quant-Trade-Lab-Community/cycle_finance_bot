@@ -1,13 +1,19 @@
-#![forbid(unsafe_code)]
-
-mod tick;
-mod queue;
-mod ring_buffer;
 pub mod state;
 pub mod config;
 pub mod pii;
 pub mod db;
 pub mod validator;
+
+pub mod hal;
+pub mod memory;
+pub mod timer;
+pub mod strategy;
+pub mod risk;
+pub mod engine;
+
+mod tick;
+mod queue;
+mod ring_buffer;
 
 use tick::EventParser;
 use queue::LockFreeDispatcher;
@@ -70,9 +76,62 @@ async fn main() {
                     }
                 }
             });
-
+            
             execution_engine::start_execution_engine(order_rx, api_key, secret_key).await;
         });
+    });
+
+    // TITANIUM CORE ORCHESTRATOR
+    // Yüksek Performanslı Ring Buffer (Sıfır Kopya, Generational Index)
+    let gen_ring = std::sync::Arc::new(memory::ring_buffer::GenerationalRingBuffer::new(100_000));
+    let gen_ring_clone = gen_ring.clone();
+    
+    // Lock-Free Gateway Kanalı (Strateji -> Execution)
+    // Execution module is using flume, so we bridge crossbeam to flume
+    let (gw_tx, gw_rx) = crossbeam_channel::bounded(1024);
+    let order_tx_titanium = order_tx.clone();
+    
+    thread::spawn(move || {
+        while let Ok(sig) = gw_rx.recv() {
+            // Signal to OrderRequest bridge
+            match sig {
+                strategy::trait_def::Signal::BuyMarket { quantity } => {
+                    let _ = order_tx_titanium.send(execution_engine::order::OrderRequest {
+                        symbol: "BTCUSDT".to_string(),
+                        side: execution_engine::order::OrderSide::Buy,
+                        order_type: execution_engine::order::OrderType::Market,
+                        quantity,
+                        price: None,
+                        time_in_force: None,
+                    });
+                },
+                strategy::trait_def::Signal::SellMarket { quantity } => {
+                    let _ = order_tx_titanium.send(execution_engine::order::OrderRequest {
+                        symbol: "BTCUSDT".to_string(),
+                        side: execution_engine::order::OrderSide::Sell,
+                        order_type: execution_engine::order::OrderType::Market,
+                        quantity,
+                        price: None,
+                        time_in_force: None,
+                    });
+                },
+                _ => {}
+            }
+        }
+    });
+
+    thread::spawn(move || {
+        hal::cpu::pin_to_core(1); // Pin Orchestrator to CPU Core 1
+        
+        let risk_engine = risk::engine::RiskEngine::new(10, -5000); // Max 10 BTC, 5000 USDT max daily loss
+        
+        let strat1 = Box::new(strategy::impls::imbalance::OrderbookImbalanceStrategy::new(1, 1.5));
+        
+        let strategies: Vec<Box<dyn strategy::trait_def::Strategy>> = vec![strat1];
+        
+        let mut orchestrator = engine::orchestrator::TitaniumOrchestrator::new(strategies, risk_engine, gw_tx);
+        
+        orchestrator.run_spin_loop(&gen_ring_clone);
     });
 
     thread::spawn(move || {
@@ -104,6 +163,10 @@ async fn main() {
                     // Ezilen veriyi ana döngüyü yavaşlatmadan DB'ye asenkron postala
                     let _ = db_tx.try_send(evicted);
                 }
+                
+                // TITANIUM CORE: Push raw bytes to the new Generational Ring Buffer
+                // The Orchestrator thread will pick this up instantly via spin-loop.
+                gen_ring.push(&bytes);
 
                 total_parse_time += start_parse.elapsed();
                 tick_count += 1;
