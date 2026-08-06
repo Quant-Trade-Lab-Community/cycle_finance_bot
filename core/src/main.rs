@@ -98,6 +98,11 @@ async fn main() {
                     continue;
                 }
 
+                // KULLANICI İSTEĞİ: Emilen tüm veriyi ekrana bas (DİKKAT: Konsolu sel gibi basabilir!)
+                if let Ok(sym) = std::str::from_utf8(&owned_event.symbol) {
+                    println!("[INGEST] Sembol: {} | Veri: {:?}", sym.trim_matches(char::from(0)), owned_event.payload);
+                }
+
                 // SIFIR TAHSİS YAZMA: Önceden tahsis edilmiş devasa Ring Buffer'a kalıcı olarak kaydet
                 // Eğer buffer tamamen dolar ve baştan yazmaya başlarsa, ezilen eski veriyi döner
                 if let Some(evicted) = ring_buffer.push(owned_event) {
