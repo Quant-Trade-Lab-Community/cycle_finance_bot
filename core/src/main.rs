@@ -7,6 +7,7 @@ pub mod state;
 pub mod config;
 pub mod pii;
 pub mod db;
+pub mod validator;
 
 use tick::EventParser;
 use queue::LockFreeDispatcher;
@@ -81,6 +82,9 @@ async fn main() {
         let mut total_parse_time = std::time::Duration::new(0, 0);
         let mut last_report = Instant::now();
         
+        let mut validator = validator::DataValidator::new();
+        let circuit_breaker = validator.circuit_breaker.clone();
+        
         // Allocate exactly ~1 GB Ring Buffer for 20-level Orderbook structs (~1.6 Million events)
         let mut ring_buffer = RingBuffer::new(160_000);
 
@@ -88,6 +92,12 @@ async fn main() {
             let start_parse = Instant::now();
             
             if let Some(owned_event) = EventParser::parse(&mut bytes) {
+                // VERİ DOĞRULAMA (DATA VALIDATION)
+                if !validator.is_valid(&owned_event) {
+                    // Bozuk veri, çöpe at. Şalter (Circuit Breaker) atarsa sistem durur.
+                    continue;
+                }
+
                 // SIFIR TAHSİS YAZMA: Önceden tahsis edilmiş devasa Ring Buffer'a kalıcı olarak kaydet
                 // Eğer buffer tamamen dolar ve baştan yazmaya başlarsa, ezilen eski veriyi döner
                 if let Some(evicted) = ring_buffer.push(owned_event) {
