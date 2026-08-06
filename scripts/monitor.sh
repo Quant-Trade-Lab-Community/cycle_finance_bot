@@ -224,9 +224,8 @@ while true; do
     echo -e "  ${DIM}Ring Buffer Durumu:${N}"
     for ring in demir_yumruk_ring demir_yumruk_orders; do
         if [ -f "/dev/shm/$ring" ]; then
-            local size
-            size=$(du -sh "/dev/shm/$ring" 2>/dev/null | cut -f1)
-            printf "    ${G}✔${N} /dev/shm/%-28s %s\n" "$ring" "$size"
+            ring_size=$(du -sh "/dev/shm/$ring" 2>/dev/null | cut -f1)
+            printf "    ${G}✔${N} /dev/shm/%-28s %s\n" "$ring" "$ring_size"
         else
             printf "    ${R}✘${N} /dev/shm/%-28s ${DIM}(yok)${N}\n" "$ring"
         fi
