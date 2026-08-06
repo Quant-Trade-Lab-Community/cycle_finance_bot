@@ -145,13 +145,23 @@ async fn run(cli: Cli) -> Result<(), String> {
                 println!("  [None]");
             } else {
                 for pos in p["positions"].as_array().unwrap() {
+                    let upnl = pos["unrealized_pnl"].as_str().unwrap_or("?");
+                    let pct = pos["unrealized_pnl_pct"].as_str().unwrap_or("?");
+                    let mark = pos["mark_price"].as_str().unwrap_or("?");
+                    let sign = upnl.parse::<f64>().unwrap_or(0.0);
+                    let icon = if sign > 0.0 { "🟢" } else if sign < 0.0 { "🔴" } else { "⚪" };
                     println!(
-                        "  {} | {} | qty: {} @ {} ({}x) | liq: {}",
+                        "  {} {} | {} | qty: {} @ {} ({}x) | mark: {} | PnL: {} {} ({}%) | liq: {}",
+                        icon,
                         pos["symbol"].as_str().unwrap_or("?"),
                         pos["side"].as_str().unwrap_or("?"),
                         fmt_decimal(&pos["quantity"]),
                         fmt_decimal(&pos["avg_entry_price"]),
                         fmt_decimal(&pos["leverage"]),
+                        mark,
+                        upnl,
+                        if sign > 0.0 { "+" } else { "" },
+                        pct,
                         pos["liquidation_price"].as_str().unwrap_or("n/a"),
                     );
                 }

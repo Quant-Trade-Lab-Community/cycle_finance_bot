@@ -18,6 +18,11 @@ pub struct PositionView {
     pub avg_entry_price: Decimal,
     pub leverage: Decimal,
     pub liquidation_price: Option<Decimal>,
+    pub mark_price: Option<Decimal>,
+    /// Gerçekleşmemiş PnL (mark price - entry) * qty
+    pub unrealized_pnl: Option<Decimal>,
+    /// PnL yüzdesi (girişe göre)
+    pub unrealized_pnl_pct: Option<Decimal>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -60,20 +65,32 @@ impl PaperSnapshot {
         positions: &PositionManager,
         open_orders: usize,
         recent_trades: Vec<TradeView>,
+        mark_prices: &std::collections::HashMap<String, Decimal>,
     ) -> Self {
         let positions = positions
             .all()
             .iter()
-            .map(|(sym, pos)| PositionView {
-                symbol: sym.clone(),
-                side: match pos.side {
-                    PositionSide::Long => "LONG".to_string(),
-                    PositionSide::Short => "SHORT".to_string(),
-                },
-                quantity: pos.quantity,
-                avg_entry_price: pos.avg_entry_price,
-                leverage: pos.leverage,
-                liquidation_price: Some(pos.liquidation_price(Decimal::from_str("0.005").unwrap_or(Decimal::ZERO))),
+            .map(|(sym, pos)| {
+                let mark = mark_prices.get(sym).copied();
+                let unrealized = mark.map(|m| pos.unrealized_pnl(m));
+                let unrealized_pnl_pct = unrealized.map(|up| {
+                    let cost = (pos.avg_entry_price * pos.quantity.abs()).max(Decimal::ONE);
+                    (up / cost) * Decimal::ONE_HUNDRED
+                });
+                PositionView {
+                    symbol: sym.clone(),
+                    side: match pos.side {
+                        PositionSide::Long => "LONG".to_string(),
+                        PositionSide::Short => "SHORT".to_string(),
+                    },
+                    quantity: pos.quantity,
+                    avg_entry_price: pos.avg_entry_price,
+                    leverage: pos.leverage,
+                    liquidation_price: Some(pos.liquidation_price(Decimal::from_str("0.005").unwrap_or(Decimal::ZERO))),
+                    mark_price: mark,
+                    unrealized_pnl: unrealized,
+                    unrealized_pnl_pct,
+                }
             })
             .collect();
 

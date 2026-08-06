@@ -122,7 +122,7 @@ impl PaperEngineActor {
             snapshot: Arc::new(RwLock::new(PaperSnapshot::build(
                 Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO,
                 crate::paper::risk::RiskStatus::Ok, Decimal::ZERO,
-                &PositionManager::new(), 0, vec![],
+                &PositionManager::new(), 0, vec![], &HashMap::new(),
             ))),
         };
 
@@ -146,6 +146,7 @@ impl PaperEngineActor {
             &self.positions,
             self.open_orders.len(),
             self.recent_trades.clone(),
+            &self.mark_prices,
         );
         *self.snapshot.write() = snap;
     }

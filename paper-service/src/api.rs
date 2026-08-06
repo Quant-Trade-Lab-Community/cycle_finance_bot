@@ -8,7 +8,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    routing::{delete, get, post},
+    routing::{get, post},
     Json, Router,
 };
 use execution_engine::order::{OrderRequest, OrderSide, OrderType};
