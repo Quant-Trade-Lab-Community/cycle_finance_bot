@@ -22,13 +22,32 @@ pub fn start_strategy_cli() {
         hal::cpu::pin_to_core(1);
         
         let gen_ring = GenerationalRingBuffer::new(160_000);
-        let order_ring = OrderRingBuffer::new(10_000);
+        let order_ring = Arc::new(OrderRingBuffer::new(10_000));
         
-        // Simulating orchestrator spin loop that occasionally fires an order
-        // For demonstration, we won't block the actual logic here, we just keep it alive
+        let script_path = "/home/smhvz/Desktop/PROJE/strategies/test_strategy.py";
+        
+        // Python motorunu başlat
+        let engine = match crate::strategy::python_bridge::PythonStrategyEngine::new(script_path, order_ring.clone()) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("❌ Python stratejisi başlatılamadı: {:?}", e);
+                return;
+            }
+        };
+
+        println!("✅ Python Strateji Motoru Başlatıldı: {}", script_path);
+
+        let mut read_cursor = 0;
         loop {
-            std::hint::spin_loop();
-            // (Real logic: read from gen_ring, compute strategy, order_ring.push(...))
+            if let Some(slot) = gen_ring.read_slot(read_cursor) {
+                let mut data = slot.data[..slot.len as usize].to_vec();
+                if let Some(owned_event) = crate::tick::EventParser::parse(&mut data) {
+                    let _ = engine.on_event(&owned_event);
+                }
+                read_cursor += 1;
+            } else {
+                std::hint::spin_loop();
+            }
         }
     });
 

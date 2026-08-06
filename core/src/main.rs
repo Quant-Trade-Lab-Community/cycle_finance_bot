@@ -89,5 +89,11 @@ async fn main() {
         return;
     }
 
-    println!("Lütfen geçerli bir RUN_MODE belirleyin (DATA, PAPER, STRATEGY)");
+    if run_mode == "BACKTEST" {
+        let csv_path = std::env::var("CSV_PATH").unwrap_or_else(|_| "/home/smhvz/Desktop/PROJE/test_data.csv".to_string());
+        engine::backtester::start_backtester(&csv_path);
+        return;
+    }
+
+    println!("Lütfen geçerli bir RUN_MODE belirleyin (DATA, PAPER, STRATEGY, BACKTEST)");
 }

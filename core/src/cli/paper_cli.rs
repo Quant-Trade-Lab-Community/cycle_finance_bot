@@ -1,10 +1,10 @@
 use rustyline::DefaultEditor;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use crate::risk::portfolio::Portfolio;
 
 pub struct PaperState {
-    pub balance: f64,
-    pub positions: HashMap<String, f64>, // Symbol -> Size
+    pub portfolio: Portfolio,
     pub leverage: HashMap<String, u32>,
     pub margin_mode: String, // "Cross" or "Isolated"
 }
@@ -16,14 +16,13 @@ pub fn start_paper_cli() {
     println!("========================================");
 
     let state = Arc::new(Mutex::new(PaperState {
-        balance: 10000.0,
-        positions: HashMap::new(),
+        portfolio: Portfolio::new(10000.0, 0.20), // 10k USD balance, 20% max drawdown
         leverage: HashMap::new(),
         margin_mode: "Cross".to_string(),
     }));
 
     // In a real scenario, this thread would read from OrderRingBuffer
-    // and execute orders, updating the state.
+    // and execute orders, updating the portfolio state (simulated fills).
     
     let mut rl = DefaultEditor::new().unwrap();
 
@@ -45,16 +44,25 @@ pub fn start_paper_cli() {
                     }
                     "status" => {
                         let st = state.lock().unwrap();
+                        let dummy_prices = HashMap::new(); // Simulated market prices could go here
+                        let equity = st.portfolio.get_total_equity(&dummy_prices);
+                        
                         println!("\n--- ACCOUNT STATUS ---");
-                        println!("Balance:     ${:.2}", st.balance);
-                        println!("Margin Mode: {}", st.margin_mode);
+                        println!("Cash Balance:  ${:.2}", st.portfolio.cash_balance);
+                        println!("Realized PnL:  ${:.2}", st.portfolio.realized_pnl);
+                        println!("Total Equity:  ${:.2}", equity);
+                        println!("Commissions:   ${:.2}", st.portfolio.total_commission);
+                        println!("Margin Mode:   {}", st.margin_mode);
                         println!("Positions:");
-                        if st.positions.is_empty() {
+                        
+                        if st.portfolio.positions.is_empty() {
                             println!("  [None]");
                         } else {
-                            for (sym, sz) in &st.positions {
-                                let lev = st.leverage.get(sym).unwrap_or(&1);
-                                println!("  {} -> Size: {} ({}x)", sym, sz, lev);
+                            for (sym, pos) in &st.portfolio.positions {
+                                if pos.quantity != 0.0 {
+                                    let lev = st.leverage.get(sym).unwrap_or(&1);
+                                    println!("  {} -> Size: {} @ ${:.2} ({}x)", sym, pos.quantity, pos.avg_entry_price, lev);
+                                }
                             }
                         }
                         println!("----------------------\n");
