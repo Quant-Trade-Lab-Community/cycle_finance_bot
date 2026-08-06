@@ -159,15 +159,22 @@ sleep 2
 cd $ROOT && ./target/debug/alert-service --config $ALERT_CONFIG
 " Enter
 
-# ── Panel 4: SHELL ───────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.4" "
+# ── Shell init dosyasını oluştur ────────────────────────────
+# (tmux send-keys ile çok satırlı komut göndermek güvensiz;
+#  bunun yerine önce dosyaya yaz, shell paneli source eder)
+cat > /tmp/cycle_init.sh << INITEOF
+#!/usr/bin/env bash
 export CYCLE_ROOT='$ROOT'
 export CYCLE_API='http://$PAPER_API_ADDR'
 export CYCLE_USER='$PAPER_ADMIN_USER'
 export CYCLE_PASS='$PAPER_ADMIN_PASS'
 source '$ROOT/scripts/cycle_env.sh'
 help-cycle
-" Enter
+INITEOF
+chmod +x /tmp/cycle_init.sh
+
+# ── Panel 4: SHELL ───────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.4" "source /tmp/cycle_init.sh" Enter
 
 # ── Pencere 1: MONITOR ───────────────────────────────────────
 tmux new-window -t "$SESSION:1" -n "Monitor"
