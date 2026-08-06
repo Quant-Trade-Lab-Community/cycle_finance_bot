@@ -1,5 +1,6 @@
 pub mod order;
 pub mod signer;
+pub mod paper;
 
 use flume::Receiver;
 use order::OrderRequest;
@@ -9,8 +10,40 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use std::sync::Arc;
+use tokio::sync::{mpsc, oneshot};
+use paper::config::PaperConfig;
+use paper::actor::{PaperEngineActor, ActorCommand};
 
 pub async fn start_execution_engine(rx: Receiver<OrderRequest>, api_key: String, secret_key: String) {
+    let trading_mode = std::env::var("TRADING_MODE").unwrap_or_else(|_| "LIVE".to_string());
+    
+    if trading_mode == "PAPER" {
+        println!("ExecutionEngine: Starting in PAPER TRADING mode.");
+        let config = PaperConfig::load_from_env();
+        let actor = PaperEngineActor::new(config);
+        
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+        
+        tokio::spawn(async move {
+            actor.run(cmd_rx).await;
+        });
+
+        // Translate flume (Strategy) -> mpsc (Actor)
+        while let Ok(order_req) = rx.recv_async().await {
+            let (resp_tx, resp_rx) = oneshot::channel();
+            let _ = cmd_tx.send(ActorCommand::SubmitOrder {
+                order: order_req,
+                response_tx: resp_tx,
+            });
+            
+            // Opsiyonel: Sonucu bekle ve logla
+            if let Ok(res) = resp_rx.await {
+                println!("Paper Order Response: {:?}", res);
+            }
+        }
+        return;
+    }
+
     let ws_url = "wss://ws-api.binance.com:443/ws-api/v3";
     let signer = Arc::new(BinanceSigner::new(api_key, secret_key));
 
