@@ -165,8 +165,16 @@ find_pid_env() {
 # ── Ana döngü ────────────────────────────────────────────────
 INTERVAL="${MONITOR_INTERVAL:-1}"
 
+# Cursor'ı gizle, çıkışta geri getir
+tput civis
+trap 'tput cnorm; echo' EXIT INT TERM
+
+# İlk açılışta bir kez temizle
+clear
+
 while true; do
-    clear
+    # Ekranı silmeden cursor'ı sol-üst köşeye taşı (titreme yok)
+    tput cup 0 0
 
     local_time=$(date '+%H:%M:%S')
     local_date=$(date '+%d.%m.%Y')
