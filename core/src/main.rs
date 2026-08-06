@@ -3,6 +3,7 @@ pub mod config;
 pub mod pii;
 pub mod db;
 pub mod validator;
+pub mod rpc;
 
 pub mod hal;
 pub mod memory;
@@ -91,6 +92,23 @@ async fn main() {
     let (gw_tx, gw_rx) = crossbeam_channel::bounded(1024);
     let order_tx_titanium = order_tx.clone();
     
+    let shared_metrics = std::sync::Arc::new(rpc::metrics_collector::SharedMetrics::new());
+    let (admin_tx, admin_rx) = crossbeam_channel::bounded(100);
+    
+    let metrics_for_rpc = shared_metrics.clone();
+    
+    // RPC ADMIN SERVER THREAD (Core 0 concept)
+    thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+            
+        rt.block_on(async {
+            rpc::server::start_rpc_server(metrics_for_rpc, admin_tx).await;
+        });
+    });
+
     thread::spawn(move || {
         while let Ok(sig) = gw_rx.recv() {
             // Signal to OrderRequest bridge
@@ -129,7 +147,13 @@ async fn main() {
         
         let strategies: Vec<Box<dyn strategy::trait_def::Strategy>> = vec![strat1];
         
-        let mut orchestrator = engine::orchestrator::TitaniumOrchestrator::new(strategies, risk_engine, gw_tx);
+        let mut orchestrator = engine::orchestrator::TitaniumOrchestrator::new(
+            strategies, 
+            risk_engine, 
+            gw_tx,
+            shared_metrics,
+            admin_rx
+        );
         
         orchestrator.run_spin_loop(&gen_ring_clone);
     });
