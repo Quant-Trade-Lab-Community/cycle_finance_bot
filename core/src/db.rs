@@ -93,7 +93,7 @@ pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
         let symbol_str = std::str::from_utf8(&event.symbol[..symbol_len]).unwrap_or("UNKNOWN");
 
         match &event.payload {
-            EventType::Trade { price, quantity, timestamp } => {
+            EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
                 tx.execute(
                     "INSERT INTO trades (symbol, price, quantity, timestamp) VALUES (?1, ?2, ?3, ?4)",
                     params![symbol_str, price, quantity, timestamp],

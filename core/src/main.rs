@@ -95,5 +95,10 @@ async fn main() {
         return;
     }
 
-    println!("Lütfen geçerli bir RUN_MODE belirleyin (DATA, PAPER, STRATEGY, BACKTEST)");
+    if run_mode == "CORRELATION" {
+        cli::correlation_cli::start_correlation_cli();
+        return;
+    }
+
+    println!("Lütfen geçerli bir RUN_MODE belirleyin (DATA, PAPER, STRATEGY, BACKTEST, CORRELATION)");
 }

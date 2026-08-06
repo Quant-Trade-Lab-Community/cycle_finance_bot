@@ -1,7 +1,7 @@
 #[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum EventType {
-    Trade { price: f64, quantity: f64, timestamp: u64 },
+    Trade { price: f64, quantity: f64, timestamp: u64, is_buyer_maker: bool },
     Orderbook { 
         bids: [(f64, f64); 20], 
         asks: [(f64, f64); 20] 
@@ -21,14 +21,14 @@ pub struct OwnedEvent {
 
 impl OwnedEvent {
     #[inline(always)]
-    pub fn new_trade(sym: &str, price: f64, quantity: f64, timestamp: u64) -> Self {
+    pub fn new_trade(sym: &str, price: f64, quantity: f64, timestamp: u64, is_buyer_maker: bool) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
         symbol[..len].copy_from_slice(&bytes[..len]);
         Self {
             symbol,
-            payload: EventType::Trade { price, quantity, timestamp },
+            payload: EventType::Trade { price, quantity, timestamp, is_buyer_maker },
         }
     }
 
@@ -107,7 +107,7 @@ impl RingBuffer {
         
         let buffer = vec![OwnedEvent {
             symbol: [0; 16],
-            payload: EventType::Trade { price: 0.0, quantity: 0.0, timestamp: 0 },
+            payload: EventType::Trade { price: 0.0, quantity: 0.0, timestamp: 0, is_buyer_maker: false },
         }; capacity].into_boxed_slice();
         
         Self {

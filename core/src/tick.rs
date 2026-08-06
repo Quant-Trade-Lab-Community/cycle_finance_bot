@@ -22,8 +22,9 @@ impl EventParser {
             
             let price = price_str.parse::<f64>().ok()?;
             let quantity = quantity_str.parse::<f64>().ok()?;
+            let is_buyer_maker = data.get("m")?.as_bool()?;
             
-            Some(OwnedEvent::new_trade(symbol, price, quantity, timestamp))
+            Some(OwnedEvent::new_trade(symbol, price, quantity, timestamp, is_buyer_maker))
         } else if stream.contains("@depth") {
             let symbol = stream.split('@').next()?;
             let mut bids = [(0.0, 0.0); 20];

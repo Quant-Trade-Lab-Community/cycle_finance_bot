@@ -37,11 +37,12 @@ impl PythonStrategyEngine {
             dict.set_item("symbol", symbol_str)?;
             
             match event.payload {
-                EventType::Trade { price, quantity, timestamp } => {
+                EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
                     dict.set_item("type", "trade")?;
                     dict.set_item("price", price)?;
                     dict.set_item("quantity", quantity)?;
                     dict.set_item("timestamp", timestamp)?;
+                    dict.set_item("is_buyer_maker", is_buyer_maker)?;
                 },
                 EventType::BookTicker { best_bid_price, best_ask_price, .. } => {
                     dict.set_item("type", "book_ticker")?;

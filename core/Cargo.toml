@@ -31,6 +31,7 @@ libc = "0.2"
 pyo3 = { version = "0.22", features = ["auto-initialize"] }
 memmap2 = "0.9"
 rustyline = "14.0.0"
+chrono = "0.4.45"
 
 [dev-dependencies]
 criterion = "0.4"

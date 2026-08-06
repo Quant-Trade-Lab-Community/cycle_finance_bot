@@ -37,7 +37,7 @@ impl DataValidator {
         }
 
         match &event.payload {
-            EventType::Trade { price, quantity, timestamp } => {
+            EventType::Trade { price, quantity, timestamp, is_buyer_maker: _ } => {
                 if *price <= 0.0 || *quantity <= 0.0 {
                     return self.flag_invalid("Trade price/qty <= 0");
                 }
