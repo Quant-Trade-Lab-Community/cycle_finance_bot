@@ -4,6 +4,7 @@ use axum::{
     Router, Json,
 };
 use ohlcv_engine::client::BinanceClient;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,7 +23,7 @@ struct APIResponse {
     status: String,
     symbol: String,
     interval: String,
-    current_price: f64,
+    current_price: Decimal,
     detected_patterns: Vec<algorithms::PatternDetection>,
 }
 

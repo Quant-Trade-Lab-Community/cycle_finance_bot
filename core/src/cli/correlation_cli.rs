@@ -1,13 +1,15 @@
 use std::collections::VecDeque;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{Local, TimeZone};
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use crate::memory::ring_buffer::GenerationalRingBuffer;
 use crate::tick::EventParser;
 use crate::ring_buffer::{OwnedEvent, EventType};
 
 struct TradeRecord {
     timestamp: u64,
-    price: f64,
-    qty: f64,
+    price: Decimal,
+    qty: Decimal,
 }
 
 struct ActiveAnomaly {
@@ -16,7 +18,7 @@ struct ActiveAnomaly {
     expected_outcome: u8, // 1: Breakout, 2: Drop, 3: Rise
     start_ts: u64,
     end_ts: u64,
-    start_price: f64,
+    start_price: Decimal,
 }
 
 pub fn start_correlation_cli() {
@@ -33,8 +35,8 @@ pub fn start_correlation_cli() {
 
     let window_ms = window_sec * 1000;
     let track_ms = track_sec * 1000;
-    let flat_threshold = 0.001;
-    let breakout_threshold = 0.005;
+    let flat_threshold = Decimal::from_str("0.001").unwrap();
+    let breakout_threshold = Decimal::from_str("0.005").unwrap();
 
     println!("========================================");
     println!("📈 KORELASYON TERMINALİ v5.0 (ASENKRON KUYRUK)");
@@ -85,8 +87,8 @@ pub fn start_correlation_cli() {
                             if current_ts - first.timestamp >= window_ms {
                                 let split_ts = current_ts - window_ms;
                                 
-                                let mut prev_total_vol = 0.0;
-                                let mut curr_total_vol = 0.0;
+                                let mut prev_total_vol = Decimal::ZERO;
+                                let mut curr_total_vol = Decimal::ZERO;
                                 
                                 let mut prev_prices = Vec::new();
                                 let mut curr_prices = Vec::new();

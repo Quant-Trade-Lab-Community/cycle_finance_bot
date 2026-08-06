@@ -1,4 +1,6 @@
 use rusqlite::{Connection, Result};
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use tokio::sync::mpsc;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -9,9 +11,9 @@ pub enum PersistEvent {
         order_id: String,
         symbol: String,
         side: String,
-        price: f64,
-        quantity: f64,
-        fee: f64,
+        price: Decimal,
+        quantity: Decimal,
+        fee: Decimal,
         timestamp: u64,
     },
     // We can add OpenOrder events here in the future
@@ -103,7 +105,14 @@ pub async fn start_db_writer(mut rx: mpsc::UnboundedReceiver<PersistEvent>, db_p
                 for ev in events {
                     match ev {
                         PersistEvent::Trade { order_id, symbol, side, price, quantity, fee, timestamp } => {
-                            stmt_trade.execute(rusqlite::params![order_id, symbol, side, price, quantity, fee, timestamp]).ok();
+                            // SQLite REAL sütunları için Decimal -> f64 dönüşümü (kalıcılık logu; doğruluk Decimal state'te korunur)
+                            stmt_trade.execute(rusqlite::params![
+                                order_id, symbol, side,
+                                price.to_f64().unwrap_or(0.0),
+                                quantity.to_f64().unwrap_or(0.0),
+                                fee.to_f64().unwrap_or(0.0),
+                                timestamp
+                            ]).ok();
                         }
                     }
                 }

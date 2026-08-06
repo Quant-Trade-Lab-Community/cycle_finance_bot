@@ -1,6 +1,7 @@
 use clap::Parser;
 use ohlcv_engine::client::BinanceClient;
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{Local, TimeZone};
+use rust_decimal::Decimal;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -39,7 +40,7 @@ async fn main() {
                 
                 let trend = if k.close >= k.open { "🟩 BOGA" } else { "🟥 AYI " };
                 let delta = k.close - k.open;
-                let delta_percent = (delta / k.open) * 100.0;
+                let delta_percent = (delta / k.open) * Decimal::ONE_HUNDRED;
 
                 println!("[{:02}] {} | {} | Açılış: {:.4} | Yüksek: {:.4} | Düşük: {:.4} | Kapanış: {:.4} | Hacim: {:.2} | Değişim: {:.4} ({:.2}%)",
                     i + 1, time_str, trend, k.open, k.high, k.low, k.close, k.volume, delta, delta_percent

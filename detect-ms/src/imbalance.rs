@@ -9,6 +9,8 @@
 // ============================================================================
 
 use ohlcv_engine::Kline;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -28,14 +30,14 @@ pub enum FvgLabel {
 #[derive(Debug, Clone, Serialize)]
 pub struct Fvg {
     /// FVG bölgesinin üst sınırı
-    pub high: f64,
+    pub high: Decimal,
     /// FVG bölgesinin alt sınırı
-    pub low: f64,
+    pub low: Decimal,
     /// Bölge orta noktası
-    pub mid: f64,
+    pub mid: Decimal,
     pub direction: FvgDirection,
     /// 3 mumun toplam delta değeri
-    pub delta: f64,
+    pub delta: Decimal,
     /// Delta doğrulama sonucu
     pub label: FvgLabel,
     pub timestamp: u64,
@@ -46,15 +48,15 @@ pub struct Fvg {
 /// Delta = Alıcı hacmi - Satıcı hacmi
 /// buy_volume = taker_buy_base_asset_volume (aggresor alıcılar)
 /// sell_volume = volume - taker_buy_base_asset_volume (aggresor satıcılar)
-pub fn candle_delta(kline: &Kline) -> f64 {
+pub fn candle_delta(kline: &Kline) -> Decimal {
     let buy_vol = kline.taker_buy_base_asset_volume;
     let sell_vol = kline.volume - buy_vol;
     buy_vol - sell_vol
 }
 
 /// Kümülatif Delta serisi
-pub fn cumulative_delta(klines: &[Kline]) -> Vec<f64> {
-    let mut cum = 0.0;
+pub fn cumulative_delta(klines: &[Kline]) -> Vec<Decimal> {
+    let mut cum = Decimal::ZERO;
     klines
         .iter()
         .map(|k| {
@@ -94,7 +96,7 @@ pub fn detect_fvg(klines: &[Kline]) -> Vec<Fvg> {
             let gap_high = next.low;
             let gap_low = prev.high;
 
-            let label = if region_delta > 0.0 {
+            let label = if region_delta > Decimal::ZERO {
                 FvgLabel::ActiveAbsorber
             } else {
                 FvgLabel::PassiveGap
@@ -103,7 +105,7 @@ pub fn detect_fvg(klines: &[Kline]) -> Vec<Fvg> {
             fvgs.push(Fvg {
                 high: gap_high,
                 low: gap_low,
-                mid: (gap_high + gap_low) / 2.0,
+                mid: (gap_high + gap_low) / Decimal::TWO,
                 direction: FvgDirection::Bullish,
                 delta: region_delta,
                 label,
@@ -118,7 +120,7 @@ pub fn detect_fvg(klines: &[Kline]) -> Vec<Fvg> {
             let gap_high = prev.low;
             let gap_low = next.high;
 
-            let label = if region_delta < 0.0 {
+            let label = if region_delta < Decimal::ZERO {
                 FvgLabel::ActiveAbsorber
             } else {
                 FvgLabel::PassiveGap
@@ -127,7 +129,7 @@ pub fn detect_fvg(klines: &[Kline]) -> Vec<Fvg> {
             fvgs.push(Fvg {
                 high: gap_high,
                 low: gap_low,
-                mid: (gap_high + gap_low) / 2.0,
+                mid: (gap_high + gap_low) / Decimal::TWO,
                 direction: FvgDirection::Bearish,
                 delta: region_delta,
                 label,

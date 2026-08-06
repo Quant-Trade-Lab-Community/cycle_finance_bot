@@ -1,6 +1,7 @@
 use rusqlite::{Connection, params};
 use flume::Receiver;
 use std::time::{Instant, Duration};
+use rust_decimal::prelude::*;
 use crate::ring_buffer::{OwnedEvent, EventType};
 
 pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
@@ -96,20 +97,20 @@ pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
             EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
                 tx.execute(
                     "INSERT INTO trades (symbol, price, quantity, timestamp) VALUES (?1, ?2, ?3, ?4)",
-                    params![symbol_str, price, quantity, timestamp],
+                    params![symbol_str, price.to_f64().unwrap_or(0.0), quantity.to_f64().unwrap_or(0.0), timestamp],
                 ).expect("Failed to insert trade");
             },
             EventType::Orderbook { bids, asks } => {
                 use std::fmt::Write;
                 let mut bids_str = String::with_capacity(512);
                 for (p, q) in bids.iter() {
-                    if *p == 0.0 && *q == 0.0 { continue; }
+                    if *p == rust_decimal::Decimal::ZERO && *q == rust_decimal::Decimal::ZERO { continue; }
                     let _ = write!(&mut bids_str, "{},{}|", p, q);
                 }
                 
                 let mut asks_str = String::with_capacity(512);
                 for (p, q) in asks.iter() {
-                    if *p == 0.0 && *q == 0.0 { continue; }
+                    if *p == rust_decimal::Decimal::ZERO && *q == rust_decimal::Decimal::ZERO { continue; }
                     let _ = write!(&mut asks_str, "{},{}|", p, q);
                 }
 
@@ -121,25 +122,25 @@ pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
             EventType::Liquidation { side, price, quantity, timestamp } => {
                 tx.execute(
                     "INSERT INTO liquidations (symbol, side, price, quantity, timestamp) VALUES (?1, ?2, ?3, ?4, ?5)",
-                    params![symbol_str, side, price, quantity, timestamp],
+                    params![symbol_str, side, price.to_f64().unwrap_or(0.0), quantity.to_f64().unwrap_or(0.0), timestamp],
                 ).expect("Failed to insert liquidation");
             },
             EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
                 tx.execute(
                     "INSERT INTO funding_rates (symbol, mark_price, funding_rate, next_funding_time) VALUES (?1, ?2, ?3, ?4)",
-                    params![symbol_str, mark_price, funding_rate, next_funding_time],
+                    params![symbol_str, mark_price.to_f64().unwrap_or(0.0), funding_rate.to_f64().unwrap_or(0.0), next_funding_time],
                 ).expect("Failed to insert funding rate");
             },
             EventType::BookTicker { best_bid_price, best_bid_qty, best_ask_price, best_ask_qty } => {
                 tx.execute(
                     "INSERT INTO booktickers (symbol, best_bid_price, best_bid_qty, best_ask_price, best_ask_qty) VALUES (?1, ?2, ?3, ?4, ?5)",
-                    params![symbol_str, best_bid_price, best_bid_qty, best_ask_price, best_ask_qty],
+                    params![symbol_str, best_bid_price.to_f64().unwrap_or(0.0), best_bid_qty.to_f64().unwrap_or(0.0), best_ask_price.to_f64().unwrap_or(0.0), best_ask_qty.to_f64().unwrap_or(0.0)],
                 ).expect("Failed to insert bookticker");
             },
             EventType::OpenInterest { open_interest, timestamp } => {
                 tx.execute(
                     "INSERT INTO open_interests (symbol, open_interest, timestamp) VALUES (?1, ?2, ?3)",
-                    params![symbol_str, open_interest, timestamp],
+                    params![symbol_str, open_interest.to_f64().unwrap_or(0.0), timestamp],
                 ).expect("Failed to insert open interest");
             }
         }

@@ -12,15 +12,17 @@
 
 use crate::{imbalance, levels, liquidity, pivot, session, trend};
 use ohlcv_engine::Kline;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use serde::Serialize;
 
 /// En yüksek manyetik alan — tüm seviyeler arasında çekim gücü en yüksek bölge
 #[derive(Debug, Clone, Serialize)]
 pub struct VacuumZone {
-    pub price_low: f64,
-    pub price_high: f64,
+    pub price_low: Decimal,
+    pub price_high: Decimal,
     /// Manyetik skor: (Savunma Skoru × Decay) + (Delta Doğrulaması) çarpımı
-    pub magnetic_score: f64,
+    pub magnetic_score: Decimal,
     pub label: String,
     pub delta_confirmed: bool,
 }
@@ -29,17 +31,17 @@ pub struct VacuumZone {
 #[derive(Debug, Clone, Serialize)]
 pub struct LevelEntry {
     pub pivot_id: String,
-    pub price: f64,
+    pub price: Decimal,
     pub level_type: String,
     pub timestamp: u64,
-    pub decay_weight: f64,
+    pub decay_weight: Decimal,
     pub defense_count: u16,
     /// Bu seviyedeki HVN hacim oranı
-    pub hvn_volume_ratio: f64,
+    pub hvn_volume_ratio: Decimal,
     /// Delta uyumu: "Pozitif (+)", "Negatif (-)", "Nötr", "N/A"
     pub delta_alignment: String,
     /// Nihai öncelik skoru (0-100)
-    pub priority_score: f64,
+    pub priority_score: Decimal,
 }
 
 /// MSMP 2.0 Nihai Rapor — Tüm 7 katmanın birleşik çıktısı
@@ -47,23 +49,23 @@ pub struct LevelEntry {
 pub struct MSMPReport {
     // ── Katman 1 + 3: Ağırlıklı Trend ──
     /// Ağırlıklı Trend Skoru: (Core×0.4) + (Amp×0.3) + (Acute×0.3)
-    pub ats: f64,
+    pub ats: Decimal,
     /// Hurst Üssü — Trend kalıcılığı (H>0.6: Momentum, H<0.4: Range)
-    pub hurst: f64,
+    pub hurst: Decimal,
     /// Belirleme Katsayısı — Trend gücü (0-1)
-    pub r_squared: f64,
+    pub r_squared: Decimal,
     /// Trend etiketi
     pub trend_label: String,
     /// Çapraz Zaman Dilimi Uyumu (0-100%)
-    pub confluence_index: f64,
+    pub confluence_index: Decimal,
 
     // ── Katman 5: Likidite ──
-    pub vwap: f64,
-    pub poc: f64,
+    pub vwap: Decimal,
+    pub poc: Decimal,
     /// Gerçek Aktif Volatilite Bandı: POC ± 1.5σ
-    pub volatility_band: (f64, f64),
+    pub volatility_band: (Decimal, Decimal),
     /// BSL/SSL Oranı — Likidite eşitsizliği (Risk asimetrisi)
-    pub bsl_ssl_ratio: f64,
+    pub bsl_ssl_ratio: Decimal,
 
     // ── Katman 7: Vakum Bölgesi ──
     pub vacuum_zone: Option<VacuumZone>,
@@ -76,9 +78,9 @@ pub struct MSMPReport {
     pub active_absorber_count: usize,
 
     // ── Meta ──
-    pub current_price: f64,
+    pub current_price: Decimal,
     pub liquidity_zones_count: usize,
-    pub atr: f64,
+    pub atr: Decimal,
 }
 
 /// Tüm 7 katmanı orkestre et ve nihai rapor üret.
@@ -90,7 +92,7 @@ pub fn generate_report(
     amp_klines: &[Kline],
     acute_klines: &[Kline],
 ) -> MSMPReport {
-    let current_price = core_klines.last().map(|k| k.close).unwrap_or(0.0);
+    let current_price = core_klines.last().map(|k| k.close).unwrap_or(Decimal::ZERO);
 
     // ═══════════════════════════════════════════════════
     // KATMAN 2: Pivot Çıkarımı (Core pencereden)
@@ -158,7 +160,7 @@ pub fn generate_report(
                 .iter()
                 .find(|n| l.price >= n.price_low && l.price <= n.price_high)
                 .map(|n| n.volume_ratio)
-                .unwrap_or(0.0);
+                .unwrap_or(Decimal::ZERO);
 
             // Bu seviyeye en yakın FVG'nin delta uyumu
             let delta_align = fvgs
@@ -166,7 +168,7 @@ pub fn generate_report(
                 .find(|f| l.price >= f.low && l.price <= f.high)
                 .map(|f| match f.label {
                     imbalance::FvgLabel::ActiveAbsorber => {
-                        if f.delta > 0.0 {
+                        if f.delta > Decimal::ZERO {
                             "Pozitif (+)"
                         } else {
                             "Negatif (-)"
@@ -221,28 +223,32 @@ fn find_vacuum_zone(
     fvgs: &[imbalance::Fvg],
     liq: &liquidity::LiquidityAnalysis,
 ) -> Option<VacuumZone> {
-    let mut best_score = 0.0f64;
+    let mut best_score = Decimal::ZERO;
     let mut best_zone: Option<VacuumZone> = None;
 
     for fvg in fvgs {
         let is_absorber = matches!(fvg.label, imbalance::FvgLabel::ActiveAbsorber);
-        let delta_mult = if is_absorber { 1.5 } else { 0.5 };
+        let delta_mult = if is_absorber {
+            Decimal::from_str("1.5").unwrap()
+        } else {
+            Decimal::from_str("0.5").unwrap()
+        };
 
         // Bu FVG bölgesindeki en yüksek seviye savunma skoru
         let defense_score = levels
             .iter()
             .filter(|l| l.price >= fvg.low && l.price <= fvg.high)
             .map(|l| l.priority_score)
-            .fold(0.0f64, f64::max);
+            .fold(Decimal::ZERO, Decimal::max);
 
         // Bu bölgedeki hacim yoğunluğu
-        let vol_score: f64 = liq
+        let vol_score: Decimal = liq
             .volume_profile
             .iter()
             .filter(|n| n.price_mid >= fvg.low && n.price_mid <= fvg.high)
             .map(|n| n.volume_ratio)
-            .sum::<f64>()
-            * 100.0;
+            .sum::<Decimal>()
+            * Decimal::ONE_HUNDRED;
 
         let magnetic_score = (defense_score + vol_score) * delta_mult;
 

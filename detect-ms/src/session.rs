@@ -6,7 +6,8 @@
 // ============================================================================
 
 use ohlcv_engine::Kline;
-
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 
 /// Seans bazlı zaman pencereleri
 #[derive(Debug, Clone, Copy)]
@@ -21,11 +22,11 @@ pub enum SessionWindow {
 
 impl SessionWindow {
     /// Pencere ağırlık katsayısı
-    pub fn weight(&self) -> f64 {
+    pub fn weight(&self) -> Decimal {
         match self {
-            SessionWindow::Core => 0.40,
-            SessionWindow::Amplified => 0.30,
-            SessionWindow::Acute => 0.30,
+            SessionWindow::Core => Decimal::from_str("0.40").unwrap(),
+            SessionWindow::Amplified => Decimal::from_str("0.30").unwrap(),
+            SessionWindow::Acute => Decimal::from_str("0.30").unwrap(),
         }
     }
 
@@ -51,11 +52,11 @@ pub fn is_active_session(ts_ms: u64) -> bool {
 }
 
 /// Seans ağırlığı: Aktif seans mumlarına 1.0, dışına 0.5
-pub fn session_weight(ts_ms: u64) -> f64 {
+pub fn session_weight(ts_ms: u64) -> Decimal {
     if is_active_session(ts_ms) {
-        1.0
+        Decimal::ONE
     } else {
-        0.5
+        Decimal::from_str("0.5").unwrap()
     }
 }
 
@@ -75,18 +76,18 @@ pub fn filter_by_window<'a>(klines: &'a [Kline], window: SessionWindow) -> Vec<&
 
 /// 3 pencereden gelen skorları Ağırlıklı Ortalama ile birleştirir.
 /// Hiçbir pencere diğerini ezmez; matematiksel üstünlük sağlanır.
-pub fn weighted_merge(core_score: f64, amp_score: f64, acute_score: f64) -> f64 {
+pub fn weighted_merge(core_score: Decimal, amp_score: Decimal, acute_score: Decimal) -> Decimal {
     core_score * SessionWindow::Core.weight()
         + amp_score * SessionWindow::Amplified.weight()
         + acute_score * SessionWindow::Acute.weight()
 }
 
 /// Confluence Index: 3 pencerenin trend yönü uyum yüzdesi
-pub fn confluence_index(core_score: f64, amp_score: f64, acute_score: f64) -> f64 {
-    let directions = [core_score.signum(), amp_score.signum(), acute_score.signum()];
-    let positive_count = directions.iter().filter(|&&d| d > 0.0).count();
-    let negative_count = directions.iter().filter(|&&d| d < 0.0).count();
+pub fn confluence_index(core_score: Decimal, amp_score: Decimal, acute_score: Decimal) -> Decimal {
+    let scores = [core_score, amp_score, acute_score];
+    let positive_count = scores.iter().filter(|&&d| d > Decimal::ZERO).count();
+    let negative_count = scores.iter().filter(|&&d| d < Decimal::ZERO).count();
 
     let dominant_count = positive_count.max(negative_count);
-    (dominant_count as f64 / 3.0) * 100.0
+    (Decimal::from(dominant_count) / Decimal::from(3)) * Decimal::ONE_HUNDRED
 }

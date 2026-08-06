@@ -1,6 +1,8 @@
 use crate::Kline;
 use reqwest::Client;
+use rust_decimal::Decimal;
 use serde_json::Value;
+use std::str::FromStr;
 
 pub struct BinanceClient {
     http: Client,
@@ -34,18 +36,19 @@ impl BinanceClient {
         for row in data {
             if let Some(arr) = row.as_array() {
                 if arr.len() >= 11 {
+                    let d = |v: &Value| Decimal::from_str(v.as_str().unwrap_or("0")).unwrap_or(Decimal::ZERO);
                     let kline = Kline {
                         open_time: arr[0].as_u64().unwrap_or(0),
-                        open: arr[1].as_str().unwrap_or("0").parse().unwrap_or(0.0),
-                        high: arr[2].as_str().unwrap_or("0").parse().unwrap_or(0.0),
-                        low: arr[3].as_str().unwrap_or("0").parse().unwrap_or(0.0),
-                        close: arr[4].as_str().unwrap_or("0").parse().unwrap_or(0.0),
-                        volume: arr[5].as_str().unwrap_or("0").parse().unwrap_or(0.0),
+                        open: d(&arr[1]),
+                        high: d(&arr[2]),
+                        low: d(&arr[3]),
+                        close: d(&arr[4]),
+                        volume: d(&arr[5]),
                         close_time: arr[6].as_u64().unwrap_or(0),
-                        quote_asset_volume: arr[7].as_str().unwrap_or("0").parse().unwrap_or(0.0),
+                        quote_asset_volume: d(&arr[7]),
                         trades: arr[8].as_u64().unwrap_or(0),
-                        taker_buy_base_asset_volume: arr[9].as_str().unwrap_or("0").parse().unwrap_or(0.0),
-                        taker_buy_quote_asset_volume: arr[10].as_str().unwrap_or("0").parse().unwrap_or(0.0),
+                        taker_buy_base_asset_volume: d(&arr[9]),
+                        taker_buy_quote_asset_volume: d(&arr[10]),
                     };
                     klines.push(kline);
                 }

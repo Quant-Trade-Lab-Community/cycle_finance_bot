@@ -11,39 +11,45 @@
 // ============================================================================
 
 use ohlcv_engine::Kline;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use serde::Serialize;
+
+fn f(x: f64) -> Decimal {
+    Decimal::from_f64(x).unwrap_or(Decimal::ZERO)
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TrendAnalysis {
     /// Regresyon eğimi (log-fiyat)
-    pub slope: f64,
+    pub slope: Decimal,
     /// Belirleme katsayısı — trendin gücü (0-1)
-    pub r_squared: f64,
+    pub r_squared: Decimal,
     /// Hurst Üssü — trendin kalıcılığı (0-1)
-    pub hurst: f64,
+    pub hurst: Decimal,
     /// Nihai trend skoru (-10 / +10)
-    pub trend_score: f64,
+    pub trend_score: Decimal,
     /// İnsan okunabilir etiket
     pub trend_label: String,
 }
 
 /// Log-Fiyat Doğrusal Regresyon (OLS — Ordinary Least Squares)
 /// Dönüş: (slope, intercept, r_squared)
-pub fn linear_regression(values: &[f64]) -> (f64, f64, f64) {
-    let n = values.len() as f64;
-    if n < 2.0 {
-        return (0.0, 0.0, 0.0);
+pub fn linear_regression(values: &[Decimal]) -> (Decimal, Decimal, Decimal) {
+    let n = Decimal::from(values.len());
+    if values.len() < 2 {
+        return (Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
     }
 
-    let x_mean = (n - 1.0) / 2.0;
-    let y_mean = values.iter().sum::<f64>() / n;
+    let x_mean = (n - Decimal::ONE) / Decimal::TWO;
+    let y_mean = values.iter().sum::<Decimal>() / n;
 
-    let mut ss_xy = 0.0;
-    let mut ss_xx = 0.0;
-    let mut ss_yy = 0.0;
+    let mut ss_xy = Decimal::ZERO;
+    let mut ss_xx = Decimal::ZERO;
+    let mut ss_yy = Decimal::ZERO;
 
     for (i, &y) in values.iter().enumerate() {
-        let x = i as f64;
+        let x = Decimal::from(i);
         let dx = x - x_mean;
         let dy = y - y_mean;
         ss_xy += dx * dy;
@@ -51,14 +57,14 @@ pub fn linear_regression(values: &[f64]) -> (f64, f64, f64) {
         ss_yy += dy * dy;
     }
 
-    if ss_xx == 0.0 {
-        return (0.0, y_mean, 0.0);
+    if ss_xx == Decimal::ZERO {
+        return (Decimal::ZERO, y_mean, Decimal::ZERO);
     }
 
     let slope = ss_xy / ss_xx;
     let intercept = y_mean - slope * x_mean;
-    let r_squared = if ss_yy == 0.0 {
-        0.0
+    let r_squared = if ss_yy == Decimal::ZERO {
+        Decimal::ZERO
     } else {
         (ss_xy * ss_xy) / (ss_xx * ss_yy)
     };
@@ -67,18 +73,18 @@ pub fn linear_regression(values: &[f64]) -> (f64, f64, f64) {
 }
 
 /// İki vektör arasında doğrusal regresyon (Hurst hesabı için helper)
-fn linear_regression_xy(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
-    let n = x.len() as f64;
-    if n < 2.0 {
-        return (0.0, 0.0, 0.0);
+fn linear_regression_xy(x: &[Decimal], y: &[Decimal]) -> (Decimal, Decimal, Decimal) {
+    let n = Decimal::from(x.len());
+    if x.len() < 2 {
+        return (Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
     }
 
-    let x_mean = x.iter().sum::<f64>() / n;
-    let y_mean = y.iter().sum::<f64>() / n;
+    let x_mean = x.iter().sum::<Decimal>() / n;
+    let y_mean = y.iter().sum::<Decimal>() / n;
 
-    let mut ss_xy = 0.0;
-    let mut ss_xx = 0.0;
-    let mut ss_yy = 0.0;
+    let mut ss_xy = Decimal::ZERO;
+    let mut ss_xx = Decimal::ZERO;
+    let mut ss_yy = Decimal::ZERO;
 
     for i in 0..x.len() {
         let dx = x[i] - x_mean;
@@ -88,14 +94,14 @@ fn linear_regression_xy(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
         ss_yy += dy * dy;
     }
 
-    if ss_xx == 0.0 {
-        return (0.0, y_mean, 0.0);
+    if ss_xx == Decimal::ZERO {
+        return (Decimal::ZERO, y_mean, Decimal::ZERO);
     }
 
     let slope = ss_xy / ss_xx;
     let intercept = y_mean - slope * x_mean;
-    let r_squared = if ss_yy == 0.0 {
-        0.0
+    let r_squared = if ss_yy == Decimal::ZERO {
+        Decimal::ZERO
     } else {
         (ss_xy * ss_xy) / (ss_xx * ss_yy)
     };
@@ -111,9 +117,9 @@ fn linear_regression_xy(x: &[f64], y: &[f64]) -> (f64, f64, f64) {
 /// H > 0.60 → Kalıcı Trend (long-memory, momentum)
 /// 0.40 ≤ H ≤ 0.60 → Rastgele Yürüyüş
 /// H < 0.40 → Ortalama Dönüş (mean-reverting)
-pub fn hurst_exponent(values: &[f64]) -> f64 {
+pub fn hurst_exponent(values: &[Decimal]) -> Decimal {
     if values.len() < 20 {
-        return 0.5; // Yetersiz veri — rastgele yürüyüş varsay
+        return f(0.5); // Yetersiz veri — rastgele yürüyüş varsay
     }
 
     let mut log_ns = Vec::new();
@@ -135,11 +141,11 @@ pub fn hurst_exponent(values: &[f64]) -> f64 {
             }
 
             let subseries = &values[start..end];
-            let mean = subseries.iter().sum::<f64>() / n as f64;
+            let mean = subseries.iter().sum::<Decimal>() / Decimal::from(n);
 
             // Kümülatif sapma serisi
             let mut cumulative = Vec::with_capacity(n);
-            let mut running = 0.0;
+            let mut running = Decimal::ZERO;
             for &v in subseries {
                 running += v - mean;
                 cumulative.push(running);
@@ -149,35 +155,35 @@ pub fn hurst_exponent(values: &[f64]) -> f64 {
             let range = cumulative
                 .iter()
                 .cloned()
-                .fold(f64::NEG_INFINITY, f64::max)
+                .fold(Decimal::MIN, Decimal::max)
                 - cumulative
                     .iter()
                     .cloned()
-                    .fold(f64::INFINITY, f64::min);
+                    .fold(Decimal::MAX, Decimal::min);
 
             // Standart sapma
             let variance = subseries
                 .iter()
                 .map(|&v| (v - mean).powi(2))
-                .sum::<f64>()
-                / n as f64;
-            let std_dev = variance.sqrt();
+                .sum::<Decimal>()
+                / Decimal::from(n);
+            let std_dev = variance.sqrt().unwrap_or(Decimal::ZERO);
 
-            if std_dev > 1e-12 {
+            if std_dev > Decimal::from_str("0.000000000001").unwrap() {
                 rs_values.push(range / std_dev);
             }
         }
 
         if !rs_values.is_empty() {
-            let avg_rs = rs_values.iter().sum::<f64>() / rs_values.len() as f64;
-            if avg_rs > 0.0 {
-                log_ns.push((n as f64).ln());
+            let avg_rs = rs_values.iter().sum::<Decimal>() / Decimal::from(rs_values.len());
+            if avg_rs > Decimal::ZERO {
+                log_ns.push(Decimal::from(n).ln());
                 log_rs.push(avg_rs.ln());
             }
         }
 
         // Geometrik artış (log-space uniform örnekleme)
-        let next_n = (n as f64 * 1.4) as usize;
+        let next_n = (Decimal::from(n) * f(1.4)).to_usize().unwrap_or(n + 1);
         if next_n <= n {
             n += 1;
         } else {
@@ -186,21 +192,21 @@ pub fn hurst_exponent(values: &[f64]) -> f64 {
     }
 
     if log_ns.len() < 2 {
-        return 0.5;
+        return f(0.5);
     }
 
     let (hurst, _, _) = linear_regression_xy(&log_ns, &log_rs);
-    hurst.clamp(0.0, 1.0)
+    hurst.max(Decimal::ZERO).min(Decimal::ONE)
 }
 
 /// Tam trend analizi — 3 pencere için ayrı ayrı çağrılır
-pub fn analyze_trend(klines: &[Kline], atr: f64) -> TrendAnalysis {
-    if klines.is_empty() || atr <= 0.0 {
+pub fn analyze_trend(klines: &[Kline], atr: Decimal) -> TrendAnalysis {
+    if klines.is_empty() || atr <= Decimal::ZERO {
         return TrendAnalysis {
-            slope: 0.0,
-            r_squared: 0.0,
-            hurst: 0.5,
-            trend_score: 0.0,
+            slope: Decimal::ZERO,
+            r_squared: Decimal::ZERO,
+            hurst: f(0.5),
+            trend_score: Decimal::ZERO,
             trend_label: "Veri Yetersiz".to_string(),
         };
     }
@@ -209,11 +215,11 @@ pub fn analyze_trend(klines: &[Kline], atr: f64) -> TrendAnalysis {
     let n = klines.len().min(50);
     let recent = &klines[klines.len().saturating_sub(n)..];
 
-    let log_prices: Vec<f64> = recent.iter().map(|k| k.close.ln()).collect();
+    let log_prices: Vec<Decimal> = recent.iter().map(|k| k.close.ln()).collect();
     let (slope, _, r_squared) = linear_regression(&log_prices);
 
     // Log-return serisi üzerinden Hurst üssü
-    let returns: Vec<f64> = recent
+    let returns: Vec<Decimal> = recent
         .windows(2)
         .map(|w| (w[1].close / w[0].close).ln())
         .collect();
@@ -222,12 +228,12 @@ pub fn analyze_trend(klines: &[Kline], atr: f64) -> TrendAnalysis {
     // Nihai Trend Skoru: (Eğim / ATR) * 10 * R²
     // Eğim log-fiyat uzayında olduğundan, gerçek fiyat eğimine çevir
     let price_slope = slope * recent.last().unwrap().close;
-    let raw_score = (price_slope / atr) * 10.0 * r_squared;
-    let trend_score = raw_score.clamp(-10.0, 10.0);
+    let raw_score = (price_slope / atr) * Decimal::TEN * r_squared;
+    let trend_score = raw_score.max(Decimal::from(-10)).min(Decimal::from(10));
 
-    let trend_label = if hurst > 0.60 {
+    let trend_label = if hurst > f(0.60) {
         "Kalıcı Trend (Momentum)".to_string()
-    } else if hurst < 0.40 {
+    } else if hurst < f(0.40) {
         "Ortalama Dönüş (Range)".to_string()
     } else {
         "Belirsiz (Random Walk)".to_string()

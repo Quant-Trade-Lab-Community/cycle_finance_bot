@@ -1,4 +1,5 @@
 use crate::ring_buffer::{OwnedEvent, EventType};
+use rust_decimal::Decimal;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -38,7 +39,7 @@ impl DataValidator {
 
         match &event.payload {
             EventType::Trade { price, quantity, timestamp, is_buyer_maker: _ } => {
-                if *price <= 0.0 || *quantity <= 0.0 {
+                if *price <= Decimal::ZERO || *quantity <= Decimal::ZERO {
                     return self.flag_invalid("Trade price/qty <= 0");
                 }
                 if now > *timestamp && (now - *timestamp) > self.max_latency_ms {
@@ -49,14 +50,14 @@ impl DataValidator {
                 }
             },
             EventType::Orderbook { bids, asks } => {
-                if bids[0].0 > 0.0 && asks[0].0 > 0.0 {
+                if bids[0].0 > Decimal::ZERO && asks[0].0 > Decimal::ZERO {
                     if bids[0].0 >= asks[0].0 {
                         return self.flag_invalid("Crossed Orderbook (Bid >= Ask)");
                     }
                 }
             },
             EventType::Liquidation { price, quantity, timestamp, .. } => {
-                if *price <= 0.0 || *quantity <= 0.0 {
+                if *price <= Decimal::ZERO || *quantity <= Decimal::ZERO {
                     return self.flag_invalid("Liquidation price/qty <= 0");
                 }
                 if now > *timestamp && (now - *timestamp) > self.max_latency_ms {
@@ -64,7 +65,7 @@ impl DataValidator {
                 }
             },
             EventType::BookTicker { best_bid_price, best_ask_price, .. } => {
-                if *best_bid_price > 0.0 && *best_ask_price > 0.0 {
+                if *best_bid_price > Decimal::ZERO && *best_ask_price > Decimal::ZERO {
                     if *best_bid_price >= *best_ask_price {
                         return self.flag_invalid("Crossed BookTicker (Bid >= Ask)");
                     }

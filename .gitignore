@@ -21,3 +21,8 @@ Cargo.lock
 *.db-shm
 *.db-wal
 .env
+
+# Paper service runtime artifacts
+paper_wal/
+paper-*.db
+market_data.db

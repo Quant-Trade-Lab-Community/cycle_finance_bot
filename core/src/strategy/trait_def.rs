@@ -1,20 +1,21 @@
 use crate::memory::ring_buffer::MarketDataSlot;
+use rust_decimal::Decimal;
 
 #[derive(Debug, Clone)]
 pub enum Signal {
     None,
-    BuyMarket { quantity: f64 },
-    SellMarket { quantity: f64 },
-    BuyLimit { price: f64, quantity: f64 },
-    SellLimit { price: f64, quantity: f64 },
+    BuyMarket { quantity: Decimal },
+    SellMarket { quantity: Decimal },
+    BuyLimit { price: Decimal, quantity: Decimal },
+    SellLimit { price: Decimal, quantity: Decimal },
     CancelAll,
 }
 
 #[derive(Debug, Clone)]
 pub struct FillReport {
     pub order_id: String,
-    pub executed_qty: f64,
-    pub avg_price: f64,
+    pub executed_qty: Decimal,
+    pub avg_price: Decimal,
 }
 
 pub trait Strategy: Send + Sync {

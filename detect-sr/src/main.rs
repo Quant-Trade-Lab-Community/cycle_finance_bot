@@ -2,6 +2,7 @@ pub mod algorithms;
 
 use clap::Parser;
 use ohlcv_engine::client::BinanceClient;
+use rust_decimal::Decimal;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -31,7 +32,7 @@ async fn main() {
         Ok(klines) => {
             println!("✅ Veri Başarıyla Çekildi ({} Adet). Analiz Başlıyor...\n", klines.len());
             
-            let current_price = klines.last().map(|k| k.close).unwrap_or(0.0);
+            let current_price = klines.last().map(|k| k.close).unwrap_or(Decimal::ZERO);
             println!("💵 GÜNCEL FİYAT: {:.4}\n", current_price);
 
             // 1. Fractal / Swing
@@ -57,7 +58,7 @@ async fn main() {
     }
 }
 
-fn print_levels(title: &str, levels: &[f64], current_price: f64) {
+fn print_levels(title: &str, levels: &[Decimal], current_price: Decimal) {
     println!("📌 {}", title);
     if levels.is_empty() {
         println!("  - Bulunamadı.");
@@ -77,18 +78,18 @@ fn print_levels(title: &str, levels: &[f64], current_price: f64) {
     }
 
     // Dirençleri büyükten küçüğe yaz (Fiyata doğru)
-    resistances.sort_by(|a, b| b.partial_cmp(a).unwrap());
+    resistances.sort_by(|a, b| b.cmp(a));
     for r in resistances {
-        let dist = ((r - current_price) / current_price) * 100.0;
+        let dist = ((r - current_price) / current_price) * Decimal::ONE_HUNDRED;
         println!("  🔴 DİRENÇ: {:.4} (Fiyata Uzaklık: +{:.2}%)", r, dist);
     }
 
     println!("  ==============================");
     
     // Destekleri büyükten küçüğe yaz (Fiyattan aşağı doğru)
-    supports.sort_by(|a, b| b.partial_cmp(a).unwrap());
+    supports.sort_by(|a, b| b.cmp(a));
     for s in supports {
-        let dist = ((current_price - s) / current_price) * 100.0;
+        let dist = ((current_price - s) / current_price) * Decimal::ONE_HUNDRED;
         println!("  🟢 DESTEK: {:.4} (Fiyata Uzaklık: -{:.2}%)", s, dist);
     }
     

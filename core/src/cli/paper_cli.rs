@@ -1,4 +1,6 @@
 use rustyline::DefaultEditor;
+use rust_decimal::Decimal;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use crate::risk::portfolio::Portfolio;
@@ -16,7 +18,7 @@ pub fn start_paper_cli() {
     println!("========================================");
 
     let state = Arc::new(Mutex::new(PaperState {
-        portfolio: Portfolio::new(10000.0, 0.20), // 10k USD balance, 20% max drawdown
+        portfolio: Portfolio::new(Decimal::from(10000), Decimal::from_str("0.20").unwrap()), // 10k USD balance, 20% max drawdown
         leverage: HashMap::new(),
         margin_mode: "Cross".to_string(),
     }));
@@ -59,7 +61,7 @@ pub fn start_paper_cli() {
                             println!("  [None]");
                         } else {
                             for (sym, pos) in &st.portfolio.positions {
-                                if pos.quantity != 0.0 {
+                                if pos.quantity != Decimal::ZERO {
                                     let lev = st.leverage.get(sym).unwrap_or(&1);
                                     println!("  {} -> Size: {} @ ${:.2} ({}x)", sym, pos.quantity, pos.avg_entry_price, lev);
                                 }

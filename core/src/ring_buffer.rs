@@ -1,27 +1,85 @@
-#[derive(Clone, Copy, Debug)]
+use rust_decimal::Decimal;
+
+#[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum EventType {
-    Trade { price: f64, quantity: f64, timestamp: u64, is_buyer_maker: bool },
-    Orderbook { 
-        bids: [(f64, f64); 20], 
-        asks: [(f64, f64); 20] 
+    Trade { price: Decimal, quantity: Decimal, timestamp: u64, is_buyer_maker: bool },
+    Orderbook {
+        bids: [(Decimal, Decimal); 20],
+        asks: [(Decimal, Decimal); 20]
     },
-    Liquidation { side: u8, price: f64, quantity: f64, timestamp: u64 },
-    FundingRate { mark_price: f64, funding_rate: f64, next_funding_time: u64 },
-    BookTicker { best_bid_price: f64, best_bid_qty: f64, best_ask_price: f64, best_ask_qty: f64 },
-    OpenInterest { open_interest: f64, timestamp: u64 },
+    Liquidation { side: u8, price: Decimal, quantity: Decimal, timestamp: u64 },
+    FundingRate { mark_price: Decimal, funding_rate: Decimal, next_funding_time: u64 },
+    BookTicker { best_bid_price: Decimal, best_bid_qty: Decimal, best_ask_price: Decimal, best_ask_qty: Decimal },
+    OpenInterest { open_interest: Decimal, timestamp: u64 },
 }
 
-#[derive(Clone, Copy, Debug)]
+impl std::fmt::Debug for EventType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
+                f.debug_struct("Trade")
+                    .field("price", price)
+                    .field("quantity", quantity)
+                    .field("timestamp", timestamp)
+                    .field("is_buyer_maker", is_buyer_maker)
+                    .finish()
+            }
+            EventType::Orderbook { bids, asks } => {
+                f.debug_struct("Orderbook").field("bids", bids).field("asks", asks).finish()
+            }
+            EventType::Liquidation { side, price, quantity, timestamp } => {
+                f.debug_struct("Liquidation")
+                    .field("side", side)
+                    .field("price", price)
+                    .field("quantity", quantity)
+                    .field("timestamp", timestamp)
+                    .finish()
+            }
+            EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
+                f.debug_struct("FundingRate")
+                    .field("mark_price", mark_price)
+                    .field("funding_rate", funding_rate)
+                    .field("next_funding_time", next_funding_time)
+                    .finish()
+            }
+            EventType::BookTicker { best_bid_price, best_bid_qty, best_ask_price, best_ask_qty } => {
+                f.debug_struct("BookTicker")
+                    .field("best_bid_price", best_bid_price)
+                    .field("best_bid_qty", best_bid_qty)
+                    .field("best_ask_price", best_ask_price)
+                    .field("best_ask_qty", best_ask_qty)
+                    .finish()
+            }
+            EventType::OpenInterest { open_interest, timestamp } => {
+                f.debug_struct("OpenInterest")
+                    .field("open_interest", open_interest)
+                    .field("timestamp", timestamp)
+                    .finish()
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct OwnedEvent {
     pub symbol: [u8; 16],
     pub payload: EventType,
 }
 
+impl std::fmt::Debug for OwnedEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OwnedEvent")
+            .field("symbol", &self.symbol)
+            .field("payload", &self.payload)
+            .finish()
+    }
+}
+
 impl OwnedEvent {
     #[inline(always)]
-    pub fn new_trade(sym: &str, price: f64, quantity: f64, timestamp: u64, is_buyer_maker: bool) -> Self {
+    pub fn new_trade(sym: &str, price: Decimal, quantity: Decimal, timestamp: u64, is_buyer_maker: bool) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -33,7 +91,7 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_orderbook(sym: &str, bids: [(f64, f64); 20], asks: [(f64, f64); 20]) -> Self {
+    pub fn new_orderbook(sym: &str, bids: [(Decimal, Decimal); 20], asks: [(Decimal, Decimal); 20]) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -45,7 +103,7 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_liquidation(sym: &str, side: u8, price: f64, quantity: f64, timestamp: u64) -> Self {
+    pub fn new_liquidation(sym: &str, side: u8, price: Decimal, quantity: Decimal, timestamp: u64) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -57,7 +115,7 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_funding_rate(sym: &str, mark_price: f64, funding_rate: f64, next_funding_time: u64) -> Self {
+    pub fn new_funding_rate(sym: &str, mark_price: Decimal, funding_rate: Decimal, next_funding_time: u64) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -69,7 +127,7 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_bookticker(sym: &str, best_bid_price: f64, best_bid_qty: f64, best_ask_price: f64, best_ask_qty: f64) -> Self {
+    pub fn new_bookticker(sym: &str, best_bid_price: Decimal, best_bid_qty: Decimal, best_ask_price: Decimal, best_ask_qty: Decimal) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -81,7 +139,7 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_open_interest(sym: &str, open_interest: f64, timestamp: u64) -> Self {
+    pub fn new_open_interest(sym: &str, open_interest: Decimal, timestamp: u64) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
@@ -107,7 +165,7 @@ impl RingBuffer {
         
         let buffer = vec![OwnedEvent {
             symbol: [0; 16],
-            payload: EventType::Trade { price: 0.0, quantity: 0.0, timestamp: 0, is_buyer_maker: false },
+            payload: EventType::Trade { price: Decimal::ZERO, quantity: Decimal::ZERO, timestamp: 0, is_buyer_maker: false },
         }; capacity].into_boxed_slice();
         
         Self {

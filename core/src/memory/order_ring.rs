@@ -3,6 +3,7 @@ use std::ptr;
 use std::ffi::CString;
 use libc::{shm_open, ftruncate, mmap, O_CREAT, O_RDWR, PROT_READ, PROT_WRITE, MAP_SHARED};
 use std::os::unix::io::FromRawFd;
+use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -18,15 +19,28 @@ pub enum IpcOrderType {
     Market = 1,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 #[repr(C, align(64))]
 pub struct OrderSlot {
     pub seq: u64,
     pub symbol: [u8; 16], // Max 16 chars like "BTCUSDT"
     pub side: IpcOrderSide,
     pub order_type: IpcOrderType,
-    pub quantity: f64,
-    pub price: f64,
+    pub quantity: Decimal,
+    pub price: Decimal,
+}
+
+impl std::fmt::Debug for OrderSlot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OrderSlot")
+            .field("seq", &self.seq)
+            .field("symbol", &self.symbol)
+            .field("side", &self.side)
+            .field("order_type", &self.order_type)
+            .field("quantity", &self.quantity)
+            .field("price", &self.price)
+            .finish()
+    }
 }
 
 #[repr(C)]
@@ -94,7 +108,7 @@ impl OrderRingBuffer {
     }
 
     #[inline(always)]
-    pub fn push(&self, symbol: &[u8], side: IpcOrderSide, order_type: IpcOrderType, quantity: f64, price: f64) {
+    pub fn push(&self, symbol: &[u8], side: IpcOrderSide, order_type: IpcOrderType, quantity: Decimal, price: Decimal) {
         unsafe {
             let seq = (*self.header).head.load(Ordering::Relaxed);
             let index = (seq % self.capacity as u64) as usize;
@@ -133,3 +147,4 @@ impl OrderRingBuffer {
         }
     }
 }
+

@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
+use rust_decimal::prelude::*;
 use crate::ring_buffer::{OwnedEvent, EventType};
 use crate::memory::order_ring::OrderRingBuffer;
 use std::sync::Arc;
@@ -39,15 +40,15 @@ impl PythonStrategyEngine {
             match event.payload {
                 EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
                     dict.set_item("type", "trade")?;
-                    dict.set_item("price", price)?;
-                    dict.set_item("quantity", quantity)?;
+                    dict.set_item("price", price.to_f64().unwrap_or(0.0))?;
+                    dict.set_item("quantity", quantity.to_f64().unwrap_or(0.0))?;
                     dict.set_item("timestamp", timestamp)?;
                     dict.set_item("is_buyer_maker", is_buyer_maker)?;
                 },
                 EventType::BookTicker { best_bid_price, best_ask_price, .. } => {
                     dict.set_item("type", "book_ticker")?;
-                    dict.set_item("bid_price", best_bid_price)?;
-                    dict.set_item("ask_price", best_ask_price)?;
+                    dict.set_item("bid_price", best_bid_price.to_f64().unwrap_or(0.0))?;
+                    dict.set_item("ask_price", best_ask_price.to_f64().unwrap_or(0.0))?;
                 },
                 _ => return Ok(()),
             }

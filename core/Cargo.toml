@@ -3,6 +3,9 @@ name = "core"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "proje_core"
+
 [features]
 default = ["binance_v5"]
 binance_v5 = []
@@ -32,6 +35,7 @@ pyo3 = { version = "0.22", features = ["auto-initialize"] }
 memmap2 = "0.9"
 rustyline = "14.0.0"
 chrono = "0.4.45"
+rust_decimal = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.4"

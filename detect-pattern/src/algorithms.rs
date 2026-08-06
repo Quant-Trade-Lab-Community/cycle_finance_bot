@@ -1,4 +1,6 @@
 use ohlcv_engine::Kline;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use serde::Serialize;
 
 #[derive(Serialize, Debug, Clone)]
@@ -6,7 +8,7 @@ pub struct PatternDetection {
     pub pattern_name: String,
     pub pattern_type: String, // BULLISH, BEARISH, NEUTRAL
     pub index: usize,
-    pub price_level: f64,
+    pub price_level: Decimal,
     pub start_time: u64,
     pub end_time: u64,
     pub description: String,
@@ -17,6 +19,15 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
     let n = klines.len();
     if n < 5 { return detections; }
 
+    let epsilon = Decimal::from_str("0.000001").unwrap();
+    let d2_5 = Decimal::from_str("2.5").unwrap();
+    let d0_5 = Decimal::from_str("0.5").unwrap();
+    let d0_3 = Decimal::from_str("0.3").unwrap();
+    let d0_2 = Decimal::from_str("0.2").unwrap();
+    let d0_1 = Decimal::from_str("0.1").unwrap();
+    let d0_95 = Decimal::from_str("0.95").unwrap();
+    let d0_0001 = Decimal::from_str("0.0001").unwrap();
+
     for i in 2..n {
         let k1 = &klines[i-2];
         let k2 = &klines[i-1];
@@ -24,19 +35,19 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
 
         let body_top = k3.open.max(k3.close);
         let body_bot = k3.open.min(k3.close);
-        let body = (body_top - body_bot).max(0.000001);
+        let body = (body_top - body_bot).max(epsilon);
         let upper_wick = k3.high - body_top;
         let lower_wick = body_bot - k3.low;
-        let total_size = (k3.high - k3.low).max(0.000001);
+        let total_size = (k3.high - k3.low).max(epsilon);
 
         let k2_body_top = k2.open.max(k2.close);
         let k2_body_bot = k2.open.min(k2.close);
-        let k2_body = (k2_body_top - k2_body_bot).max(0.000001);
+        let k2_body = (k2_body_top - k2_body_bot).max(epsilon);
         let k2_is_green = k2.close > k2.open;
         let is_green = k3.close > k3.open;
 
         // 1. Pin Bar (Hammer / Shooting Star)
-        if lower_wick > body * 2.5 && upper_wick < body * 0.5 {
+        if lower_wick > body * d2_5 && upper_wick < body * d0_5 {
             detections.push(PatternDetection {
                 pattern_name: "Hammer (Pin Bar)".into(),
                 pattern_type: "BULLISH".into(),
@@ -44,7 +55,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
                 start_time: k3.open_time, end_time: k3.close_time,
                 description: "Uzun alt iğne, likidite avı (Sweep) veya güçlü alıcı tepkisi.".into()
             });
-        } else if upper_wick > body * 2.5 && lower_wick < body * 0.5 {
+        } else if upper_wick > body * d2_5 && lower_wick < body * d0_5 {
             detections.push(PatternDetection {
                 pattern_name: "Shooting Star (Pin Bar)".into(),
                 pattern_type: "BEARISH".into(),
@@ -74,7 +85,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         }
 
         // 3. Doji
-        if body / total_size < 0.1 && upper_wick > body && lower_wick > body {
+        if body / total_size < d0_1 && upper_wick > body && lower_wick > body {
             detections.push(PatternDetection {
                 pattern_name: "Doji".into(),
                 pattern_type: "NEUTRAL".into(),
@@ -96,7 +107,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         }
 
         // 5. Marubozu
-        if body / total_size > 0.95 {
+        if body / total_size > d0_95 {
             detections.push(PatternDetection {
                 pattern_name: "Marubozu".into(),
                 pattern_type: if is_green { "BULLISH".into() } else { "BEARISH".into() },
@@ -110,10 +121,10 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         let k1_is_green = k1.close > k1.open;
         let k1_body_top = k1.open.max(k1.close);
         let k1_body_bot = k1.open.min(k1.close);
-        let k1_body = (k1_body_top - k1_body_bot).max(0.000001);
-        
-        if !k1_is_green && k1_body > total_size * 0.5 && 
-           k2_body < k1_body * 0.3 && is_green && k3.close > (k1_body_bot + k1_body_top) / 2.0 {
+        let k1_body = (k1_body_top - k1_body_bot).max(epsilon);
+
+        if !k1_is_green && k1_body > total_size * d0_5 && 
+           k2_body < k1_body * d0_3 && is_green && k3.close > (k1_body_bot + k1_body_top) / Decimal::TWO {
             detections.push(PatternDetection {
                 pattern_name: "Morning Star".into(),
                 pattern_type: "BULLISH".into(),
@@ -121,8 +132,8 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
                 start_time: k1.open_time, end_time: k3.close_time,
                 description: "Düşüş trendi sonunda U-dönüşü.".into()
             });
-        } else if k1_is_green && k1_body > total_size * 0.5 && 
-                k2_body < k1_body * 0.3 && !is_green && k3.close < (k1_body_bot + k1_body_top) / 2.0 {
+        } else if k1_is_green && k1_body > total_size * d0_5 && 
+                k2_body < k1_body * d0_3 && !is_green && k3.close < (k1_body_bot + k1_body_top) / Decimal::TWO {
              detections.push(PatternDetection {
                  pattern_name: "Evening Star".into(),
                  pattern_type: "BEARISH".into(),
@@ -135,7 +146,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         // 7. Tweezer
         let diff_high = (k3.high - k2.high).abs() / k3.high;
         let diff_low = (k3.low - k2.low).abs() / k3.low;
-        if diff_high < 0.0001 && upper_wick > body && k2.high - k2_body_top > k2_body {
+        if diff_high < d0_0001 && upper_wick > body && k2.high - k2_body_top > k2_body {
             detections.push(PatternDetection {
                 pattern_name: "Tweezer Tops".into(),
                 pattern_type: "BEARISH".into(),
@@ -143,7 +154,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
                 start_time: k2.open_time, end_time: k3.close_time,
                 description: "Aynı fiyattan milimetrik ret yendi. Likidite duvara çarptı.".into()
             });
-        } else if diff_low < 0.0001 && lower_wick > body && k2_body_bot - k2.low > k2_body {
+        } else if diff_low < d0_0001 && lower_wick > body && k2_body_bot - k2.low > k2_body {
             detections.push(PatternDetection {
                 pattern_name: "Tweezer Bottoms".into(),
                 pattern_type: "BULLISH".into(),
@@ -154,7 +165,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         }
 
         // 10. Dark Cloud Cover / Piercing Line
-        if k1_is_green && !is_green && k3.open > k1.high && k3.close < (k1.open + k1.close) / 2.0 {
+        if k1_is_green && !is_green && k3.open > k1.high && k3.close < (k1.open + k1.close) / Decimal::TWO {
              detections.push(PatternDetection {
                  pattern_name: "Dark Cloud Cover".into(),
                  pattern_type: "BEARISH".into(),
@@ -162,7 +173,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
                  start_time: k1.open_time, end_time: k3.close_time,
                  description: "Yeşil mumun %50'si aşağı delindi. Güç kaybı.".into()
              });
-        } else if !k1_is_green && is_green && k3.open < k1.low && k3.close > (k1.open + k1.close) / 2.0 {
+        } else if !k1_is_green && is_green && k3.open < k1.low && k3.close > (k1.open + k1.close) / Decimal::TWO {
              detections.push(PatternDetection {
                  pattern_name: "Piercing Line".into(),
                  pattern_type: "BULLISH".into(),
@@ -173,7 +184,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         }
 
         // 11. Spinning Top
-        if body / total_size >= 0.1 && body / total_size <= 0.3 && upper_wick > body && lower_wick > body {
+        if body / total_size >= d0_1 && body / total_size <= d0_3 && upper_wick > body && lower_wick > body {
             detections.push(PatternDetection {
                  pattern_name: "Spinning Top".into(),
                  pattern_type: "NEUTRAL".into(),
@@ -184,7 +195,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         }
 
         // 12. Abandoned Baby
-        if k2_body / (k2.high - k2.low).max(0.000001) < 0.1 {
+        if k2_body / (k2.high - k2.low).max(epsilon) < d0_1 {
             if k1_is_green && k2.low > k1.high && k3.high < k2.low && !is_green {
                 detections.push(PatternDetection {
                      pattern_name: "Bearish Abandoned Baby".into(),
@@ -217,7 +228,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         
         if k1.close > k1.open && k2.close > k2.open && k3.close > k3.open {
             if k2.close > k1.close && k3.close > k2.close {
-                if (k1.high - k1.close) < k1_body * 0.2 && (k2.high - k2.close) < k2_body * 0.2 && (k3.high - k3.close) < k3_body * 0.2 {
+                if (k1.high - k1.close) < k1_body * d0_2 && (k2.high - k2.close) < k2_body * d0_2 && (k3.high - k3.close) < k3_body * d0_2 {
                     detections.push(PatternDetection {
                         pattern_name: "3 White Soldiers".into(),
                         pattern_type: "BULLISH".into(),
@@ -231,7 +242,7 @@ pub fn scan_patterns(klines: &[Kline]) -> Vec<PatternDetection> {
         
         if k1.close < k1.open && k2.close < k2.open && k3.close < k3.open {
             if k2.close < k1.close && k3.close < k2.close {
-                if (k1.close - k1.low) < k1_body * 0.2 && (k2.close - k2.low) < k2_body * 0.2 && (k3.close - k3.low) < k3_body * 0.2 {
+                if (k1.close - k1.low) < k1_body * d0_2 && (k2.close - k2.low) < k2_body * d0_2 && (k3.close - k3.low) < k3_body * d0_2 {
                     detections.push(PatternDetection {
                         pattern_name: "3 Black Crows".into(),
                         pattern_type: "BEARISH".into(),

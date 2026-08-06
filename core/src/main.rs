@@ -1,29 +1,11 @@
-pub mod state;
-pub mod config;
-pub mod pii;
-pub mod db;
-pub mod validator;
-pub mod cli;
-
-pub mod hal;
-pub mod memory;
-pub mod timer;
-pub mod strategy;
-pub mod risk;
-pub mod engine;
-
-mod tick;
-mod queue;
-mod ring_buffer;
-
-use tick::EventParser;
-use queue::LockFreeDispatcher;
+use proje_core::tick::EventParser;
+use proje_core::queue::LockFreeDispatcher;
 use std::thread;
 use std::time::Instant;
 use os_utils::set_rt_thread_priority;
 use adapter::binance::start_binance_ws_client;
-use crate::memory::ring_buffer::GenerationalRingBuffer;
-use crate::memory::order_ring::OrderRingBuffer;
+use proje_core::memory::ring_buffer::GenerationalRingBuffer;
+use proje_core::memory::order_ring::OrderRingBuffer;
 
 #[tokio::main]
 async fn main() {
@@ -36,7 +18,7 @@ async fn main() {
         
         let (db_tx, db_rx) = flume::bounded(1_000_000); 
         thread::spawn(move || {
-            db::start_db_writer(db_rx);
+            proje_core::db::start_db_writer(db_rx);
         });
 
         let dispatcher = LockFreeDispatcher::new();
@@ -48,7 +30,7 @@ async fn main() {
             let mut tick_count = 0;
             let mut total_parse_time = std::time::Duration::new(0, 0);
             let mut last_report = Instant::now();
-            let mut validator = validator::DataValidator::new();
+            let mut validator = proje_core::validator::DataValidator::new();
             
             while let Ok(mut bytes) = rx.recv() {
                 let start_parse = Instant::now();
@@ -80,23 +62,23 @@ async fn main() {
     }
 
     if run_mode == "PAPER" {
-        cli::paper_cli::start_paper_cli();
+        proje_core::cli::paper_cli::start_paper_cli();
         return;
     }
 
     if run_mode == "STRATEGY" {
-        cli::strategy_cli::start_strategy_cli();
+        proje_core::cli::strategy_cli::start_strategy_cli();
         return;
     }
 
     if run_mode == "BACKTEST" {
         let csv_path = std::env::var("CSV_PATH").unwrap_or_else(|_| "/home/smhvz/Desktop/PROJE/test_data.csv".to_string());
-        engine::backtester::start_backtester(&csv_path);
+        proje_core::engine::backtester::start_backtester(&csv_path);
         return;
     }
 
     if run_mode == "CORRELATION" {
-        cli::correlation_cli::start_correlation_cli();
+        proje_core::cli::correlation_cli::start_correlation_cli();
         return;
     }
 

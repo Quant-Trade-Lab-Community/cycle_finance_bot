@@ -7,6 +7,8 @@
 // ============================================================================
 
 use ohlcv_engine::Kline;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -25,29 +27,29 @@ pub enum PivotTip {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PivotPoint {
-    pub price: f64,
+    pub price: Decimal,
     pub index: usize,
     pub pivot_type: PivotType,
     pub tip: PivotTip,
     pub timestamp: u64,
-    pub decay_weight: f64,
+    pub decay_weight: Decimal,
     pub defense_count: u16,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LiquidityZone {
-    pub price_a: f64,
-    pub price_b: f64,
-    pub zone_width: f64,
+    pub price_a: Decimal,
+    pub price_b: Decimal,
+    pub zone_width: Decimal,
     pub timestamp: u64,
     /// Stop Loss havuzu ve Piyasa Yapıcı bloklarının konuşlandığı alan
     pub confidence: String,
 }
 
 /// ATR(14) hesaplaması — True Range'in 14 periyotluk üssel hareketli ortalaması
-pub fn atr_14(klines: &[Kline]) -> f64 {
+pub fn atr_14(klines: &[Kline]) -> Decimal {
     if klines.len() < 2 {
-        return 0.0;
+        return Decimal::ZERO;
     }
 
     let mut trs = Vec::with_capacity(klines.len() - 1);
@@ -63,15 +65,15 @@ pub fn atr_14(klines: &[Kline]) -> f64 {
     }
 
     if trs.is_empty() {
-        return 0.0;
+        return Decimal::ZERO;
     }
 
     // İlk ATR: basit ortalama
     let period = 14.min(trs.len());
-    let first_atr: f64 = trs[..period].iter().sum::<f64>() / period as f64;
+    let first_atr: Decimal = trs[..period].iter().sum::<Decimal>() / Decimal::from(period);
 
     // EMA smoothing
-    let multiplier = 2.0 / (period as f64 + 1.0);
+    let multiplier = Decimal::TWO / Decimal::from(period + 1);
     let mut atr = first_atr;
     for &tr in &trs[period..] {
         atr = (tr - atr) * multiplier + atr;
@@ -81,8 +83,8 @@ pub fn atr_14(klines: &[Kline]) -> f64 {
 }
 
 /// Dinamik pivot çıkarımı — Tip A (Wick) ve Tip B (Close)
-pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
-    let threshold = atr * 0.25;
+pub fn extract_pivots(klines: &[Kline], atr: Decimal) -> Vec<PivotPoint> {
+    let threshold = atr * Decimal::from_str("0.25").unwrap();
     let mut pivots = Vec::new();
 
     if klines.len() < 7 {
@@ -108,7 +110,7 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
                 pivot_type: PivotType::SwingHigh,
                 tip: PivotTip::A,
                 timestamp: klines[i].open_time,
-                decay_weight: 1.0,
+                decay_weight: Decimal::ONE,
                 defense_count: 0,
             });
         }
@@ -120,7 +122,7 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
                 pivot_type: PivotType::SwingLow,
                 tip: PivotTip::A,
                 timestamp: klines[i].open_time,
-                decay_weight: 1.0,
+                decay_weight: Decimal::ONE,
                 defense_count: 0,
             });
         }
@@ -128,11 +130,11 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
         // ── Tip B: Close-based pivotlar ──
         let is_swing_high_b = (1..=window).all(|j| {
             klines[i].close >= klines[i - j].close && klines[i].close >= klines[i + j].close
-        }) && (klines[i].close - klines[i].open).abs() >= threshold * 0.5;
+        }) && (klines[i].close - klines[i].open).abs() >= threshold * Decimal::from_str("0.5").unwrap();
 
         let is_swing_low_b = (1..=window).all(|j| {
             klines[i].close <= klines[i - j].close && klines[i].close <= klines[i + j].close
-        }) && (klines[i].close - klines[i].open).abs() >= threshold * 0.5;
+        }) && (klines[i].close - klines[i].open).abs() >= threshold * Decimal::from_str("0.5").unwrap();
 
         if is_swing_high_b {
             pivots.push(PivotPoint {
@@ -141,7 +143,7 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
                 pivot_type: PivotType::SwingHigh,
                 tip: PivotTip::B,
                 timestamp: klines[i].open_time,
-                decay_weight: 1.0,
+                decay_weight: Decimal::ONE,
                 defense_count: 0,
             });
         }
@@ -153,7 +155,7 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
                 pivot_type: PivotType::SwingLow,
                 tip: PivotTip::B,
                 timestamp: klines[i].open_time,
-                decay_weight: 1.0,
+                decay_weight: Decimal::ONE,
                 defense_count: 0,
             });
         }
@@ -164,9 +166,9 @@ pub fn extract_pivots(klines: &[Kline], atr: f64) -> Vec<PivotPoint> {
 
 /// Likidite Oluşum Bölgesi tespiti
 /// |Tip A - Tip B| > ATR * 0.05 ise → Piyasa Yapıcı alım-satım bölgesi
-pub fn detect_liquidity_zones(pivots: &[PivotPoint], atr: f64) -> Vec<LiquidityZone> {
+pub fn detect_liquidity_zones(pivots: &[PivotPoint], atr: Decimal) -> Vec<LiquidityZone> {
     let mut zones = Vec::new();
-    let threshold = atr * 0.05;
+    let threshold = atr * Decimal::from_str("0.05").unwrap();
 
     for i in 0..pivots.len() {
         for j in (i + 1)..pivots.len() {
