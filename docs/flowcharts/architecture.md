@@ -21,17 +21,17 @@ flowchart TD
 **Dosya:** `core/src/memory/ring_buffer.rs`
 ```mermaid
 flowchart LR
-    subgraph Yazan (Producer)
+    subgraph Yazan ["Yazan (Producer)"]
         W1[Veri Gelir] --> W2[Atomik Head Pointer'ı Oku]
         W2 --> W3[Slot'a Byte'ları Kopyala]
         W3 --> W4[Head Pointer'ı +1 Artır]
     end
     
-    subgraph Paylaşımlı Hafıza (mmap /dev/shm)
+    subgraph PaylasimliHafiza ["Paylaşımlı Hafıza (mmap /dev/shm)"]
         R[(Generational\nRing Buffer)]
     end
     
-    subgraph Okuyan (Consumer)
+    subgraph Okuyan ["Okuyan (Consumer)"]
         C1[Spin Loop\nBekle] --> C2{Cursor < Head ?}
         C2 -- Evet --> C3[Slot Verisini Oku]
         C2 -- Hayır --> C1
@@ -73,7 +73,7 @@ flowchart TD
 flowchart TD
     Start[CLI Başlar] --> Setup[Ring Buffer & PythonBridge Başlat]
     
-    subgraph Arka Plan Döngüsü
+    subgraph ArkaPlanDongusu ["Arka Plan Döngüsü"]
         L1[Sonsuz Loop] --> L2{read_slot(cursor)}
         L2 -- Yok --> Spin[spin_loop]
         Spin --> L1
