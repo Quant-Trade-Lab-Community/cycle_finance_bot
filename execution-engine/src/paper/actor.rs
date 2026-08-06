@@ -35,8 +35,12 @@ pub enum ActorCommand {
         order: OrderRequest,
         response_tx: oneshot::Sender<Result<OrderAck, OrderRejectReason>>,
     },
-    PriceUpdate(Decimal),
+    PriceUpdate {
+        symbol: String,
+        price: Decimal,
+    },
     MarkPriceUpdate {
+        symbol: String,
         mark_price: Decimal,
         funding_rate: Decimal,
         timestamp: u64,
@@ -65,6 +69,7 @@ pub struct PaperEngineActor {
     db_tx: mpsc::UnboundedSender<PersistEvent>,
     event_tx: Option<mpsc::UnboundedSender<DomainEvent>>,
     last_funding_ts: u64,
+    prices: HashMap<String, Decimal>,
     mark_prices: HashMap<String, Decimal>,
     funding_rates: HashMap<String, Decimal>,
     recent_trades: Vec<TradeView>,
@@ -110,6 +115,7 @@ impl PaperEngineActor {
             db_tx,
             event_tx,
             last_funding_ts: 0,
+            prices: HashMap::new(),
             mark_prices: HashMap::new(),
             funding_rates: HashMap::new(),
             recent_trades: Vec::new(),
@@ -136,7 +142,7 @@ impl PaperEngineActor {
             self.risk.realized_pnl,
             self.account.get_locked("USDT"),
             self.risk.status,
-            self.orderbook.last_price,
+            self.last_price(),
             &self.positions,
             self.open_orders.len(),
             self.recent_trades.clone(),
@@ -189,13 +195,14 @@ impl PaperEngineActor {
                     let result = self.process_order(order).await;
                     let _ = response_tx.send(result);
                 }
-                ActorCommand::PriceUpdate(price) => {
+                ActorCommand::PriceUpdate { symbol, price } => {
                     self.orderbook.apply_price(price);
-                    self.check_limit_orders(price);
+                    self.prices.insert(symbol.clone(), price);
+                    self.check_limit_orders(symbol, price);
                 }
-                ActorCommand::MarkPriceUpdate { mark_price, funding_rate, timestamp } => {
-                    self.mark_prices.insert("BTCUSDT".to_string(), mark_price);
-                    self.funding_rates.insert("BTCUSDT".to_string(), funding_rate);
+                ActorCommand::MarkPriceUpdate { symbol, mark_price, funding_rate, timestamp } => {
+                    self.mark_prices.insert(symbol.clone(), mark_price);
+                    self.funding_rates.insert(symbol, funding_rate);
                     self.on_mark_tick(timestamp);
                 }
             }
@@ -204,7 +211,8 @@ impl PaperEngineActor {
     }
 
     pub fn last_price(&self) -> Decimal {
-        self.orderbook.last_price
+        // Görüntüleme için BTCUSDT öncelikli; yoksa son gelen fiyat
+        self.prices.get("BTCUSDT").copied().unwrap_or(self.orderbook.last_price)
     }
 
     pub fn account(&self) -> &AccountState {
@@ -244,7 +252,8 @@ impl PaperEngineActor {
     // PRICE_ONLY: gerçek fiyat verisiyle (order book'suz) dolum
     // ─────────────────────────────────────────────────────────────
     fn process_price_only(&mut self, order: OrderRequest) -> Result<OrderAck, OrderRejectReason> {
-        let last = self.orderbook.last_price;
+        // Emir sembolünün güncel fiyatını kullan
+        let last = *self.prices.get(&order.symbol).unwrap_or(&self.orderbook.last_price);
         if last <= Decimal::ZERO {
             return Err(OrderRejectReason::MarketUnavailable);
         }
@@ -400,13 +409,16 @@ impl PaperEngineActor {
         });
     }
 
-    fn check_limit_orders(&mut self, price: Decimal) {
+    fn check_limit_orders(&mut self, symbol: String, price: Decimal) {
         if self.config.matching_mode != "PRICE_ONLY" {
             return;
         }
         let mut filled: Vec<usize> = Vec::new();
         let mut fill_data: Vec<(String, String, OrderSide, Decimal, Decimal, Decimal, Decimal)> = Vec::new();
         for (i, o) in self.open_orders.iter().enumerate() {
+            if o.symbol != symbol {
+                continue;
+            }
             let crossed = match o.side {
                 OrderSide::Buy => price <= o.limit_price,
                 OrderSide::Sell => price >= o.limit_price,

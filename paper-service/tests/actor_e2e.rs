@@ -27,7 +27,7 @@ async fn test_market_buy_fills_and_emits_event() {
     tokio::spawn(async move { actor.run(cmd_rx).await; });
 
     // Fiyat besle (DATA terminalden gelirmiş gibi)
-    cmd_tx.send(ActorCommand::PriceUpdate(dec("50000"))).unwrap();
+    cmd_tx.send(ActorCommand::PriceUpdate { symbol: "BTCUSDT".into(), price: dec("50000") }).unwrap();
 
     let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
     let _ = cmd_tx.send(ActorCommand::SubmitOrder {
@@ -82,7 +82,7 @@ async fn test_limit_order_fills_on_price_cross() {
     tokio::spawn(async move { actor.run(cmd_rx).await; });
 
     // Fiyat 51000; LIMIT BUY 50000 bekler
-    cmd_tx.send(ActorCommand::PriceUpdate(dec("51000"))).unwrap();
+    cmd_tx.send(ActorCommand::PriceUpdate { symbol: "BTCUSDT".into(), price: dec("51000") }).unwrap();
 
     let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
     let _ = cmd_tx.send(ActorCommand::SubmitOrder {
@@ -102,7 +102,7 @@ async fn test_limit_order_fills_on_price_cross() {
     assert_eq!(ack.order_id, "PENDING");
 
     // Fiyat 50000'e düşünce dolar
-    cmd_tx.send(ActorCommand::PriceUpdate(dec("50000"))).unwrap();
+    cmd_tx.send(ActorCommand::PriceUpdate { symbol: "BTCUSDT".into(), price: dec("50000") }).unwrap();
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
     let snap = snapshot.read().clone();

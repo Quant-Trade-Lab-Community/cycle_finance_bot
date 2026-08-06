@@ -36,7 +36,8 @@ fn spawn_tick_reader(actor_tx: UnboundedSender<ActorCommand>) {
                 if let Some(event) = EventParser::parse(&mut data) {
                     match event.payload {
                         EventType::Trade { price, .. } => {
-                            let _ = actor_tx.send(ActorCommand::PriceUpdate(price));
+                            let symbol = decode_symbol(&event.symbol);
+                            let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price });
                         }
                         EventType::BookTicker { best_ask_price, best_bid_price, .. } => {
                             // Best ask öncelikli; yoksa best bid
@@ -46,11 +47,14 @@ fn spawn_tick_reader(actor_tx: UnboundedSender<ActorCommand>) {
                                 best_bid_price
                             };
                             if price > Decimal::ZERO {
-                                let _ = actor_tx.send(ActorCommand::PriceUpdate(price));
+                                let symbol = decode_symbol(&event.symbol);
+                                let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price });
                             }
                         }
                         EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
+                            let symbol = decode_symbol(&event.symbol);
                             let _ = actor_tx.send(ActorCommand::MarkPriceUpdate {
+                                symbol,
                                 mark_price,
                                 funding_rate,
                                 timestamp: next_funding_time.max(now_ms()),
@@ -94,12 +98,10 @@ fn spawn_order_reader(actor_tx: UnboundedSender<ActorCommand>) {
                 let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
                 let _ = actor_tx.send(ActorCommand::SubmitOrder { order, response_tx: resp_tx });
 
-                // Yanıtı bekle (opsiyonel; actor işlemi senkronize eder)
-                tokio::spawn(async move {
-                    if let Ok(res) = resp_rx.await {
-                        tracing::debug!("Paper order response: {:?}", res);
-                    }
-                });
+                // Yanıtı bekle (std thread, reactor yok → blocking_recv)
+                if let Ok(res) = resp_rx.blocking_recv() {
+                    tracing::debug!("Paper order response: {:?}", res);
+                }
 
                 cursor += 1;
             } else {
