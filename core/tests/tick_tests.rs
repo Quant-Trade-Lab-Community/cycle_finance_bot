@@ -32,3 +32,10 @@ fn test_tick_allocation_mock() {
         assert!(tick.is_some());
     }
 }
+
+#[test]
+fn test_parse_mark_price_stream() {
+    let mut raw = br#"{"stream":"btcusdt@markPrice@1s","data":{"e":"markPriceUpdate","E":1562305380000,"s":"BTCUSDT","p":"64359.10000000","i":"64350.00000000","P":"64300.00000000","r":"0.00038167","T":1562306400000}}"#.to_vec();
+    let ev = EventParser::parse(&mut raw).expect("markPrice parse edilmeli");
+    assert!(matches!(ev.payload, proje_core::ring_buffer::EventType::FundingRate { .. }));
+}

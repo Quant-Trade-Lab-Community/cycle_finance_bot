@@ -61,7 +61,7 @@ impl EventParser {
             let quantity = o.get("q")?.as_str()?.parse::<Decimal>().ok()?;
             let timestamp = o.get("T")?.as_u64()?;
             Some(OwnedEvent::new_liquidation(symbol, side, price, quantity, timestamp))
-        } else if stream.ends_with("@markPrice") {
+        } else if stream.contains("@markPrice") {
             let symbol = data.get("s")?.as_str()?;
             let mark_price = data.get("p")?.as_str()?.parse::<Decimal>().ok()?;
             let funding_rate = data.get("r")?.as_str()?.parse::<Decimal>().ok().unwrap_or(Decimal::ZERO);

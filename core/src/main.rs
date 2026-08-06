@@ -34,10 +34,13 @@ async fn main() {
             
             while let Ok(mut bytes) = rx.recv() {
                 let start_parse = Instant::now();
+                // simd_json sıfır-kopya parse buffer'ı BOZAR (ayırıcıları '\0' yapar).
+                // Ring'e yazılacak orijinal baytları parse öncesi sakla.
+                let pristine = bytes.clone();
                 if let Some(owned_event) = EventParser::parse(&mut bytes) {
                     if !validator.is_valid(&owned_event) { continue; }
 
-                    gen_ring_data.push(&bytes);
+                    gen_ring_data.push(&pristine);
                     let _ = db_tx.try_send(owned_event); 
 
                     total_parse_time += start_parse.elapsed();

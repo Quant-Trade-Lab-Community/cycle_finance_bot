@@ -7,6 +7,7 @@ members = [
     "cold-storage",
     "os-utils", "execution-engine", "ohlcv-engine", "detect-sr", "detect-trend", "detect-ms", "detect-liquidity", "detect-pattern",
     "paper-service",
+    "alert-service",
 ]
 resolver = "2"
 

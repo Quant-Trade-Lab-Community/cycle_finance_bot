@@ -1,0 +1,36 @@
+# Sesli uyarı örnek yapılandırması
+# Veri kaynağı: "ring" (DATA terminali) veya "binance" (bağımsız doğrudan WS)
+data_source = "ring"
+
+[[alerts]]
+symbol = "BTCUSDT"
+condition = "above"
+price = 64500
+voice = "Bitcoin 64 bin 500 üzerine çıktı"
+cooldown_sec = 30
+
+[[alerts]]
+symbol = "BTCUSDT"
+condition = "below"
+price = 64000
+voice = "Bitcoin 64 bin altına indi"
+cooldown_sec = 30
+
+[[alerts]]
+symbol = "BTCUSDT"
+condition = "touch"
+price = 64300
+tolerance_pct = 0.002
+cooldown_sec = 20
+
+[[alerts]]
+symbol = "ETHUSDT"
+condition = "cross"
+price = 3200
+cooldown_sec = 60
+
+[[alerts]]
+symbol = "SOLUSDT"
+condition = "above"
+price = 150
+cooldown_sec = 60
