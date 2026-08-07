@@ -37,11 +37,11 @@ help-cycle() {
   echo -e "  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY terminali (PyO3)"
   echo -e "  ${_G}paper-start${_N} / ${_R}paper-stop${_N}        Paper-service (REST :8080)"
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
-  echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (pozisyon metrikleri)"
+  echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
   echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
 
-  echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Pozisyon Metrikleri)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.4'te başlat"
   echo -e "  ${_C}listener-stop${_N}       Durdur"
   echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
@@ -262,7 +262,7 @@ alert-stop() {
   if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ alert-service durduruldu [pid:$p]"; else echo "ℹ️  alert-service çalışmıyor"; fi
 }
 
-# ── LISTENER (Anlık Pozisyon Metrikleri, pane 0.4) ──────────
+# ── LISTENER (Anlık Metrik Analizi, pane 0.4) ──────────
 listener-start() {
   _start_guard
   if pgrep -x listener &>/dev/null; then

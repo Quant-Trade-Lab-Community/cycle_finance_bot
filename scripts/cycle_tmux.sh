@@ -178,7 +178,7 @@ chmod +x /tmp/cycle_init.sh
 # ── Panel 4: LISTENER ─────────────────────────────────────────
 tmux send-keys -t "$SESSION:0.4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🛰️   LISTENER  (Anlık Pozisyon Metrikleri)'
+echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
 cd $ROOT && ./target/debug/listener

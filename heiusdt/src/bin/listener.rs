@@ -1,120 +1,129 @@
-//! LISTENER — açık pozisyonlar için anlık metrik analizi (Rust).
-//! Python karşılığı: scripts/listener.py
+//! LISTENER — data merkezinden gelen verilerle anlık metrik analizi (Rust).
 //!
-//! Paper-service'ten pozisyonları + health çeker, tablo çizer ve
-//! /tmp/listener_metrics.json'a yazar. Metrikler şu an placeholder.
+//! Pozisyon izleyici DEĞİLDİR. Data merkezi (price-feed :3004) üzerinden
+//! sistemde tanımlı HER sembol için anlık fiyat verilerini (last/mark/index/
+//! bid/ask) çeker ve metrik hesaplar.
+//!
+//! Metrikler ŞU AN BOŞ (placeholder) — gerçek metrikler sonra eklenecek.
+//! Çıktılar: konsol tablosu + /tmp/listener_metrics.json
 
 use serde_json::Value;
 use std::env;
 use std::time::Duration;
 
-const PAPER_API: &str = "http://127.0.0.1:8080";
+const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
 const OUT_FILE: &str = "/tmp/listener_metrics.json";
 
 fn env_or(key: &str, default: &str) -> String {
     env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
-async fn http_json(client: &reqwest::Client, url: &str, token: Option<&str>) -> Value {
-    let mut req = client.get(url);
-    if let Some(t) = token {
-        req = req.header("Authorization", format!("Bearer {t}"));
-    }
-    match req.send().await {
+async fn http_json(client: &reqwest::Client, url: &str) -> Value {
+    match client.get(url).send().await {
         Ok(r) => r.json::<Value>().await.unwrap_or(Value::Null),
         Err(e) => serde_json::json!({"error": e.to_string()}),
     }
 }
 
-async fn http_post_json(client: &reqwest::Client, url: &str, body: &Value) -> Value {
-    match client.post(url).json(body).send().await {
-        Ok(r) => r.json::<Value>().await.unwrap_or(Value::Null),
-        Err(e) => serde_json::json!({"error": e.to_string()}),
-    }
-}
-
-async fn login(client: &reqwest::Client, user: &str, pass: &str) -> Option<String> {
-    let body = serde_json::json!({"username": user, "password": pass});
-    let v = http_post_json(client, &format!("{PAPER_API}/api/v1/auth/login"), &body).await;
-    v.get("access_token").and_then(|t| t.as_str()).map(|s| s.to_string())
-}
-
-fn fmt_val(v: &Value) -> String {
+fn fmt_val(v: Option<&Value>) -> String {
     match v {
-        Value::String(s) => s.clone(),
-        Value::Number(n) => n.to_string(),
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Number(n)) => n.to_string(),
+        Some(Value::Null) | None => "—".to_string(),
         _ => "—".to_string(),
     }
 }
 
+/// ANLIK METRİK ANALİZİ — ŞU AN BOŞ, metrikler sonra eklenecek.
+/// Her sembol için hesaplanacak örnek metrikler:
+///   - spread_pct, momentum, distance_to_vwap, liquidity_score, ...
+fn compute_metrics(symbol: &str, price: &Value) -> Value {
+    let last = price.get("last").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let mark = price.get("mark").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let index = price.get("index").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let bid = price.get("bid").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let ask = price.get("ask").and_then(|v| v.as_f64()).unwrap_or(0.0);
+
+    // ── METRİK ŞABLONU (doldurulacak) ─────────────────────
+    serde_json::json!({
+        "symbol": symbol,
+        "placeholder": true,
+        "spread_pct": if ask > bid && bid > 0.0 { Some((ask - bid) / bid * 100.0) } else { None },
+        "last": last,
+        "mark": mark,
+        "index": index,
+        "bid": bid,
+        "ask": ask,
+    })
+}
+
 #[tokio::main]
 async fn main() {
-    let user = env_or("PAPER_ADMIN_USER", "admin");
-    let pass = env_or("PAPER_ADMIN_PASS", "changeme123");
     let refresh: u64 = env_or("LISTENER_REFRESH_SEC", "2").parse().unwrap_or(2);
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(5))
         .build()
         .expect("reqwest client");
 
-    println!("{}", "═".repeat(60));
-    println!("  🛰️  LISTENER KATMANI — ANLIK POZİSYON METRİKLERİ");
-    println!("{}", "═".repeat(60));
+    println!("{}", "═".repeat(72));
+    println!("  🛰️  LISTENER — ANLIK METRİK ANALİZİ (data merkezi: price-feed)");
+    println!("{}", "═".repeat(72));
 
     loop {
-        let token = match login(&client, &user, &pass).await {
-            Some(t) => t,
-            None => {
-                println!("⚠️  Paper giriş başarısız — yeniden deneniyor...");
-                tokio::time::sleep(Duration::from_secs(refresh)).await;
-                continue;
-            }
-        };
+        let data = http_json(&client, &format!("{PRICE_FEED_URL}/api/lastprice")).await;
 
-        let health = http_json(&client, &format!("{PAPER_API}/api/v1/system/health"), Some(&token)).await;
-        let pos = http_json(&client, &format!("{PAPER_API}/api/v1/account/positions"), Some(&token)).await;
-
-        // ── Ekranı temizle ve çiz ──
         print!("\x1b[2J\x1b[H");
-        println!("{}", "═".repeat(60));
-        println!("  🛰️  LISTENER — ANLIK POZİSYON METRİKLERİ");
-        println!("  Paper: {PAPER_API}  |  Yenileme: {refresh}s");
-        println!("{}", "═".repeat(60));
+        println!("{}", "═".repeat(72));
+        println!("  🛰️  LISTENER — DATA MERKEZİ ANLIK METRİKLERİ");
+        println!("  Kaynak: {PRICE_FEED_URL}  |  Yenileme: {refresh}s");
+        println!("{}", "═".repeat(72));
 
-        if !health.is_null() {
-            let last = fmt_val(health.get("last_price").unwrap_or(&Value::Null));
-            let status = fmt_val(health.get("status").unwrap_or(&Value::Null));
-            println!("  Veri Merkezi: {status}  |  Son Fiyat: {last}");
-        } else {
-            println!("  ⚠️  Veri Merkezi: {health}");
+        if data.get("error").is_some() {
+            println!("  ⚠️  Data merkezi erişilemiyor: {}", data.get("error").unwrap());
+            tokio::time::sleep(Duration::from_secs(refresh)).await;
+            continue;
         }
 
-        println!("{}", "-".repeat(60));
-        let positions = pos.get("positions").and_then(|p| p.as_array()).cloned().unwrap_or_default();
-        if positions.is_empty() {
-            println!("  📭 AÇIK POZİSYON YOK");
+        let prices = data.get("prices").and_then(|p| p.as_object()).cloned().unwrap_or_default();
+        let symbols = data.get("symbols").and_then(|s| s.as_array()).cloned().unwrap_or_default();
+
+        if prices.is_empty() {
+            println!("  📭 VERİ YOK — price-feed çalışıyor mu? (pricefeed-start)");
         } else {
-            println!("  {:<12}{:<8}{:<10}{:<14}{:<14}{}", "SEMBOL", "YÖN", "MİKTAR", "GİRİŞ", "MARK", "METRİK");
-            println!("  {}", "-".repeat(56));
-            for p in &positions {
-                let sym = fmt_val(p.get("symbol").unwrap_or(&Value::Null));
-                let side = fmt_val(p.get("side").unwrap_or(&Value::Null));
-                let qty = fmt_val(p.get("quantity").unwrap_or(&Value::Null));
-                let entry = fmt_val(p.get("avg_entry_price").unwrap_or(&Value::Null));
-                let mark = fmt_val(p.get("mark_price").unwrap_or(&Value::Null));
-                println!("  {:<12}{:<8}{:<10}{:<14}{:<14}⏳ analiz bekliyor", sym, side, qty, entry, mark);
+            println!("  {:<10}{:<14}{:<14}{:<14}{:<14}{:<14}{:<14}", "SEMBOL", "LAST", "MARK", "INDEX", "BID", "ASK", "METRİK");
+            println!("  {}", "-".repeat(72));
+            for s in &symbols {
+                let sym = fmt_val(Some(s));
+                if let Some(p) = prices.get(sym.as_str()) {
+                    let last = fmt_val(p.get("last"));
+                    let mark = fmt_val(p.get("mark"));
+                    let index = fmt_val(p.get("index"));
+                    let bid = fmt_val(p.get("bid"));
+                    let ask = fmt_val(p.get("ask"));
+                    let m = compute_metrics(&sym, p);
+                    let mtext = if m.get("placeholder").and_then(|x| x.as_bool()).unwrap_or(false) {
+                        "⏳ analiz bekliyor".to_string()
+                    } else {
+                        "—".to_string()
+                    };
+                    println!("  {:<10}{:<14}{:<14}{:<14}{:<14}{:<14}{:<14}", sym, last, mark, index, bid, ask, mtext);
+                }
             }
         }
-        println!("{}", "-".repeat(60));
+        println!("{}", "-".repeat(70));
         let now = chrono::Local::now().format("%H:%M:%S").to_string();
         println!("  Son güncelleme: {now}  (Ctrl+C ile çık)");
 
-        // ── JSON çıktısı ──
+        // ── Metrik çıktısı (JSON) ──
+        let metrics: serde_json::Map<String, Value> = prices
+            .iter()
+            .map(|(k, v)| (k.clone(), compute_metrics(k, v)))
+            .collect();
         let doc = serde_json::json!({
             "timestamp": now,
-            "positions": positions,
-            "metrics": {},
+            "symbols": symbols,
+            "metrics": metrics,
         });
         let _ = std::fs::write(OUT_FILE, serde_json::to_string_pretty(&doc).unwrap_or_default());
 
