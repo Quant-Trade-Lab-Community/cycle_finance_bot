@@ -6,6 +6,7 @@ members = [
     "cold-starter",
     "cold-storage",
     "os-utils", "execution-engine", "ohlcv-engine", "detect-sr", "detect-trend", "detect-ms", "detect-liquidity", "detect-pattern",
+    "detect-wyckoff",
     "paper-service",
     "alert-service",
     "price-feed",
