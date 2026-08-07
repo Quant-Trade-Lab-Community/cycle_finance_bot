@@ -193,7 +193,7 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 echo '⚠️   RİSK ANALİZİ  (market_data.db)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
-cd $ROOT && while true; do clear; ./target/debug/risk_analysis; echo; echo '--- 5 sn sonra yenilenir (Ctrl+C) ---'; sleep 5; done
+cd $ROOT && ./target/debug/risk_analysis --watch
 " Enter
 
 # ── Panel 6: SHELL ───────────────────────────────────────────

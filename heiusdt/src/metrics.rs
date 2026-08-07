@@ -29,6 +29,8 @@ pub struct MetricsConfig {
     pub noise_corr: f64,       // Lee-Ready gürültü filtresi
     pub delta_window_sec: usize, // ΔV penceresi (saniye)
     pub tps_window_sec: usize,   // TPS pencere (saniye)
+    pub corr_price_window_sec: usize, // fiyat korelasyon penceresi (saniye)
+    pub corr_vol_window_sec: usize,   // hacim korelasyon penceresi (saniye)
     pub gamma: [f64; 6],       // Alpha Basket ağırlıkları
 }
 
@@ -45,6 +47,8 @@ impl Default for MetricsConfig {
             noise_corr: 0.85,
             delta_window_sec: 60,
             tps_window_sec: 10,
+            corr_price_window_sec: 5,
+            corr_vol_window_sec: 5,
             gamma: [0.0, 0.4, -0.3, 0.5, 0.6, -0.35],
         }
     }
@@ -82,6 +86,8 @@ impl MetricsConfig {
                 "noise_corr" => cfg.noise_corr = f(cfg.noise_corr),
                 "delta_window_sec" => cfg.delta_window_sec = v.parse::<usize>().unwrap_or(cfg.delta_window_sec),
                 "tps_window_sec" => cfg.tps_window_sec = v.parse::<usize>().unwrap_or(cfg.tps_window_sec),
+                "corr_price_window_sec" => cfg.corr_price_window_sec = v.parse::<usize>().unwrap_or(cfg.corr_price_window_sec),
+                "corr_vol_window_sec" => cfg.corr_vol_window_sec = v.parse::<usize>().unwrap_or(cfg.corr_vol_window_sec),
                 "gamma0" => cfg.gamma[0] = f(cfg.gamma[0]),
                 "gamma1" => cfg.gamma[1] = f(cfg.gamma[1]),
                 "gamma2" => cfg.gamma[2] = f(cfg.gamma[2]),
@@ -494,4 +500,81 @@ impl SymbolMetrics {
         let win = self.cfg.tps_window_sec.max(1) as f64;
         self.tps = self.trade_times.len() as f64 / win;
     }
+}
+
+// ══ Korelasyon serisi — pencere bazlı zaman serisi ═════════════
+/// (ts_ms, value) çiftlerini pencere içinde tutar, normalize korelasyon (0-1) hesaplar.
+#[derive(Debug, Clone)]
+pub struct CorrSeries {
+    pub points: VecDeque<(u64, f64)>,
+    window_ms: u64,
+}
+
+impl CorrSeries {
+    pub fn new(window_sec: usize) -> Self {
+        Self {
+            points: VecDeque::new(),
+            window_ms: (window_sec.max(1) as u64) * 1000,
+        }
+    }
+
+    /// pencere süresini güncelle ve eski noktaları kırp
+    pub fn set_window(&mut self, window_sec: usize) {
+        self.window_ms = (window_sec.max(1) as u64) * 1000;
+        self.trim(now_ms());
+    }
+
+    pub fn push(&mut self, ts_ms: u64, value: f64) {
+        self.points.push_back((ts_ms, value));
+        self.trim(ts_ms);
+    }
+
+    fn trim(&mut self, ref_ts: u64) {
+        while let Some(&(t, _)) = self.points.front() {
+            if ref_ts.saturating_sub(t) > self.window_ms {
+                self.points.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Değerleri (korelasyon için) pencere içindeki sırayla döndürür
+    pub fn values(&self) -> Vec<f64> {
+        self.points.iter().map(|&(_, v)| v).collect()
+    }
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
+
+/// İki seri arasında Pearson korelasyonu. Sonuç [0,1]'e normalize edilir: (r+1)/2.
+/// Yetersiz veri (n<3 veya sabit seri) durumunda 0.0 (ilişkisiz) döndürülür.
+pub fn normalized_corr(a: &[f64], b: &[f64]) -> f64 {
+    let n = a.len().min(b.len());
+    if n < 3 {
+        return 0.0;
+    }
+    let (a, b) = (&a[..n], &b[..n]);
+    let ma = a.iter().sum::<f64>() / n as f64;
+    let mb = b.iter().sum::<f64>() / n as f64;
+    let mut sxy = 0.0;
+    let mut sxx = 0.0;
+    let mut syy = 0.0;
+    for i in 0..n {
+        let dx = a[i] - ma;
+        let dy = b[i] - mb;
+        sxy += dx * dy;
+        sxx += dx * dx;
+        syy += dy * dy;
+    }
+    if sxx < 1e-12 || syy < 1e-12 {
+        return 0.0;
+    }
+    let r = sxy / (sxx.sqrt() * syy.sqrt());
+    (r + 1.0) / 2.0
 }

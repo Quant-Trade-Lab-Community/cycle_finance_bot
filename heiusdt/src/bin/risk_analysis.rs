@@ -1,9 +1,11 @@
-//! Risk analizi (Rust) — Python karşılığı: scripts/risk_analysis.py
+//! Risk analizi (Rust) — market_data.db'deki trades tablosunu SQL ile özetler.
 //!
-//! market_data.db'deki trades tablosunu SQL ile özetler, hacim ve
-//! volatilite riski hesaplar.
+//! --watch  : sabit ekranda her N sn'de yenilenir (tmux RISK paneli için).
+//!           clear YAPILMAZ; imleç başa alınıp üzerine yazılır (titreşimsiz).
+//! WATCH_SEC: yenileme süresi (varsayılan 5 sn).
 
 use rusqlite::Connection;
+use std::time::Duration;
 
 #[derive(Debug)]
 struct Row {
@@ -14,14 +16,12 @@ struct Row {
     max: f64,
 }
 
-fn main() {
-    println!("Veritabanı taranıyor... İstatistiksel risk hesaplanıyor...\n");
-
+fn render() {
     let conn = match Connection::open("market_data.db") {
         Ok(c) => c,
         Err(e) => {
             eprintln!("❌ Veritabanı açılamadı: {e}");
-            std::process::exit(1);
+            return;
         }
     };
 
@@ -86,5 +86,27 @@ fn main() {
     println!("  {:<10}{:<12}{:<18}{:<16}", "PARİTE", "İŞLEM", "VOLATİLİTE_%", "HACİM_USDT");
     for (r, vol) in sorted.iter().take(10) {
         println!("  {:<10}{:<12}{:<18.2}{:<16.2}", r.symbol, r.count, vol, r.volume);
+    }
+}
+
+fn main() {
+    let watch = std::env::args().any(|a| a == "--watch");
+    let watch_sec: u64 = std::env::var("WATCH_SEC")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(5);
+
+    if !watch {
+        render();
+        return;
+    }
+
+    // Sabit ekran: ilk render tam boyutla çizilir; sonrakiler imleç başa alınır.
+    print!("\x1b[2J\x1b[H"); // başta bir kez temizle
+    render();
+    loop {
+        std::thread::sleep(Duration::from_secs(watch_sec));
+        print!("\x1b[H"); // imleç en üste
+        render();
     }
 }

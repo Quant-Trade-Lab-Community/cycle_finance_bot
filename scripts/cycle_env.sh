@@ -326,7 +326,7 @@ risk-start() {
     echo "⚠️  RISK zaten çalışıyor (pid: $(pgrep -x risk_analysis | head -1))"
     return 1
   fi
-  _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && while true; do clear; ./target/debug/risk_analysis; echo; echo '--- 5 sn sonra yenilenir (Ctrl+C) ---'; sleep 5; done" Enter
+  _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && ./target/debug/risk_analysis --watch" Enter
   sleep 2
   echo "✅ RISK başlatıldı (pane 0.5)"
 }
@@ -380,6 +380,8 @@ listenconfig-list() {
     echo "  noise_corr = 0.85     (Lee-Ready gürültü filtresi)"
     echo "  delta_window_sec = 60 (ΔV penceresi, saniye)"
     echo "  tps_window_sec = 10  (TPS penceresi, saniye)"
+    echo "  corr_price_window_sec = 5 (fiyat korelasyonu penceresi, saniye)"
+    echo "  corr_vol_window_sec = 5   (hacim korelasyonu penceresi, saniye)"
     echo "  gamma0..gamma5        (Alpha Basket ağırlıkları)"
   fi
 }
@@ -393,14 +395,14 @@ listenconfig-set() {
     echo "     listenconfig-set gamma1 0.5 | listenconfig-set delta_window_sec 120"
     return 1
   fi
-  local valid_keys="lambda theta_vol alpha_bucket k_abs n_bucket ice_threshold efp_threshold noise_corr delta_window_sec tps_window_sec gamma0 gamma1 gamma2 gamma3 gamma4 gamma5"
+  local valid_keys="lambda theta_vol alpha_bucket k_abs n_bucket ice_threshold efp_threshold noise_corr delta_window_sec tps_window_sec corr_price_window_sec corr_vol_window_sec gamma0 gamma1 gamma2 gamma3 gamma4 gamma5"
   if ! echo "$valid_keys" | grep -qw "$key"; then
     echo "❌ Geçersiz parametre: $key"
     echo "Geçerli: $valid_keys"
     return 1
   fi
   # k_abs, n_bucket, delta_window_sec tam sayı olmalı
-  if echo "k_abs n_bucket delta_window_sec tps_window_sec" | grep -qw "$key"; then
+  if echo "k_abs n_bucket delta_window_sec tps_window_sec corr_price_window_sec corr_vol_window_sec" | grep -qw "$key"; then
     if ! echo "$val" | grep -qE '^[0-9]+$'; then
       echo "❌ $key tam sayı olmalı"; return 1
     fi
