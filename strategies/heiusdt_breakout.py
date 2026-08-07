@@ -34,6 +34,10 @@ SYMBOL = os.environ.get("HEIUSDT_SYMBOL", "HEIUSDT")
 INTERVAL = os.environ.get("HEIUSDT_INTERVAL", "1m")
 LIMIT = int(os.environ.get("HEIUSDT_LIMIT", "100"))
 CHECK_EVERY_WINDOWS = int(os.environ.get("HEIUSDT_CHECK_EVERY", "20"))
+# Bekleme süresi saniye cinsinden (varsayılan: 20 pencere x 60sn = 1200sn = 20dk).
+# Shell'den ayarlanabilir: heiusdt-wait <saniye>
+WAIT_SEC = int(os.environ.get("HEIUSDT_WAIT_SEC", str(CHECK_EVERY_WINDOWS * 60)))
+WAIT_FILE = "/tmp/heiusdt_wait_sec.txt"
 QTY = os.environ.get("HEIUSDT_QTY", "1000")
 DRY_RUN = "--dry-run" in sys.argv
 ONCE = "--once" in sys.argv
@@ -143,14 +147,33 @@ def evaluate(data, price=None):
         return None, log + " | Nötr trend"
 
 
+def current_wait_sec():
+    """Bekleme süresini alır: önce /tmp/heiusdt_wait_sec.txt, sonra env, sonra varsayılan."""
+    try:
+        with open(WAIT_FILE) as f:
+            v = int(f.read().strip())
+            if v > 0:
+                return v
+    except Exception:
+        pass
+    return WAIT_SEC
+
+
 def analyze_once():
+    """Bir analiz döngüsü. detect-ms ulaşılabilirse True, değilse False döndürür."""
     auth = login()
     if "access_token" not in auth:
         print(f"❌ Paper giriş başarısız: {auth}")
-        return
+        return False
     token = auth["access_token"]
 
     data = fetch_analysis()
+    if "error" in data:
+        # detect-ms'e ulaşılamadı (connection refused) — kısa aralıkla yeniden dene
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️  detect-ms erişilemiyor: {data['error']}")
+        print("   → 10 sn sonra yeniden denenecek...")
+        return False
+
     pf_price, pf_err = fetch_price_feed(SYMBOL)
     signal, msg = evaluate(data, price=pf_price)
     print(f"[{time.strftime('%H:%M:%S')}] {SYMBOL} {INTERVAL} {LIMIT} pencere")
@@ -161,7 +184,7 @@ def analyze_once():
     print(f"  {msg}")
 
     if signal is None:
-        return
+        return True
 
     # Aynı sembolde zaten pozisyon varsa tekrar açma
     pos = get_positions(token)
@@ -169,11 +192,11 @@ def analyze_once():
         if p.get("symbol") == SYMBOL and float(p.get("quantity", 0)) != 0:
             print(f"  ⏭️  {SYMBOL} pozisyonu zaten var ({p.get('side')} "
                   f"{p.get('quantity')}). Yeni emir açılmadı.")
-            return
+            return True
 
     if DRY_RUN:
         print(f"  🧪 [DRY-RUN] {signal} emri gönderilmedi (QTY={QTY})")
-        return
+        return True
 
     resp = place_order(token, signal, QTY)
     if "order_id" in resp:
@@ -181,6 +204,7 @@ def analyze_once():
               f"avg={resp.get('avg_price')}")
     else:
         print(f"  ❌ Emir reddedildi: {resp}")
+    return True
 
 
 def main():
@@ -198,11 +222,18 @@ def main():
 
     while True:
         try:
-            analyze_once()
+            ok = analyze_once()
         except Exception as e:
             print(f"⚠️  Hata: {e}")
-        sleep_s = CHECK_EVERY_WINDOWS * 60
-        print(f"  😴 {CHECK_EVERY_WINDOWS} pencere ({sleep_s//60} dk) bekleniyor...\n")
+            ok = False
+        if not ok:
+            # detect-ms'e ulaşılamadı — 10 sn sonra yeniden dene
+            print(f"  🔄 10 sn sonra yeniden deneniyor... {time.strftime('%H:%M:%S')}\n")
+            time.sleep(10)
+            continue
+        sleep_s = current_wait_sec()
+        print(f"  😴 {sleep_s} saniye ({sleep_s/60:.1f} dk) bekleniyor... (heiusdt-wait ile değiştir)"
+              f" {time.strftime('%H:%M:%S')}\n")
         time.sleep(sleep_s)
 
 

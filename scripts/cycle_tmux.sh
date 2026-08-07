@@ -192,6 +192,26 @@ tmux new-window -t "$SESSION:1" -n "Monitor"
 tmux send-keys -t "$SESSION:1" "bash '$ROOT/scripts/monitor.sh'" Enter
 tmux select-pane -t "$SESSION:1" -T "Monitor"
 
+# ── Pencere 2: DETECT-MS ─────────────────────────────────────
+tmux new-window -t "$SESSION:2" -n "DETECT-MS"
+tmux send-keys -t "$SESSION:2" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT && ./target/debug/detect-ms
+" Enter
+
+# ── Pencere 3: HEIUSDT STRATEJİ ─────────────────────────────
+tmux new-window -t "$SESSION:3" -n "HEIUSDT"
+tmux send-keys -t "$SESSION:3" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🎯  HEIUSDT  (Kırılım Stratejisi)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && python3 strategies/heiusdt_breakout.py
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" pane-border-status top

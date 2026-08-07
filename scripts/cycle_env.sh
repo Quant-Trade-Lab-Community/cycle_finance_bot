@@ -99,6 +99,7 @@ help-cycle() {
   echo -e "  ${_C}heiusdt-status${_N}       Çalışıyor mu? CPU/RAM göster"
   echo -e "  ${_C}heiusdt-query${_N}        Tek seferlik analiz (emir açmaz)"
   echo -e "  ${_C}heiusdt-query --dry-run${_N}  Analiz + kırılım simülasyonu"
+  echo -e "  ${_C}heiusdt-wait 600${_N}     Bekleme süresini ayarla (saniye)"
   echo -e "  ${_C}heiusdt-log${_N}          Canlı strateji logu izle"
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -661,6 +662,29 @@ heiusdt-status() {
 
 heiusdt-log() {
   tail -f /tmp/heiusdt.log
+}
+
+# Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
+# Kullanım: heiusdt-wait 600   (10 dakika)  |  heiusdt-wait 1200  (20 dakika)
+heiusdt-wait() {
+  _start_guard
+  local sec="${1:-}"
+  if [ -z "$sec" ]; then
+    local cur; cur=$(cat /tmp/heiusdt_wait_sec.txt 2>/dev/null || echo "1200")
+    echo "ℹ️  Mevcut bekleme: $cur sn"
+    echo "Kullanım: heiusdt-wait <saniye>   (örn. heiusdt-wait 600 → 10dk)"
+    return 0
+  fi
+  if ! echo "$sec" | grep -qE '^[0-9]+$' || [ "$sec" -lt 10 ]; then
+    echo "❌ Saniye değeri geçerli değil (min 10): $sec"
+    return 1
+  fi
+  echo "$sec" > /tmp/heiusdt_wait_sec.txt
+  echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
+  echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
+  if pgrep -f "[h]eiusdt_breakout.py" >/dev/null 2>&1; then
+    echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
+  fi
 }
 
 heiusdt-query() {
