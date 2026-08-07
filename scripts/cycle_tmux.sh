@@ -104,18 +104,20 @@ tmux new-session -d -s "$SESSION" -x 220 -y 50
 tmux rename-window -t "$SESSION:0" "Trading"
 
 # ── Panel düzeni ─────────────────────────────────────────────
-# 0=sol-üst  1=sağ-üst  2=sol-orta  3=sağ-orta  4=alt-tam
+# 0=sol-üst  1=sağ-üst  2=sol-orta  3=sağ-orta  4=LISTENER  5=alt(SHELL)
 tmux split-window -t "$SESSION:0"    -h
 tmux split-window -t "$SESSION:0.0"  -v
 tmux split-window -t "$SESSION:0.1"  -v
-tmux split-window -t "$SESSION:0"    -v -p 20
+tmux split-window -t "$SESSION:0"    -v -p 35
+tmux split-window -t "$SESSION:0.4"  -v -p 40
 
 # ── Panel başlıkları ─────────────────────────────────────────
 tmux select-pane -t "$SESSION:0.0" -T "📡 DATA"
 tmux select-pane -t "$SESSION:0.1" -T "🛡️  PAPER"
 tmux select-pane -t "$SESSION:0.2" -T "🧠 STRATEGY"
 tmux select-pane -t "$SESSION:0.3" -T "🔔 ALERT"
-tmux select-pane -t "$SESSION:0.4" -T "💻 SHELL"
+tmux select-pane -t "$SESSION:0.4" -T "🛰️  LISTENER"
+tmux select-pane -t "$SESSION:0.5" -T "💻 SHELL"
 
 # ── Panel 0: DATA ────────────────────────────────────────────
 tmux send-keys -t "$SESSION:0.0" "
@@ -173,8 +175,17 @@ help-cycle
 INITEOF
 chmod +x /tmp/cycle_init.sh
 
-# ── Panel 4: SHELL ───────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.4" "source /tmp/cycle_init.sh" Enter
+# ── Panel 4: LISTENER ─────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.4" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛰️   LISTENER  (Anlık Pozisyon Metrikleri)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && python3 scripts/listener.py
+" Enter
+
+# ── Panel 5: SHELL ───────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.5" "source /tmp/cycle_init.sh" Enter
 
 # ── Pencere 1: MONITOR ───────────────────────────────────────
 tmux new-window -t "$SESSION:1" -n "Monitor"
@@ -219,16 +230,21 @@ tmux select-pane -t "$SESSION:0.3" -P "bg=colour52,fg=colour255"
 tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=colour214,bold"
 tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=colour130"
 
+# 🛰️  LISTENER   → Camgöbeği tema (bg: koyu turkuaz | kenarlık: cyan)
+tmux select-pane -t "$SESSION:0.4" -P "bg=colour23,fg=colour255"
+tmux set-option -t "$SESSION:0.4" -p pane-active-border-style "fg=colour45,bold"
+tmux set-option -t "$SESSION:0.4" -p pane-border-style        "fg=colour36"
+
 # 💻 SHELL     → Antrasit tema (bg: çok koyu  | kenarlık: açık gri)
-tmux select-pane -t "$SESSION:0.4" -P "bg=colour233,fg=colour252"
-tmux set-option -t "$SESSION:0.4" -p pane-active-border-style "fg=colour244,bold"
-tmux set-option -t "$SESSION:0.4" -p pane-border-style        "fg=colour238"
+tmux select-pane -t "$SESSION:0.5" -P "bg=colour233,fg=colour252"
+tmux set-option -t "$SESSION:0.5" -p pane-active-border-style "fg=colour244,bold"
+tmux set-option -t "$SESSION:0.5" -p pane-border-style        "fg=colour238"
 
 # Pane başlık formatı — renk kodlu
 tmux set-option -t "$SESSION:0" pane-border-format \
-  "#{?#{==:#{pane_index},0},#[fg=colour39 bold],#{?#{==:#{pane_index},1},#[fg=colour46 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour214 bold],#[fg=colour244 bold]}}}} #{pane_title} #[default]"
+  "#{?#{==:#{pane_index},0},#[fg=colour39 bold],#{?#{==:#{pane_index},1},#[fg=colour46 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour214 bold],#{?#{==:#{pane_index},4},#[fg=colour45 bold],#[fg=colour244 bold]}}}}}} #{pane_title} #[default]"
 
 # ── Terminal penceresine dön ve bağlan ───────────────────────
 tmux select-window -t "$SESSION:0"
-tmux select-pane  -t "$SESSION:0.4"
+tmux select-pane  -t "$SESSION:0.5"
 tmux attach-session -t "$SESSION"

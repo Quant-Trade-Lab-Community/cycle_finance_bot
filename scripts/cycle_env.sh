@@ -32,6 +32,21 @@ help-cycle() {
   echo -e "  ${_G}cycle-build${_N}          Projeyi derle (cargo build)"
   echo -e "  ${_G}cycle-build-full${_N}     Tam set derle (--features full)"
 
+  echo -e "\n${_Y}━━━  ⚙️  SİSTEMLERİ TEK TEK AÇ / KAPAT  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_G}data-start${_N} / ${_R}data-stop${_N}          DATA terminali (Binance WS)"
+  echo -e "  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY terminali (PyO3)"
+  echo -e "  ${_G}paper-start${_N} / ${_R}paper-stop${_N}        Paper-service (REST :8080)"
+  echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
+  echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (pozisyon metrikleri)"
+  echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
+  echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
+
+  echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Pozisyon Metrikleri)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}listener-start${_N}      Pane 0.4'te başlat"
+  echo -e "  ${_C}listener-stop${_N}       Durdur"
+  echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
+  echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
+
   echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}data-live${_N}            Canlı Binance WS başlat (RUN_MODE=DATA)"
   echo -e "  ${_C}data-backtest${_N}        CSV backtest başlat"
@@ -52,7 +67,8 @@ help-cycle() {
   echo -e "  ${_C}paper-cli  [arglar]${_N}         Paper CLI (tüm seçenekler)"
 
   echo -e "\n${_Y}━━━  🧠 STRATEGY / CORRELATION  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}strategy-start${_N}       Strategy terminalini başlat"
+  echo -e "  ${_C}strategy-start${_N}       Strategy terminalini başlat (arka plan)"
+  echo -e "  ${_C}strategy-stop${_N}        Strategy terminalini durdur"
   echo -e "  ${_C}correlation-start${_N}    Korelasyon analizini başlat"
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -66,6 +82,14 @@ help-cycle() {
   echo -e "  ${_C}detect-ms-query${_N}      BTCUSDT 15m analiz (JSON çıktı)"
   echo -e "  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu"
   echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
+
+  echo -e "\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}heiusdt-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
+  echo -e "  ${_C}heiusdt-stop${_N}         Stratejiyi durdur"
+  echo -e "  ${_C}heiusdt-status${_N}       Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}heiusdt-query${_N}        Tek seferlik analiz (emir açmaz)"
+  echo -e "  ${_C}heiusdt-query --dry-run${_N}  Analiz + kırılım simülasyonu"
+  echo -e "  ${_C}heiusdt-log${_N}          Canlı strateji logu izle"
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 1)"
@@ -90,6 +114,17 @@ help-cycle() {
 # ============================================================
 #  SİSTEM YÖNETİMİ
 # ============================================================
+# Bu dosya değiştiğinde fonksiyonları güncellemek için:
+reload-cycle() {
+  source "$CYCLE_ROOT/scripts/cycle_env.sh" >/dev/null 2>&1
+  echo "✅ cycle_env.sh yeniden yüklendi"
+}
+
+# Her start/stop fonksiyonunun güncel sürümü kullanması için otomatik yenileme
+# (tmux SHELL paneli eski sürümü yüklemiş olsa bile sorun yaşanmaz)
+_start_guard() {
+  source "$CYCLE_ROOT/scripts/cycle_env.sh" >/dev/null 2>&1
+}
 cycle-start() {
   "$CYCLE_ROOT/scripts/cycle_tmux.sh"
 }
@@ -104,6 +139,164 @@ cycle-build() {
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
+}
+
+# ============================================================
+#  SİSTEMLERİ TEK TEK AÇ / KAPAT  (6 panelli Trading penceresinde)
+#  Her servis kendi pane'inde başlar: yeni sekme/pencere açılmaz.
+# ============================================================
+# Yardımcı: Trading penceresindeki bir pane'e komut gönder
+# Servis → pane haritası: 0.0=DATA 0.1=PAPER 0.2=STRATEGY 0.3=ALERT 0.4=LISTENER
+_tmux_pane() {
+  local name="$1"; shift
+  local session="cycle"
+  local pane
+  case "$name" in
+    "📡DATA")   pane="0.0" ;;
+    "🛡️PAPER")  pane="0.1" ;;
+    "🧠STRATEGY") pane="0.2" ;;
+    "🔔ALERT")  pane="0.3" ;;
+    "🛰️LISTENER") pane="0.4" ;;
+    "💻SHELL")  pane="0.5" ;;
+    *)
+      # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
+      if ! tmux has-session -t "$session" 2>/dev/null; then
+        tmux new-session -d -s "$session" -x 220 -y 50
+        tmux rename-window -t "$session:0" "Trading"
+      fi
+      local idx
+      idx=$(tmux list-windows -t "$session" -F "#{window_name} #{window_index}" 2>/dev/null | awk -v n="$name" '$1==n{print $2}')
+      if [ -z "$idx" ]; then
+        tmux new-window -t "$session" -n "$name"
+        idx=$(tmux list-windows -t "$session" -F "#{window_name} #{window_index}" 2>/dev/null | awk -v n="$name" '$1==n{print $2}')
+      fi
+      tmux send-keys -t "$session:$idx" "$@"
+      return 0
+      ;;
+  esac
+  tmux send-keys -t "$session:$pane" C-c
+  tmux send-keys -t "$session:$pane" C-u
+  tmux send-keys -t "$session:$pane" "$@"
+}
+
+# ── DATA terminali (Binance WS → ring) ──────────────────────
+# RUN_MODE env değişkeni ps'de görünmez → /proc/*/environ ile kontrol et
+_core_mode_pid() {
+  local mode="$1"
+  for p in $(pgrep -x core 2>/dev/null); do
+    if tr '\0' '\n' < "/proc/$p/environ" 2>/dev/null | grep -q "^RUN_MODE=$mode$"; then
+      echo "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+data-start() {
+  _start_guard
+  if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
+  cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
+  rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/core" Enter
+  echo "✅ DATA başlatıldı (pane 0.0)"
+}
+data-stop() {
+  _start_guard
+  local p; p=$(_core_mode_pid DATA)
+  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; echo "✅ DATA durduruldu [pid:$p]"; else echo "ℹ️  DATA çalışmıyor"; fi
+}
+
+# ── STRATEGY terminali (core) ────────────────────────────────
+strategy-start() {
+  _start_guard
+  if _core_mode_pid STRATEGY &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor (pid: $(_core_mode_pid STRATEGY))"; return 1; fi
+  cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
+  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && RUN_MODE=STRATEGY ./target/debug/core" Enter
+  echo "✅ STRATEGY başlatıldı (pane 0.2)"
+}
+strategy-stop() {
+  _start_guard
+  local p; p=$(_core_mode_pid STRATEGY)
+  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; echo "✅ STRATEGY durduruldu [pid:$p]"; else echo "ℹ️  STRATEGY çalışmıyor"; fi
+}
+
+# ── PAPER-SERVICE (REST API :8080) ───────────────────────────
+paper-start() {
+  _start_guard
+  if pgrep -x "paper-service" &>/dev/null; then echo "⚠️  paper-service zaten çalışıyor"; return 1; fi
+  cd "$CYCLE_ROOT" && cargo build -p paper-service 2>&1 | tail -1
+  rm -rf "$CYCLE_ROOT/paper_wal"
+  _tmux_pane "🛡️PAPER" \
+    "cd $CYCLE_ROOT && PAPER_ADMIN_USER=${PAPER_ADMIN_USER:-admin} PAPER_ADMIN_PASS=${PAPER_ADMIN_PASS:-changeme123} PAPER_API_ADDR=${PAPER_API_ADDR:-127.0.0.1:8080} PAPER_INITIAL_USDT=${PAPER_INITIAL_USDT:-100000} PAPER_DB_PATH=/tmp/paper_live.db PAPER_SLED_PATH=$CYCLE_ROOT/paper_wal ./target/debug/paper-service" \
+    Enter
+  echo "✅ PAPER-SERVICE başlatıldı (pane 0.1, http://127.0.0.1:8080)"
+}
+paper-stop() {
+  _start_guard
+  local p; p=$(pgrep -x paper-service 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ paper-service durduruldu [pid:$p]"; else echo "ℹ️  paper-service çalışmıyor"; fi
+}
+
+# ── ALERT-SERVICE ────────────────────────────────────────────
+alert-start() {
+  _start_guard
+  if pgrep -x "alert-service" &>/dev/null; then echo "⚠️  alert-service zaten çalışıyor"; return 1; fi
+  cd "$CYCLE_ROOT" && cargo build -p alert-service 2>&1 | tail -1
+  _tmux_pane "🔔ALERT" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter
+  echo "✅ ALERT-SERVICE başlatıldı (pane 0.3)"
+}
+alert-stop() {
+  _start_guard
+  local p; p=$(pgrep -x alert-service 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ alert-service durduruldu [pid:$p]"; else echo "ℹ️  alert-service çalışmıyor"; fi
+}
+
+# ── LISTENER (Anlık Pozisyon Metrikleri, pane 0.4) ──────────
+listener-start() {
+  _start_guard
+  if pgrep -f "[l]istener.py" &>/dev/null; then
+    echo "⚠️  listener zaten çalışıyor (pid: $(pgrep -f '[l]istener.py' | head -1))"
+    return 1
+  fi
+  # Bağımlılık: paper-service gerekli
+  if ! pgrep -x paper-service &>/dev/null; then
+    echo "⚠️  paper-service çalışmıyor — önce paper-start ile başlatın"
+    return 1
+  fi
+  _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && python3 scripts/listener.py" Enter
+  sleep 2
+  if pgrep -f "[l]istener.py" &>/dev/null; then
+    echo "✅ LISTENER başlatıldı (pane 0.4)"
+  else
+    echo "❌ LISTENER başlatılamadı"
+  fi
+}
+listener-stop() {
+  _start_guard
+  local p; p=$(pgrep -f "[l]istener.py" 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    pkill -TERM -f "[l]istener.py" 2>/dev/null
+    sleep 1
+    pkill -KILL -f "[l]istener.py" 2>/dev/null || true
+    echo "✅ LISTENER durduruldu [pid:$p]"
+  else
+    echo "ℹ️  LISTENER çalışmıyor"
+  fi
+}
+listener-status() {
+  _start_guard
+  local p; p=$(pgrep -f "[l]istener.py" 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    local cpu mem
+    cpu=$(ps -p "$p" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$p" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ LISTENER ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]"
+  else
+    echo "✘  LISTENER durdurulmuş"
+  fi
+}
+listener-log() {
+  tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
 }
 
 # ============================================================
@@ -183,9 +376,8 @@ paper-cli() {
 # ============================================================
 #  STRATEGY / CORRELATION
 # ============================================================
-strategy-start() {
-  cd "$CYCLE_ROOT" && RUN_MODE=STRATEGY ./target/debug/core
-}
+# Not: strategy-start/stop artık "SİSTEMLERİ TEK TEK AÇ/KAPAT" bölümünde
+# (arka planda, pid dosyalı). correlation-start foreground çalıştırır.
 correlation-start() {
   cd "$CYCLE_ROOT" && RUN_MODE=CORRELATION ./target/debug/core
 }
@@ -234,6 +426,7 @@ db-size() {
 DETECT_MS_ADDR="${DETECT_MS_ADDR:-127.0.0.1:3002}"
 
 detect-ms-start() {
+  _start_guard
   if pgrep -x "detect-ms" &>/dev/null; then
     echo "⚠️  detect-ms zaten çalışıyor (pid: $(pgrep -x detect-ms))"
     echo "   → detect-ms-stop ile önce durdur"
@@ -247,20 +440,18 @@ detect-ms-start() {
   fi
 
   echo "🚀 detect-ms başlatılıyor → http://$DETECT_MS_ADDR"
-  cd "$CYCLE_ROOT"
-  nohup ./target/debug/detect-ms > /tmp/detect_ms.log 2>&1 &
-  local pid=$!
+  _tmux_pane "📈DETECT-MS" "cd $CYCLE_ROOT && ./target/debug/detect-ms" Enter
   sleep 1
-  if kill -0 "$pid" 2>/dev/null; then
-    echo "✅ detect-ms başladı [pid: $pid]"
+  if pgrep -x detect-ms &>/dev/null; then
+    echo "✅ detect-ms başladı [pid: $(pgrep -x detect-ms)]"
     echo "   API: http://$DETECT_MS_ADDR/api/ms?symbol=BTCUSDT&interval=15m"
   else
-    echo "❌ detect-ms başlatılamadı. Log:"
-    tail -10 /tmp/detect_ms.log
+    echo "❌ detect-ms başlatılamadı."
   fi
 }
 
 detect-ms-stop() {
+  _start_guard
   if pgrep -x "detect-ms" &>/dev/null; then
     pkill -TERM -x "detect-ms" && echo "✅ detect-ms durduruldu"
   else
@@ -293,6 +484,73 @@ detect-ms-query() {
 
 detect-ms-log() {
   tail -f /tmp/detect_ms.log
+}
+
+# ============================================================
+#  HEIUSDT KIRILIM STRATEJİSİ  (strategies/heiusdt_breakout.py)
+#  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
+#  her 20 pencerede bir analiz.
+# ============================================================
+heiusdt-start() {
+  _start_guard
+  if pgrep -f "[h]eiusdt_breakout.py" &>/dev/null; then
+    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1))"
+    return 1
+  fi
+  # Bağımlılık kontrolü
+  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
+    echo "⚠️  detect-ms yanıt vermiyor → heiusdt-start ile başlatın"
+    return 1
+  fi
+  echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
+  _tmux_pane "🎯HEIUSDT" "cd $CYCLE_ROOT && python3 strategies/heiusdt_breakout.py" Enter
+  sleep 2
+  if pgrep -f "[h]eiusdt_breakout.py" &>/dev/null; then
+    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1)]"
+    echo "   Pencere: cycle → 🎯HEIUSDT"
+  else
+    echo "❌ HEIUSDT stratejisi başlatılamadı."
+  fi
+}
+
+heiusdt-stop() {
+  _start_guard
+  local pid
+  pid=$(pgrep -f "[h]eiusdt_breakout.py" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    pkill -TERM -f "[h]eiusdt_breakout.py" 2>/dev/null
+    sleep 1
+    pkill -KILL -f "[h]eiusdt_breakout.py" 2>/dev/null || true
+    echo "✅ HEIUSDT stratejisi durduruldu [pid:$pid]"
+  else
+    echo "⚠️  HEIUSDT stratejisi zaten çalışmıyor"
+  fi
+}
+
+heiusdt-status() {
+  local pid
+  pid=$(pgrep -f "[h]eiusdt_breakout.py" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ HEIUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+  else
+    echo "✘  HEIUSDT stratejisi durdurulmuş"
+  fi
+}
+
+heiusdt-log() {
+  tail -f /tmp/heiusdt.log
+}
+
+heiusdt-query() {
+  # Kullanım: heiusdt-query [--dry-run]
+  if [ "${1:-}" = "--dry-run" ]; then
+    cd "$CYCLE_ROOT" && python3 strategies/heiusdt_breakout.py --once --dry-run
+  else
+    cd "$CYCLE_ROOT" && python3 strategies/heiusdt_breakout.py --once
+  fi
 }
 
 # ── Yüklendiğini bildir ──────────────────────────────────────

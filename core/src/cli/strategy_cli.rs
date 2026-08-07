@@ -1,57 +1,36 @@
-use rustyline::DefaultEditor;
-use crate::memory::ring_buffer::GenerationalRingBuffer;
-use crate::memory::order_ring::{OrderRingBuffer, IpcOrderSide, IpcOrderType};
-use std::sync::{Arc, Mutex};
-use std::thread;
-use os_utils::set_rt_thread_priority;
-use crate::hal;
+//! STRATEGY terminali — HEIUSDT kırılım stratejisini çalıştırır.
+//!
+//! Strateji mantığı Python'da (`strategies/heiusdt_breakout.py`) çalışır:
+//! detect-ms'ten seviye/yapı analizi alır, kırılım koşullarını kontrol eder,
+//! paper-service'e emir açar. Bu modül Python sürecini spawn eder.
+
+use std::process::{Child, Command};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+const HEIUSDT_SCRIPT: &str = "/home/smhvz/Desktop/PROJE/strategies/heiusdt_breakout.py";
+
+struct StrategyChild {
+    child: Child,
+}
 
 pub fn start_strategy_cli() {
     println!("========================================");
-    println!("🧠 STRATEGY ENGINE TERMINAL v1.0");
-    println!("Type 'help' for available commands.");
+    println!("🎯 STRATEGY ENGINE — HEIUSDT KIRILIM");
+    println!("  Script: {}", HEIUSDT_SCRIPT);
+    println!("  detect-ms :3002 + paper-service :8080");
     println!("========================================");
 
-    // This mode attaches to the data ring buffer (Read Only)
-    // and writes to the order ring buffer (Write Only)
-    
-    // We launch the orchestrator in the background thread.
-    // In a full implementation, the Orchestrator reads SHM and pushes to order_ring.
-    thread::spawn(|| {
-        set_rt_thread_priority(99);
-        hal::cpu::pin_to_core(1);
-        
-        let gen_ring = GenerationalRingBuffer::new(160_000);
-        let order_ring = Arc::new(OrderRingBuffer::new(10_000));
-        
-        let script_path = "/home/smhvz/Desktop/PROJE/strategies/test_strategy.py";
-        
-        // Python motorunu başlat
-        let engine = match crate::strategy::python_bridge::PythonStrategyEngine::new(script_path, order_ring.clone()) {
-            Ok(e) => e,
-            Err(e) => {
-                eprintln!("❌ Python stratejisi başlatılamadı: {:?}", e);
-                return;
-            }
-        };
+    let running = Arc::new(AtomicBool::new(false));
+    let mut child: Option<StrategyChild> = spawn_strategy();
+    if child.is_none() {
+        println!("❌ HEIUSDT stratejisi başlatılamadı.");
+    } else {
+        running.store(true, Ordering::SeqCst);
+        println!("✅ HEIUSDT stratejisi çalışıyor.");
+    }
 
-        println!("✅ Python Strateji Motoru Başlatıldı: {}", script_path);
-
-        let mut read_cursor = 0;
-        loop {
-            if let Some(slot) = gen_ring.read_slot(read_cursor) {
-                let mut data = slot.data[..slot.len as usize].to_vec();
-                if let Some(owned_event) = crate::tick::EventParser::parse(&mut data) {
-                    let _ = engine.on_event(&owned_event);
-                }
-                read_cursor += 1;
-            } else {
-                std::hint::spin_loop();
-            }
-        }
-    });
-
-    let mut rl = DefaultEditor::new().unwrap();
+    let mut rl = rustyline::DefaultEditor::new().unwrap();
 
     loop {
         let readline = rl.readline("strategy> ");
@@ -64,31 +43,30 @@ pub fn start_strategy_cli() {
                 match parts[0].to_lowercase().as_str() {
                     "help" => {
                         println!("Commands:");
-                        println!("  status                        - Show running strategies");
-                        println!("  set_threshold <id> <val>      - Adjust strategy parameters live");
-                        println!("  pause                         - Pause all trading");
-                        println!("  resume                        - Resume all trading");
-                        println!("  exit                          - Quit the terminal");
+                        println!("  status      - Show strategy status");
+                        println!("  restart     - Restart HEIUSDT strategy");
+                        println!("  exit        - Quit the terminal");
                     }
                     "status" => {
-                        println!("\n--- STRATEGY STATUS ---");
-                        println!("Active Strategies: 1");
-                        println!("  [ID: 1] OrderbookImbalance - Threshold: 1.5x");
-                        println!("State: RUNNING");
-                        println!("-----------------------\n");
-                    }
-                    "set_threshold" => {
-                        if parts.len() == 3 {
-                            println!("✅ Strategy {} threshold updated to {}", parts[1], parts[2]);
+                        if running.load(Ordering::SeqCst) {
+                            println!("  🎯 HEIUSDT Kırılım — RUNNING");
                         } else {
-                            println!("Usage: set_threshold <id> <val>");
+                            println!("  🎯 HEIUSDT Kırılım — DURDU");
                         }
                     }
-                    "pause" => {
-                        println!("⚠️ All strategies PAUSED. No new orders will be sent.");
-                    }
-                    "resume" => {
-                        println!("▶️ Strategies RESUMED.");
+                    "restart" => {
+                        println!("🔄 Strateji yeniden başlatılıyor...");
+                        if let Some(mut c) = child.take() {
+                            let _ = c.child.kill();
+                        }
+                        child = spawn_strategy();
+                        if child.is_some() {
+                            running.store(true, Ordering::SeqCst);
+                            println!("✅ HEIUSDT stratejisi yeniden başlatıldı.");
+                        } else {
+                            running.store(false, Ordering::SeqCst);
+                            println!("❌ Yeniden başlatılamadı.");
+                        }
                     }
                     "exit" | "quit" => {
                         println!("Shutting down strategy terminal...");
@@ -102,6 +80,20 @@ pub fn start_strategy_cli() {
             Err(_) => {
                 break;
             }
+        }
+    }
+}
+
+fn spawn_strategy() -> Option<StrategyChild> {
+    match Command::new("python3")
+        .arg(HEIUSDT_SCRIPT)
+        .current_dir("/home/smhvz/Desktop/PROJE")
+        .spawn()
+    {
+        Ok(child) => Some(StrategyChild { child }),
+        Err(e) => {
+            eprintln!("❌ Python süreci başlatılamadı: {}", e);
+            None
         }
     }
 }

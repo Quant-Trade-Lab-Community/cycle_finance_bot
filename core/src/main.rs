@@ -5,7 +5,6 @@ use std::time::Instant;
 use os_utils::set_rt_thread_priority;
 use adapter::binance::start_binance_ws_client;
 use proje_core::memory::ring_buffer::GenerationalRingBuffer;
-use proje_core::memory::order_ring::OrderRingBuffer;
 
 #[tokio::main]
 async fn main() {
