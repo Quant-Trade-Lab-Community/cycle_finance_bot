@@ -32,7 +32,9 @@ impl EventParser {
             let mut bids = [(Decimal::ZERO, Decimal::ZERO); 20];
             let mut asks = [(Decimal::ZERO, Decimal::ZERO); 20];
             
-            if let Some(b) = data.get("bids").and_then(|v| v.as_array()) {
+            // Spot `@depth` → "bids"/"asks"; Futures `@depth20@100ms` → "b"/"a"
+            if let Some(b) = data.get("bids").and_then(|v| v.as_array())
+                .or_else(|| data.get("b").and_then(|v| v.as_array())) {
                 for (i, bid) in b.iter().take(20).enumerate() {
                     if let Some(arr) = bid.as_array() {
                         let p = arr.get(0).and_then(|v| v.as_str()).and_then(|s| Decimal::from_str(s).ok()).unwrap_or(Decimal::ZERO);
@@ -41,7 +43,8 @@ impl EventParser {
                     }
                 }
             }
-            if let Some(a) = data.get("asks").and_then(|v| v.as_array()) {
+            if let Some(a) = data.get("asks").and_then(|v| v.as_array())
+                .or_else(|| data.get("a").and_then(|v| v.as_array())) {
                 for (i, ask) in a.iter().take(20).enumerate() {
                     if let Some(arr) = ask.as_array() {
                         let p = arr.get(0).and_then(|v| v.as_str()).and_then(|s| Decimal::from_str(s).ok()).unwrap_or(Decimal::ZERO);

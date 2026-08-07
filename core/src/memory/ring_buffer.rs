@@ -9,7 +9,7 @@ use std::os::unix::io::FromRawFd;
 pub struct MarketDataSlot {
     pub seq: u64,
     pub len: u16,
-    pub data: [u8; 246], // Total 256 bytes (8 + 2 + 246)
+    pub data: [u8; 2046], // Total 2048 bytes — depth20 (1.1KB) tam sığar
 }
 
 #[repr(C)]
@@ -99,7 +99,7 @@ impl GenerationalRingBuffer {
             let seq = (*self.header).head.load(Ordering::Relaxed);
             let index = (seq % self.capacity as u64) as usize;
             
-            let len = if data.len() > 246 { 246 } else { data.len() as u16 };
+            let len = if data.len() > 2046 { 2046 } else { data.len() as u16 };
 
             let slot_ptr = self.slots.add(index);
             // Önce veriyi ve len'i yaz, seq en sona kalsın ki okuyucu

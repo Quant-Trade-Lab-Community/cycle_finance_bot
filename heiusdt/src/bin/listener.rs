@@ -1,132 +1,173 @@
-//! LISTENER — data merkezinden gelen verilerle anlık metrik analizi (Rust).
+//! LISTENER — DATA MERKEZİNDEN anlık mikro-yapı metrik analizi (Rust).
 //!
-//! Pozisyon izleyici DEĞİLDİR. Data merkezi (price-feed :3004) üzerinden
-//! sistemde tanımlı HER sembol için anlık fiyat verilerini (last/mark/index/
-//! bid/ask) çeker ve metrik hesaplar.
+//! Veri kaynağı: DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/demir_yumruk_ring`).
+//! price-feed KULLANILMAZ.
 //!
-//! Metrikler ŞU AN BOŞ (placeholder) — gerçek metrikler sonra eklenecek.
+//! Sistemde tanımlı HER sembol için tick-by-tick mikro-yapı metrikleri:
+//!   - Lee-Ready Signing, WLOBI, Quote Slope
+//!   - EffDelta, Delta Velocity, Absorption, aVPIN
+//!   - Hasbrouck Kalıcı/Geçici Etki, EfP, Alpha Basket sinyali
+//!
 //! Çıktılar: konsol tablosu + /tmp/listener_metrics.json
 
-use serde_json::Value;
-use std::env;
+use heiusdt::metrics::{DepthLevel, SymbolMetrics};
+use rust_decimal::prelude::ToPrimitive;
+
+use proje_core::memory::ring_buffer::GenerationalRingBuffer;
+use proje_core::ring_buffer::EventType;
+use proje_core::tick::EventParser;
+use serde_json::json;
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 
-const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
 const OUT_FILE: &str = "/tmp/listener_metrics.json";
+const REFRESH_MS: u64 = 2000;
 
-fn env_or(key: &str, default: &str) -> String {
-    env::var(key).unwrap_or_else(|_| default.to_string())
+fn decode_symbol(buf: &[u8; 16]) -> String {
+    let len = buf.iter().position(|&c| c == 0).unwrap_or(16);
+    String::from_utf8_lossy(&buf[..len]).to_string().to_uppercase()
 }
 
-async fn http_json(client: &reqwest::Client, url: &str) -> Value {
-    match client.get(url).send().await {
-        Ok(r) => r.json::<Value>().await.unwrap_or(Value::Null),
-        Err(e) => serde_json::json!({"error": e.to_string()}),
-    }
-}
+fn main() {
+    println!("{}", "═".repeat(84));
+    println!("  🛰️  LISTENER — DATA MERKEZİ MİKRO-YAPI METRİKLERİ");
+    println!("  Kaynak: /dev/shm/demir_yumruk_ring (core RUN_MODE=DATA)");
+    println!("{}", "═".repeat(84));
 
-fn fmt_val(v: Option<&Value>) -> String {
-    match v {
-        Some(Value::String(s)) => s.clone(),
-        Some(Value::Number(n)) => n.to_string(),
-        Some(Value::Null) | None => "—".to_string(),
-        _ => "—".to_string(),
-    }
-}
+    let ring = Arc::new(GenerationalRingBuffer::new(160_000));
+    let mut cursor = ring.get_head();
+    let mut symbols: HashMap<String, SymbolMetrics> = HashMap::new();
 
-/// ANLIK METRİK ANALİZİ — ŞU AN BOŞ, metrikler sonra eklenecek.
-/// Her sembol için hesaplanacak örnek metrikler:
-///   - spread_pct, momentum, distance_to_vwap, liquidity_score, ...
-fn compute_metrics(symbol: &str, price: &Value) -> Value {
-    let last = price.get("last").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let mark = price.get("mark").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let index = price.get("index").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let bid = price.get("bid").and_then(|v| v.as_f64()).unwrap_or(0.0);
-    let ask = price.get("ask").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    // Sembol seti: alerts.toml'dan
+    let known: Vec<String> = load_symbols();
 
-    // ── METRİK ŞABLONU (doldurulacak) ─────────────────────
-    serde_json::json!({
-        "symbol": symbol,
-        "placeholder": true,
-        "spread_pct": if ask > bid && bid > 0.0 { Some((ask - bid) / bid * 100.0) } else { None },
-        "last": last,
-        "mark": mark,
-        "index": index,
-        "bid": bid,
-        "ask": ask,
-    })
-}
-
-#[tokio::main]
-async fn main() {
-    let refresh: u64 = env_or("LISTENER_REFRESH_SEC", "2").parse().unwrap_or(2);
-
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        .build()
-        .expect("reqwest client");
-
-    println!("{}", "═".repeat(72));
-    println!("  🛰️  LISTENER — ANLIK METRİK ANALİZİ (data merkezi: price-feed)");
-    println!("{}", "═".repeat(72));
+    let mut last_render = std::time::Instant::now();
+    let mut tick_count: u64 = 0;
+    let mut depth_count: u64 = 0;
 
     loop {
-        let data = http_json(&client, &format!("{PRICE_FEED_URL}/api/lastprice")).await;
+        if let Some(slot) = ring.read_slot(cursor) {
+            let mut data = slot.data[..slot.len as usize].to_vec();
+            if let Some(event) = EventParser::parse(&mut data) {
+                let sym = decode_symbol(&event.symbol);
+                if !known.iter().any(|k| k == &sym) {
+                    cursor += 1;
+                    continue;
+                }
+                let m = symbols.entry(sym.clone()).or_default();
 
-        print!("\x1b[2J\x1b[H");
-        println!("{}", "═".repeat(72));
-        println!("  🛰️  LISTENER — DATA MERKEZİ ANLIK METRİKLERİ");
-        println!("  Kaynak: {PRICE_FEED_URL}  |  Yenileme: {refresh}s");
-        println!("{}", "═".repeat(72));
-
-        if data.get("error").is_some() {
-            println!("  ⚠️  Data merkezi erişilemiyor: {}", data.get("error").unwrap());
-            tokio::time::sleep(Duration::from_secs(refresh)).await;
-            continue;
+                match event.payload {
+                    EventType::Trade { price, quantity, timestamp, is_buyer_maker } => {
+                        let p = price.to_f64().unwrap_or(0.0);
+                        let q = quantity.to_f64().unwrap_or(0.0);
+                        m.process_tick(p, q, is_buyer_maker, timestamp);
+                        tick_count += 1;
+                    }
+                    EventType::Orderbook { bids, asks } => {
+                        let bids_l: Vec<DepthLevel> = bids.iter().take(5)
+                            .map(|(p, q)| DepthLevel { price: p.to_f64().unwrap_or(0.0), qty: q.to_f64().unwrap_or(0.0) })
+                            .collect();
+                        let asks_l: Vec<DepthLevel> = asks.iter().take(5)
+                            .map(|(p, q)| DepthLevel { price: p.to_f64().unwrap_or(0.0), qty: q.to_f64().unwrap_or(0.0) })
+                            .collect();
+                        depth_count += 1;
+                        m.update_depth(&bids_l, &asks_l);
+                        m.refresh();
+                    }
+                    _ => {}
+                }
+            }
+            cursor += 1;
+        } else {
+            std::thread::sleep(Duration::from_micros(50));
         }
 
-        let prices = data.get("prices").and_then(|p| p.as_object()).cloned().unwrap_or_default();
-        let symbols = data.get("symbols").and_then(|s| s.as_array()).cloned().unwrap_or_default();
+        if last_render.elapsed().as_millis() as u64 >= REFRESH_MS {
+            render(&symbols, tick_count, depth_count);
+            tick_count = 0;
+            depth_count = 0;
+            last_render = std::time::Instant::now();
+        }
+    }
+}
 
-        if prices.is_empty() {
-            println!("  📭 VERİ YOK — price-feed çalışıyor mu? (pricefeed-start)");
-        } else {
-            println!("  {:<10}{:<14}{:<14}{:<14}{:<14}{:<14}{:<14}", "SEMBOL", "LAST", "MARK", "INDEX", "BID", "ASK", "METRİK");
-            println!("  {}", "-".repeat(72));
-            for s in &symbols {
-                let sym = fmt_val(Some(s));
-                if let Some(p) = prices.get(sym.as_str()) {
-                    let last = fmt_val(p.get("last"));
-                    let mark = fmt_val(p.get("mark"));
-                    let index = fmt_val(p.get("index"));
-                    let bid = fmt_val(p.get("bid"));
-                    let ask = fmt_val(p.get("ask"));
-                    let m = compute_metrics(&sym, p);
-                    let mtext = if m.get("placeholder").and_then(|x| x.as_bool()).unwrap_or(false) {
-                        "⏳ analiz bekliyor".to_string()
-                    } else {
-                        "—".to_string()
-                    };
-                    println!("  {:<10}{:<14}{:<14}{:<14}{:<14}{:<14}{:<14}", sym, last, mark, index, bid, ask, mtext);
+fn load_symbols() -> Vec<String> {
+    let mut syms: Vec<String> = Vec::new();
+    if let Ok(content) = std::fs::read_to_string("/home/smhvz/Desktop/PROJE/alerts.toml") {
+        for line in content.lines() {
+            let t = line.trim();
+            if let Some(rest) = t.strip_prefix("symbol") {
+                if let Some(eq) = rest.find('=') {
+                    let s = rest[eq + 1..].trim().trim_matches('"').trim_matches('\'').trim().to_string();
+                    if !s.is_empty() && !syms.contains(&s) {
+                        syms.push(s);
+                    }
                 }
             }
         }
-        println!("{}", "-".repeat(70));
-        let now = chrono::Local::now().format("%H:%M:%S").to_string();
-        println!("  Son güncelleme: {now}  (Ctrl+C ile çık)");
-
-        // ── Metrik çıktısı (JSON) ──
-        let metrics: serde_json::Map<String, Value> = prices
-            .iter()
-            .map(|(k, v)| (k.clone(), compute_metrics(k, v)))
-            .collect();
-        let doc = serde_json::json!({
-            "timestamp": now,
-            "symbols": symbols,
-            "metrics": metrics,
-        });
-        let _ = std::fs::write(OUT_FILE, serde_json::to_string_pretty(&doc).unwrap_or_default());
-
-        tokio::time::sleep(Duration::from_secs(refresh)).await;
     }
+    if !syms.contains(&"HEIUSDT".to_string()) {
+        syms.push("HEIUSDT".to_string());
+    }
+    syms
+}
+
+fn render(symbols: &HashMap<String, SymbolMetrics>, ticks: u64, depth: u64) {
+    print!("\x1b[2J\x1b[H");
+    println!("{}", "═".repeat(84));
+    println!("  🛰️  LISTENER — DATA MERKEZİ MİKRO-YAPI METRİKLERİ");
+    println!("  Kaynak: /dev/shm/demir_yumruk_ring | tick/s: {ticks} | depth/s: {depth}");
+    println!("{}", "═".repeat(84));
+
+    if symbols.is_empty() {
+        println!("  📭 VERİ BEKLENİYOR — DATA terminali (RUN_MODE=DATA) çalışıyor mu?");
+        return;
+    }
+
+    println!("  {:<9}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>7}{:>8}{:>8}",
+        "SEMBOL", "WLOBI", "SLP_ASK", "EFFΔ", "ΔV", "ABS", "aVPIN", "PERM", "EfP", "P(LONG)", "SİNYAL");
+    println!("  {}", "-".repeat(82));
+
+    let mut rows: Vec<(&String, &SymbolMetrics)> = symbols.iter().collect();
+    rows.sort_by_key(|(k, _)| k.clone());
+
+    for (sym, m) in rows {
+        let signal = match m.signal {
+            1 => "▲ LONG",
+            -1 => "▼ SHORT",
+            _ => "· NÖTR",
+        };
+        println!(
+            "  {:<9}{:>8.3}{:>8.2}{:>8.2}{:>8.2}{:>8.2}{:>8.3}{:>8.2e}{:>7.3}{:>8.3}{:>8}",
+            sym, m.wlobi, m.slope_ask, m.eff_delta, m.delta_velocity,
+            m.absorption, m.avpin, m.permanent_impact, m.efp, m.p_long, signal
+        );
+    }
+    println!("{}", "-".repeat(82));
+    let now = chrono::Local::now().format("%H:%M:%S").to_string();
+    println!("  Son güncelleme: {now} | Metrikler: Lee-Ready, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP");
+
+    // ── JSON çıktısı ──
+    let mut out = serde_json::Map::new();
+    for (sym, m) in &*symbols {
+        out.insert(sym.clone(), json!({
+            "wlobi": m.wlobi,
+            "slope_ask": m.slope_ask,
+            "slope_bid": m.slope_bid,
+            "eff_delta": m.eff_delta,
+            "delta_velocity": m.delta_velocity,
+            "absorption": m.absorption,
+            "idm": m.idm,
+            "avpin": m.avpin,
+            "permanent_impact": m.permanent_impact,
+            "temporary_impact": m.temporary_impact,
+            "efp": m.efp,
+            "alpha_score": m.alpha_score,
+            "p_long": m.p_long,
+            "signal": m.signal,
+        }));
+    }
+    let doc = json!({ "timestamp": now, "metrics": out });
+    let _ = std::fs::write(OUT_FILE, serde_json::to_string_pretty(&doc).unwrap_or_default());
 }

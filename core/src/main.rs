@@ -27,6 +27,8 @@ async fn main() {
         thread::spawn(move || {
             set_rt_thread_priority(99);
             let mut tick_count = 0;
+            let mut depth_count = 0u64;
+            let mut invalid_count = 0u64;
             let mut total_parse_time = std::time::Duration::new(0, 0);
             let mut last_report = Instant::now();
             let mut validator = proje_core::validator::DataValidator::new();
@@ -37,8 +39,10 @@ async fn main() {
                 // Ring'e yazılacak orijinal baytları parse öncesi sakla.
                 let pristine = bytes.clone();
                 if let Some(owned_event) = EventParser::parse(&mut bytes) {
-                    if !validator.is_valid(&owned_event) { continue; }
-
+                    if !validator.is_valid(&owned_event) { invalid_count += 1; continue; }
+                    if matches!(owned_event.payload, proje_core::ring_buffer::EventType::Orderbook { .. }) {
+                        depth_count += 1;
+                    }
                     gen_ring_data.push(&pristine);
                     let _ = db_tx.try_send(owned_event); 
 
@@ -50,9 +54,11 @@ async fn main() {
                     let avg_parse_time = if tick_count > 0 {
                         total_parse_time.as_nanos() as f64 / tick_count as f64
                     } else { 0.0 };
-                    println!("[MARKET DATA] Ticks/sec: {} | Avg Parse Latency: {:.2} ns", tick_count, avg_parse_time);
+                    println!("[MARKET DATA] Ticks/sec: {} | depth: {} | invalid: {} | Avg Parse: {:.2} ns", tick_count, depth_count, invalid_count, avg_parse_time);
                     
                     tick_count = 0;
+                    depth_count = 0;
+                    invalid_count = 0;
                     total_parse_time = std::time::Duration::new(0, 0);
                     last_report = Instant::now();
                 }
