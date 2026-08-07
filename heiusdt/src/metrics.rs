@@ -28,6 +28,7 @@ pub struct MetricsConfig {
     pub efp_threshold: f64,    // execution footprint eşiği
     pub noise_corr: f64,       // Lee-Ready gürültü filtresi
     pub delta_window_sec: usize, // ΔV penceresi (saniye)
+    pub tps_window_sec: usize,   // TPS pencere (saniye)
     pub gamma: [f64; 6],       // Alpha Basket ağırlıkları
 }
 
@@ -43,6 +44,7 @@ impl Default for MetricsConfig {
             efp_threshold: 0.05,
             noise_corr: 0.85,
             delta_window_sec: 60,
+            tps_window_sec: 10,
             gamma: [0.0, 0.4, -0.3, 0.5, 0.6, -0.35],
         }
     }
@@ -79,6 +81,7 @@ impl MetricsConfig {
                 "efp_threshold" => cfg.efp_threshold = f(cfg.efp_threshold),
                 "noise_corr" => cfg.noise_corr = f(cfg.noise_corr),
                 "delta_window_sec" => cfg.delta_window_sec = v.parse::<usize>().unwrap_or(cfg.delta_window_sec),
+                "tps_window_sec" => cfg.tps_window_sec = v.parse::<usize>().unwrap_or(cfg.tps_window_sec),
                 "gamma0" => cfg.gamma[0] = f(cfg.gamma[0]),
                 "gamma1" => cfg.gamma[1] = f(cfg.gamma[1]),
                 "gamma2" => cfg.gamma[2] = f(cfg.gamma[2]),
@@ -128,6 +131,9 @@ pub struct SymbolMetrics {
     // Hasbrouck VAR (son 200 örnek)
     var_r: VecDeque<f64>,
     var_x: VecDeque<f64>,
+    // TPS (trade/saniye) — son tps_window_sec saniyedeki trade sayısı
+    trade_times: VecDeque<u64>,
+    pub tps: f64,
     // EfP
     last_depth_total: f64,
     // sonuçlar
@@ -170,6 +176,8 @@ impl Default for SymbolMetrics {
             last_park_low: f64::MAX,
             var_r: VecDeque::new(),
             var_x: VecDeque::new(),
+            trade_times: VecDeque::new(),
+            tps: 0.0,
             last_depth_total: 0.0,
             cfg: MetricsConfig::load(),
             wlobi: 0.0,
@@ -207,7 +215,6 @@ impl SymbolMetrics {
             self.bucket_vsell.pop_front();
         }
     }
-
     // ══ AŞAMA 0: Lee-Ready Signing ═══════════════════════════
     pub fn lee_ready_sign(&mut self, price: f64) -> i8 {
         let mid = self.mid;
@@ -468,7 +475,23 @@ impl SymbolMetrics {
         self.update_avpin(price, qty, sign, ts_ms);
         self.update_hasbrouck(price, qty, sign);
         self.update_efp(qty);
+        self.update_tps(ts_ms);
         let _ = is_buyer_maker; // Lee-Ready yönü is_buyer_maker'ı aşar (mid'e göre)
         self.refresh();
+    }
+
+    // ══ TPS — saniyedeki trade sayısı ═════════════════════════
+    fn update_tps(&mut self, ts_ms: u64) {
+        self.trade_times.push_back(ts_ms);
+        let window_ms = (self.cfg.tps_window_sec.max(1)) as u64 * 1000;
+        while let Some(&t) = self.trade_times.front() {
+            if ts_ms.saturating_sub(t) > window_ms {
+                self.trade_times.pop_front();
+            } else {
+                break;
+            }
+        }
+        let win = self.cfg.tps_window_sec.max(1) as f64;
+        self.tps = self.trade_times.len() as f64 / win;
     }
 }

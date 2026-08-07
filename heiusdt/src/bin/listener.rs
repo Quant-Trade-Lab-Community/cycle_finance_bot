@@ -129,9 +129,9 @@ fn render(symbols: &HashMap<String, SymbolMetrics>, ticks: u64, depth: u64) {
         return;
     }
 
-    println!("  {:<9}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>7}{:>8}{:>8}",
-        "SEMBOL", "WLOBI", "SLP_ASK", "EFFΔ", "ΔV", "ABS", "aVPIN", "PERM", "EfP", "P(LONG)", "SİNYAL");
-    println!("  {}", "-".repeat(82));
+    println!("  {:<9}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>8}{:>7}{:>8}{:>8}{:>8}",
+        "SEMBOL", "TPS", "WLOBI", "SLP_ASK", "EFFΔ", "ΔV", "ABS", "aVPIN", "PERM", "EfP", "P(LONG)", "SİNYAL");
+    println!("  {}", "-".repeat(90));
 
     let mut rows: Vec<(&String, &SymbolMetrics)> = symbols.iter().collect();
     rows.sort_by_key(|(k, _)| k.clone());
@@ -143,19 +143,20 @@ fn render(symbols: &HashMap<String, SymbolMetrics>, ticks: u64, depth: u64) {
             _ => "· NÖTR",
         };
         println!(
-            "  {:<9}{:>8.3}{:>8.2}{:>8.2}{:>8.2}{:>8.2}{:>8.3}{:>8.2e}{:>7.3}{:>8.3}{:>8}",
-            sym, m.wlobi, m.slope_ask, m.eff_delta, m.delta_velocity,
+            "  {:<9}{:>8.1}{:>8.3}{:>8.2}{:>8.2}{:>8.2}{:>8.2}{:>8.3}{:>8.2e}{:>7.3}{:>8.3}{:>8}",
+            sym, m.tps, m.wlobi, m.slope_ask, m.eff_delta, m.delta_velocity,
             m.absorption, m.avpin, m.permanent_impact, m.efp, m.p_long, signal
         );
     }
-    println!("{}", "-".repeat(82));
+    println!("{}", "-".repeat(90));
     let now = chrono::Local::now().format("%H:%M:%S").to_string();
-    println!("  Son güncelleme: {now} | Metrikler: Lee-Ready, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP");
+    println!("  Son güncelleme: {now} | Metrikler: TPS, Lee-Ready, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP");
 
     // ── JSON çıktısı ──
     let mut out = serde_json::Map::new();
     for (sym, m) in &*symbols {
         out.insert(sym.clone(), json!({
+            "tps": m.tps,
             "wlobi": m.wlobi,
             "slope_ask": m.slope_ask,
             "slope_bid": m.slope_bid,
