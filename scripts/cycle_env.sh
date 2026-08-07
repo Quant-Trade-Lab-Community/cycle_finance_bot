@@ -50,6 +50,11 @@ help-cycle() {
   echo -e "  ${_C}listenconfig-reset${_N}  Varsayılanlara dön"
   echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
 
+  echo -e "\n${_Y}━━━  ⚠️  RİSK ANALİZİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}risk-start${_N}           Pane 0.5'te başlat (5 sn yenileme)"
+  echo -e "  ${_C}risk-stop${_N}            Durdur"
+  echo -e "  ${_C}risk-query${_N}           Tek seferlik analiz çalıştır"
+
   echo -e "\n${_Y}━━━  💹 PRICE-FEED  (WS→Ring, Anlık Last/Mark/Index)  ━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)"
   echo -e "  ${_C}pricefeed-stop${_N}      Durdur"
@@ -160,7 +165,7 @@ cycle-build-full() {
 #  Her servis kendi pane'inde başlar: yeni sekme/pencere açılmaz.
 # ============================================================
 # Yardımcı: Trading penceresindeki bir pane'e komut gönder
-# Servis → pane haritası: 0.0=DATA 0.1=PAPER 0.2=STRATEGY 0.3=ALERT 0.4=LISTENER
+# Servis → pane haritası: 0.0=DATA 0.1=PAPER 0.2=STRATEGY 0.3=ALERT 0.4=LISTENER 0.5=RISK
 _tmux_pane() {
   local name="$1"; shift
   local session="cycle"
@@ -171,7 +176,8 @@ _tmux_pane() {
     "🧠STRATEGY") pane="0.2" ;;
     "🔔ALERT")  pane="0.3" ;;
     "🛰️LISTENER") pane="0.4" ;;
-    "💻SHELL")  pane="0.5" ;;
+    "⚠️RISK")  pane="0.5" ;;
+    "💻SHELL")  pane="0.6" ;;
     *)
       # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -311,6 +317,42 @@ listener-status() {
 }
 listener-log() {
   tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
+}
+
+# ── RISK (Anlık risk analizi, pane 0.5) ──────────────────────
+risk-start() {
+  _start_guard
+  if pgrep -x risk_analysis &>/dev/null; then
+    echo "⚠️  RISK zaten çalışıyor (pid: $(pgrep -x risk_analysis | head -1))"
+    return 1
+  fi
+  _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && while true; do clear; ./target/debug/risk_analysis; echo; echo '--- 5 sn sonra yenilenir (Ctrl+C) ---'; sleep 5; done" Enter
+  sleep 2
+  echo "✅ RISK başlatıldı (pane 0.5)"
+}
+risk-stop() {
+  _start_guard
+  local p; p=$(pgrep -x risk_analysis 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    pkill -TERM -x risk_analysis 2>/dev/null; sleep 1
+    pkill -KILL -x risk_analysis 2>/dev/null || true
+    echo "✅ RISK durduruldu [pid:$p]"
+  else
+    echo "ℹ️  RISK çalışmıyor"
+  fi
+}
+risk-status() {
+  _start_guard
+  local p; p=$(pgrep -x risk_analysis 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    echo "✅ RISK ÇALIŞIYOR [pid:$p]"
+  else
+    echo "✘  RISK durdurulmuş"
+  fi
+}
+risk-query() {
+  _start_guard
+  cd "$CYCLE_ROOT" && ./target/debug/risk_analysis
 }
 
 # ── Listener metrik parametreleri (shell'den ayarlanabilir) ──

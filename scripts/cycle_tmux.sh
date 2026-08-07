@@ -104,12 +104,14 @@ tmux new-session -d -s "$SESSION" -x 220 -y 50
 tmux rename-window -t "$SESSION:0" "Trading"
 
 # ── Panel düzeni ─────────────────────────────────────────────
-# 0=sol-üst  1=sağ-üst  2=sol-orta  3=sağ-orta  4=LISTENER  5=alt(SHELL)
+# 0=sol-üst  1=sağ-üst  2=sol-orta  3=sağ-orta
+# 4=LISTENER  5=RISK  6=alt(SHELL)
 tmux split-window -t "$SESSION:0"    -h
 tmux split-window -t "$SESSION:0.0"  -v
 tmux split-window -t "$SESSION:0.1"  -v
-tmux split-window -t "$SESSION:0"    -v -p 35
-tmux split-window -t "$SESSION:0.4"  -v -p 40
+tmux split-window -t "$SESSION:0"    -v -p 42
+tmux split-window -t "$SESSION:0.4"  -v -p 50
+tmux split-window -t "$SESSION:0.5"  -v -p 50
 
 # ── Panel başlıkları ─────────────────────────────────────────
 tmux select-pane -t "$SESSION:0.0" -T "📡 DATA"
@@ -117,7 +119,8 @@ tmux select-pane -t "$SESSION:0.1" -T "🛡️  PAPER"
 tmux select-pane -t "$SESSION:0.2" -T "🧠 STRATEGY"
 tmux select-pane -t "$SESSION:0.3" -T "🔔 ALERT"
 tmux select-pane -t "$SESSION:0.4" -T "🛰️  LISTENER"
-tmux select-pane -t "$SESSION:0.5" -T "💻 SHELL"
+tmux select-pane -t "$SESSION:0.5" -T "⚠️  RISK"
+tmux select-pane -t "$SESSION:0.6" -T "💻 SHELL"
 
 # ── Panel 0: DATA ────────────────────────────────────────────
 tmux send-keys -t "$SESSION:0.0" "
@@ -184,8 +187,17 @@ sleep 4
 cd $ROOT && ./target/debug/listener
 " Enter
 
-# ── Panel 5: SHELL ───────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.5" "source /tmp/cycle_init.sh" Enter
+# ── Panel 5: RISK ─────────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.5" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '⚠️   RİSK ANALİZİ  (market_data.db)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && while true; do clear; ./target/debug/risk_analysis; echo; echo '--- 5 sn sonra yenilenir (Ctrl+C) ---'; sleep 5; done
+" Enter
+
+# ── Panel 6: SHELL ───────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.6" "source /tmp/cycle_init.sh" Enter
 
 # ── Pencere 1: MONITOR ───────────────────────────────────────
 tmux new-window -t "$SESSION:1" -n "Monitor"
@@ -255,16 +267,21 @@ tmux select-pane -t "$SESSION:0.4" -P "bg=colour23,fg=colour255"
 tmux set-option -t "$SESSION:0.4" -p pane-active-border-style "fg=colour45,bold"
 tmux set-option -t "$SESSION:0.4" -p pane-border-style        "fg=colour36"
 
+# ⚠️  RISK       → Kırmızı tema  (bg: koyu bordo | kenarlık: kırmızı)
+tmux select-pane -t "$SESSION:0.5" -P "bg=colour52,fg=colour255"
+tmux set-option -t "$SESSION:0.5" -p pane-active-border-style "fg=colour196,bold"
+tmux set-option -t "$SESSION:0.5" -p pane-border-style        "fg=colour124"
+
 # 💻 SHELL     → Antrasit tema (bg: çok koyu  | kenarlık: açık gri)
-tmux select-pane -t "$SESSION:0.5" -P "bg=colour233,fg=colour252"
-tmux set-option -t "$SESSION:0.5" -p pane-active-border-style "fg=colour244,bold"
-tmux set-option -t "$SESSION:0.5" -p pane-border-style        "fg=colour238"
+tmux select-pane -t "$SESSION:0.6" -P "bg=colour233,fg=colour252"
+tmux set-option -t "$SESSION:0.6" -p pane-active-border-style "fg=colour244,bold"
+tmux set-option -t "$SESSION:0.6" -p pane-border-style        "fg=colour238"
 
 # Pane başlık formatı — renk kodlu
 tmux set-option -t "$SESSION:0" pane-border-format \
-  "#{?#{==:#{pane_index},0},#[fg=colour39 bold],#{?#{==:#{pane_index},1},#[fg=colour46 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour214 bold],#{?#{==:#{pane_index},4},#[fg=colour45 bold],#[fg=colour244 bold]}}}}}} #{pane_title} #[default]"
+  "#{?#{==:#{pane_index},0},#[fg=colour39 bold],#{?#{==:#{pane_index},1},#[fg=colour46 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour214 bold],#{?#{==:#{pane_index},4},#[fg=colour45 bold],#{?#{==:#{pane_index},5},#[fg=colour196 bold],#[fg=colour244 bold]}}}}}}} #{pane_title} #[default]"
 
 # ── Terminal penceresine dön ve bağlan ───────────────────────
 tmux select-window -t "$SESSION:0"
-tmux select-pane  -t "$SESSION:0.5"
+tmux select-pane  -t "$SESSION:0.6"
 tmux attach-session -t "$SESSION"
