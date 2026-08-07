@@ -26,3 +26,4 @@ Cargo.lock
 paper_wal/
 paper-*.db
 market_data.db
+__pycache__/

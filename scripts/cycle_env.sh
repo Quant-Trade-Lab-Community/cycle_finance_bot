@@ -80,6 +80,9 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
+  echo -e "  ${_C}alert-add HEIUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
+  echo -e "  ${_C}alert-update SYM cond OLD NEW${_N}   Alarmı güncelle"
+  echo -e "  ${_C}alert-remove SYM cond PRICE${_N}     Alarmı sil"
   echo -e "  ${_C}alert-reload${_N}         Alert servisini yeniden başlat"
 
   echo -e "\n${_Y}━━━  📈 DETECT-MS  (Market Structure Engine :3002)  ━━━━━━━━━━━━━━━━━━${_N}"
@@ -438,14 +441,78 @@ correlation-start() {
 #  ALERT SERVİSİ
 # ============================================================
 alert-list() {
-  echo "=== alerts.toml ==="
-  grep -E '^\s*(symbol|condition|price|voice)\s*=' "$CYCLE_ROOT/alerts.toml" | sed 's/^/  /'
+  echo "=== alerts.toml — aktif uyarılar ==="
+  python3 "$CYCLE_ROOT/scripts/alerts_cli.py" list
+  echo ""
+  echo "Kullanım:"
+  echo "  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]"
+  echo "  alert-update HEIUSDT above 0.21628 0.22 [voice] [cooldown]"
+  echo "  alert-remove HEIUSDT above 0.21628"
 }
 alert-reload() {
   pkill -x alert-service 2>/dev/null || true
   sleep 1
   cd "$CYCLE_ROOT" && nohup ./target/debug/alert-service --config ./alerts.toml > /tmp/alert_service.log 2>&1 &
   echo "✅ Alert servisi yeniden başlatıldı (pid: $!)"
+}
+
+# ── Alarm yönetimi (shell'den) — değişiklik sonrası otomatik reload ──
+_alert_apply() {
+  local msg="$1"
+  echo "$msg"
+  echo "🔄 Alert servisi yeniden yükleniyor..."
+  # Eski süreci durdur, tmux pane'inde yeniden başlat
+  pkill -x alert-service 2>/dev/null || true
+  sleep 1
+  tmux send-keys -t "cycle:0.3" C-c 2>/dev/null
+  tmux send-keys -t "cycle:0.3" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter 2>/dev/null
+  sleep 1
+  echo "✅ Tamamlandı. alert-list ile görüntüleyin."
+}
+
+# Yeni alarm ekle
+# Kullanım: alert-add <SYMBOL> <above|below|cross|touch> <PRICE> [voice] [cooldown]
+alert-add() {
+  _start_guard
+  local sym="${1:-}" cond="${2:-}" price="${3:-}" voice="${4:-}" cooldown="${5:-30}"
+  if [ -z "$sym" ] || [ -z "$cond" ] || [ -z "$price" ]; then
+    echo "Kullanım: alert-add <SYMBOL> <above|below|cross|touch> <PRICE> [voice metni] [cooldown]"
+    return 1
+  fi
+  local voice_arg=()
+  [ -n "$voice" ] && voice_arg=(--voice "$voice")
+  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" add \
+    --symbol "$sym" --condition "$cond" --price "$price" \
+    "${voice_arg[@]}" --cooldown "$cooldown")"
+}
+
+# Mevcut alarmı güncelle (eski fiyata göre bulur)
+# Kullanım: alert-update <SYMBOL> <cond> <OLD_PRICE> <NEW_PRICE> [voice] [cooldown]
+alert-update() {
+  _start_guard
+  local sym="${1:-}" cond="${2:-}" old="${3:-}" new="${4:-}" voice="${5:-}" cooldown="${6:-}"
+  if [ -z "$sym" ] || [ -z "$cond" ] || [ -z "$old" ]; then
+    echo "Kullanım: alert-update <SYMBOL> <cond> <OLD_PRICE> [NEW_PRICE] [voice] [cooldown]"
+    return 1
+  fi
+  local args=(--symbol "$sym" --condition "$cond" --old-price "$old")
+  [ -n "$new" ] && args+=(--price "$new")
+  [ -n "$voice" ] && args+=(--voice "$voice")
+  [ -n "$cooldown" ] && args+=(--cooldown "$cooldown")
+  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" update "${args[@]}")"
+}
+
+# Alarm sil
+# Kullanım: alert-remove <SYMBOL> <cond> <PRICE>
+alert-remove() {
+  _start_guard
+  local sym="${1:-}" cond="${2:-}" price="${3:-}"
+  if [ -z "$sym" ] || [ -z "$cond" ] || [ -z "$price" ]; then
+    echo "Kullanım: alert-remove <SYMBOL> <cond> <PRICE>"
+    return 1
+  fi
+  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" remove \
+    --symbol "$sym" --condition "$cond" --price "$price")"
 }
 
 # ============================================================
