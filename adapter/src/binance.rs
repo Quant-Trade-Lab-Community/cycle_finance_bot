@@ -12,10 +12,6 @@ async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Erro
     for sym in target_symbols {
         pairs.push(format!("{}@trade", sym));
         pairs.push(format!("{}@depth20@100ms", sym));
-        pairs.push(format!("{}@forceOrder", sym));
-        pairs.push(format!("{}@markPrice@1s", sym));
-        pairs.push(format!("{}@ticker", sym));
-        pairs.push(format!("{}@bookTicker", sym));
     }
     
     println!("Binance WS: Found {} streams for targeted Futures pairs.", pairs.len());

@@ -9,7 +9,7 @@ pub enum EventType {
         asks: [(Decimal, Decimal); 20]
     },
     Liquidation { side: u8, price: Decimal, quantity: Decimal, timestamp: u64 },
-    FundingRate { mark_price: Decimal, funding_rate: Decimal, next_funding_time: u64 },
+    FundingRate { mark_price: Decimal, index_price: Decimal, funding_rate: Decimal, next_funding_time: u64 },
     BookTicker { best_bid_price: Decimal, best_bid_qty: Decimal, best_ask_price: Decimal, best_ask_qty: Decimal },
     OpenInterest { open_interest: Decimal, timestamp: u64 },
 }
@@ -36,9 +36,10 @@ impl std::fmt::Debug for EventType {
                     .field("timestamp", timestamp)
                     .finish()
             }
-            EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
+            EventType::FundingRate { mark_price, index_price, funding_rate, next_funding_time } => {
                 f.debug_struct("FundingRate")
                     .field("mark_price", mark_price)
+                    .field("index_price", index_price)
                     .field("funding_rate", funding_rate)
                     .field("next_funding_time", next_funding_time)
                     .finish()
@@ -115,14 +116,14 @@ impl OwnedEvent {
     }
 
     #[inline(always)]
-    pub fn new_funding_rate(sym: &str, mark_price: Decimal, funding_rate: Decimal, next_funding_time: u64) -> Self {
+    pub fn new_funding_rate(sym: &str, mark_price: Decimal, index_price: Decimal, funding_rate: Decimal, next_funding_time: u64) -> Self {
         let mut symbol = [0u8; 16];
         let bytes = sym.as_bytes();
         let len = bytes.len().min(16);
         symbol[..len].copy_from_slice(&bytes[..len]);
         Self {
             symbol,
-            payload: EventType::FundingRate { mark_price, funding_rate, next_funding_time },
+            payload: EventType::FundingRate { mark_price, index_price, funding_rate, next_funding_time },
         }
     }
 

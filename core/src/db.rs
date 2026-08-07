@@ -54,6 +54,7 @@ pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT NOT NULL,
             mark_price REAL NOT NULL,
+            index_price REAL NOT NULL DEFAULT 0,
             funding_rate REAL NOT NULL,
             next_funding_time INTEGER NOT NULL
         )",
@@ -125,10 +126,10 @@ pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
                     params![symbol_str, side, price.to_f64().unwrap_or(0.0), quantity.to_f64().unwrap_or(0.0), timestamp],
                 ).expect("Failed to insert liquidation");
             },
-            EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
+            EventType::FundingRate { mark_price, index_price, funding_rate, next_funding_time } => {
                 tx.execute(
-                    "INSERT INTO funding_rates (symbol, mark_price, funding_rate, next_funding_time) VALUES (?1, ?2, ?3, ?4)",
-                    params![symbol_str, mark_price.to_f64().unwrap_or(0.0), funding_rate.to_f64().unwrap_or(0.0), next_funding_time],
+                    "INSERT INTO funding_rates (symbol, mark_price, index_price, funding_rate, next_funding_time) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    params![symbol_str, mark_price.to_f64().unwrap_or(0.0), index_price.to_f64().unwrap_or(0.0), funding_rate.to_f64().unwrap_or(0.0), next_funding_time],
                 ).expect("Failed to insert funding rate");
             },
             EventType::BookTicker { best_bid_price, best_bid_qty, best_ask_price, best_ask_qty } => {

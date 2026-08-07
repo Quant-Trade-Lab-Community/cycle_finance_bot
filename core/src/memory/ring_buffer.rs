@@ -33,7 +33,13 @@ unsafe impl Sync for GenerationalRingBuffer {}
 
 impl GenerationalRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        let name = CString::new("/demir_yumruk_ring").unwrap();
+        Self::with_name("/demir_yumruk_ring", capacity)
+    }
+
+    /// Belirtilen POSIX shm nesnesi üzerinde ring buffer oluşturur/açar.
+    /// Farklı servisler farklı isim kullanabilir (örn. price-feed).
+    pub fn with_name(shm_name: &str, capacity: usize) -> Self {
+        let name = CString::new(shm_name).unwrap();
         
         let header_size = std::mem::size_of::<SharedHeader>();
         // Align to 64 bytes

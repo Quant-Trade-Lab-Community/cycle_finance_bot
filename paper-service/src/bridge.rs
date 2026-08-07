@@ -51,7 +51,7 @@ fn spawn_tick_reader(actor_tx: UnboundedSender<ActorCommand>) {
                                 let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price });
                             }
                         }
-                        EventType::FundingRate { mark_price, funding_rate, next_funding_time } => {
+                        EventType::FundingRate { mark_price, funding_rate, next_funding_time, .. } => {
                             let symbol = decode_symbol(&event.symbol);
                             let _ = actor_tx.send(ActorCommand::MarkPriceUpdate {
                                 symbol,

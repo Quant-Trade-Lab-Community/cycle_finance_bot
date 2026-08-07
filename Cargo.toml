@@ -8,6 +8,7 @@ members = [
     "os-utils", "execution-engine", "ohlcv-engine", "detect-sr", "detect-trend", "detect-ms", "detect-liquidity", "detect-pattern",
     "paper-service",
     "alert-service",
+    "price-feed",
 ]
 resolver = "2"
 

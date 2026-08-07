@@ -1,7 +1,7 @@
 # 🏛️ Cycle Finance — Kurumsal HFT Sistemi
 
 **Proje Türü:** Kurumsal Düzey Yüksek Frekanslı Kripto Ticaret (HFT) Motoru  
-**Dil:** Rust (çekirdek) + Python (strateji köprüsü)  
+**Dil:** Rust (çekirdek) + Python (strateji/listener katmanları)  
 **Hedef Borsa:** Binance (Spot & Futures)  
 **Mimari:** Bare-Metal, Zero-Copy IPC, Multi-Terminal, Actor Model, Event Sourcing
 
@@ -14,7 +14,7 @@ Sistem, bağımsız süreçler (terminaller) halinde çalışan bir **mikro-çek
 ```mermaid
 graph TB
     subgraph "DATA Terminali (core)"
-        WS["Binance WebSocket<br/>(Futures & Spot)"] --> TP["Tick Parser<br/>(sonic-rs)"]
+        WS["Binance WebSocket<br/>(Futures & Spot)"] --> TP["Tick Parser<br/>(simd-json)"]
         TP --> VAL["DataValidator"]
         VAL --> TR["Tick Ring Buffer<br/>/dev/shm/demir_yumruk_ring<br/>160,000 byte"]
         VAL --> DB_RAW["SQLite DB Writer<br/>(flume channel)"]
@@ -28,7 +28,7 @@ graph TB
     subgraph "STRATEGY Terminali (core)"
         TR --> |"Zero-Copy Read"| OHLCV["OHLCV Candle Builder<br/>(1dk mumlar)"]
         OHLCV --> DET["5 Algılayıcı Motoru"]
-        DET --> PY["Python Strateji Köprüsü<br/>(PyO3)"]
+        DET --> PY["Python Strateji Süreci<br/>(heiusdt_breakout.py)"]
         PY --> OR["Order Ring Buffer<br/>/dev/shm/demir_yumruk_orders<br/>10,000 byte"]
     end
 
@@ -52,18 +52,26 @@ graph TB
     subgraph "CORRELATION Terminali (core)"
         TR --> CA["Korelasyon Analizi<br/>(Anomali + Kümeleme)"]
     end
+
+    subgraph "PRICE-FEED (bağımsız binary :3004)"
+        WS3["Binance WS<br/>markPrice + bookTicker"] --> PF["PriceFeed<br/>HTTP API /api/lastprice"]
+    end
+
+    subgraph "DETECT-MS (bağımsız binary :3002)"
+        PF --> |"fiyat beslemesi"| MS["MSMP 2.0 REST API<br/>7 katmanlı analiz"]
+    end
 ```
 
 ---
 
-## 🧩 Modül Haritası (15 Crate)
+## 🧩 Modül Haritası (16 Crate)
 
 | # | Crate | Rol | Önemli Dosyalar |
 |---|-------|-----|-----------------|
 | 1 | [core](./core) | Ana orkestratör — 5 terminal modu | `main.rs`, `engine/`, `cli/`, `memory/` |
 | 2 | [adapter](./adapter) | Binance WS/REST bağdaştırıcısı | `src/binance.rs` |
 | 3 | [os-utils](./os-utils) | Lock-free Ring Buffer (`/dev/shm`) | `src/lib.rs` |
-| 4 | [ohlcv-engine](./ohlcv-engine) | Gerçek zamanlı OHLCV mum oluşturucu | `src/lib.rs` |
+| 4 | [ohlcv-engine](./ohlcv-engine) | Gerçek zamanlı OHLCV mum oluşturucu | `src/lib.rs`, `src/client.rs` |
 | 5 | [execution-engine](./execution-engine) | Emir yönetimi + Paper Engine | `src/lib.rs`, `src/paper/` |
 | 6 | [paper-service](./paper-service) | Bağımsız Paper Trading Servisi | `src/api.rs`, `src/events.rs`, `src/bridge.rs` |
 | 7 | [risk-worker](./risk-worker) | Risk matrisi & FinOps optimizasyonu | `src/matrix.rs`, `src/finops.rs` |
@@ -71,10 +79,11 @@ graph TB
 | 9 | [cold-storage](./cold-storage) | SQLite işlem geçmişi | `src/lib.rs` |
 | 10 | [detect-sr](./detect-sr) | Destek/Direnç + FVG algılama | `src/lib.rs` |
 | 11 | [detect-trend](./detect-trend) | Trend algılama (EMA + ADX) | `src/lib.rs` |
-| 12 | [detect-ms](./detect-ms) | Piyasa Yapısı (BOS/CHoCH) | `src/lib.rs` |
+| 12 | [detect-ms](./detect-ms) | MSMP 2.0 REST API (7 katmanlı analiz, :3002) | `src/main.rs`, `src/narrative.rs` |
 | 13 | [detect-liquidity](./detect-liquidity) | Likidite havuzu tespiti | `src/lib.rs` |
 | 14 | [detect-pattern](./detect-pattern) | Mum çubuğu patern algılama | `src/lib.rs` |
 | 15 | [alert-service](./alert-service) | Sesli fiyat uyarı servisi | `src/engine.rs`, `src/audio.rs`, `src/source.rs` |
+| 16 | [price-feed](./price-feed) | Anlık last/mark/index price daemon (:3004) | `src/main.rs` |
 
 ---
 
@@ -87,8 +96,9 @@ Tüm terminaller tek `core` binary'si üzerinden çalışır; `RUN_MODE` ortam d
 > Canlı Binance piyasa verisini ring buffer'a besleyen ana motor.
 
 - **Binance WebSocket** bağlantısı (Futures & Spot stream desteği)
-- **sonic-rs** ile ultra-hızlı sıfır-kopya JSON ayrıştırma
-- Desteklenen stream tipleri: `Trade`, `BookTicker`, `FundingRate`
+- **simd-json** ile ultra-hızlı sıfır-kopya JSON ayrıştırma
+- Abone olunan stream'ler: `@trade` (işlemler) + `@depth20@100ms` (20 seviyeli emir defteri)
+- Parser desteklenen tipler: `Trade`, `OrderBook`, `Liquidation`, `FundingRate`, `BookTicker`, `OpenInterest`
 - **DataValidator:** Fiyat > 0, Miktar > 0, Zaman damgası ± 60 sn kontrolü
 - Ring buffer'a yazma + paralel SQLite kayıt (`flume` kanalı ile)
 - RT thread önceliği: `set_rt_thread_priority(99)`
@@ -99,18 +109,16 @@ Tüm terminaller tek `core` binary'si üzerinden çalışır; `RUN_MODE` ortam d
 
 ### 2. STRATEGY Terminali (`RUN_MODE=STRATEGY`)
 
-> Sistemin beyni — veri tüketimi, analiz ve strateji çalıştırma.
+> Sistemin beyni — HEIUSDT kırılım stratejisini Python süreci olarak çalıştırır.
 
-**Veri İşleme Pipeline'ı:**
+- `detect-ms` REST API'sinden (:3002) seviye/yapı analizi alır
+- `paper-service` API'sine (:8080) kırılım sinyaline göre market emri açar
+- Rust tarafı (`strategy_cli.rs`) Python sürecini spawn eder ve izler
+- Komutlar: `status`, `restart`, `exit`
 
-1. Ring buffer'dan zero-copy tick okuma
-2. `CandleBuilder` ile 1 dakikalık OHLCV mumları oluşturma
-3. ≥ 42 mum biriktiğinde **5 algılayıcıyı** paralel çalıştırma
-4. Tüm sonuçları Python `ctx` sözlüğüne paketleme
-5. `on_event(ctx)` ile Python stratejisine gönderme (PyO3)
-6. Dönen emirleri Order Ring Buffer'a yazma
+> **Not:** Eski PyO3 köprüsü kaldırıldı — strateji mantığı artık bağımsız Python sürecinde çalışır (bkz. §HEIUSDT Kırılım Stratejisi).
 
-**CLI Komutları:** `status`, `candles`, `detectors`, `quit`
+**CLI Komutları:** `status`, `restart`, `quit`
 
 ---
 
@@ -243,6 +251,48 @@ PaperEngineActor (Actor Model)
 
 ---
 
+## 💹 Price Feed (`price-feed` / `scripts/price_feed.py`)
+
+> Tüm katmanlara anlık last/mark/index fiyatı sunan daemon. Rust (WS) ve Python (REST polling) iki gerçeklemesi mevcuttur; ikisi de aynı HTTP API ve JSON çıktısını paylaşır.
+
+**Rust gerçeklemesi (`cargo run -p price-feed`):** Binance Futures WS'ten `markPrice@1s` (mark + index) ve `bookTicker@1s` (best bid/ask) aboneliği yapar, `simd_json` ile ayrıştırıp kendi ring buffer'ına yazar (`/dev/shm/demir_yumruk_pricefeed`).
+
+**Python gerçeklemesi (`python3 scripts/price_feed.py`):** Binance REST `ticker/price`'i periyodik çeker (`PRICE_FEED_REFRESH` sn), sembolleri `alerts.toml` + `HEIUSDT`'tan türetir.
+
+| Uç Nokta | Açıklama |
+|----------|----------|
+| `GET /api/lastprice` | Tüm semboller `{last, mark, index, bid, ask}` |
+| `GET /api/lastprice/{SYMBOL}` | Tek sembol |
+| `GET /health` | Sağlık + anlık fiyatlar |
+| `/tmp/price_feed.json` | Her güncellemede yazılan JSON dosyası |
+
+**Sembol kaynağı:** `PRICE_FEED_SYMBOLS` env'i (virgülle ayrılmış) veya `alerts.toml` sembolleri + `HEIUSDT`. Port: `PRICE_FEED_PORT` (varsayılan 3004).
+
+---
+
+## 📈 Detect-MS — MSMP 2.0 REST API (`:3002`)
+
+> Kurumsal matematiksel çerçeve: 7 katmanlı piyasa yapısı analiz motoru. `BinanceClient` ile geçmiş kline çeker, üç zaman penceresi (Core/Amplified/Acute) üzerinde analiz yapar ve birleşik rapor döndürür.
+
+| Katman | Analiz |
+|--------|--------|
+| 1 | Session-Based Zaman Pencereleri |
+| 2 | Dinamik Pivot (ATR × 0.25, Tip A/B, Likidite Bölgeleri) |
+| 3 | Trend Yapısı (Log-Regresyon, R², Hurst Üssü) |
+| 4 | Stratejik Seviye Envanteri (Üssel Çürüme, BO Onayı) |
+| 5 | Likidite Pool (VWAP, Volume Profile, BSL/SSL) |
+| 6 | Dengesizlik (FVG + Cumulative Delta) |
+| 7 | Bütünsel Naratif (ATS, Vakum Bölgesi, Confluence Index) |
+
+```bash
+cargo run -p detect-ms
+curl "http://127.0.0.1:3002/api/ms?symbol=BTCUSDT&interval=15m&limit=200"
+```
+
+**Rapor çıktısı:** `ats` (Ağırlıklı Trend Skoru), `hurst`, `r_squared`, `trend_label`, `confluence_index`, `levels` (priority_score'lu SH/SL seviyeleri), `vacuum_zone`.
+
+---
+
 ## 🔔 Alert Service (`alert-service`)
 
 Yapılandırma dosyasından okunan kurallara göre sesli fiyat uyarısı üreten bağımsız servis.
@@ -354,48 +404,46 @@ cooldown_sec = 60
 
 ---
 
-## 🐍 Python Strateji Köprüsü (PyO3)
+## 🎯 HEIUSDT Kırılım Stratejisi ([heiusdt_breakout.py](./strategies/heiusdt_breakout.py))
+
+> Kullanıcı türevli HEIUSDT odaklı alım-satım stratejisi. `detect-ms` analizi + `paper-service` emir yürütme.
 
 ```mermaid
 sequenceDiagram
-    participant RB as Tick Ring Buffer
-    participant ST as Strategy Terminal (Rust)
-    participant PY as Python Interpreter (PyO3)
-    participant OR as Order Ring Buffer
+    participant MS as detect-ms REST (:3002)
+    participant PY as heiusdt_breakout.py
+    participant PS as paper-service (:8080)
 
-    RB->>ST: Zero-copy tick okuma
-    ST->>ST: OHLCV oluşturma + 5 algılayıcı
-    ST->>PY: ctx dict gönderme (on_event)
-    Note over PY: Strateji kararı
-    PY-->>ST: Order JSON (veya None)
-    ST->>OR: Order Ring Buffer'a yazma
+    loop Her 20 pencere (1m)
+        PY->>MS: GET /api/ms?symbol=HEIUSDT&interval=1m&limit=100
+        MS-->>PY: MSMPReport (levels, ats, trend_label)
+        PY->>PY: Kırılım koşulu kontrolü (SH/SL seviyesi)
+        alt ATS > 0 ve fiyat > SH direnci
+            PY->>PS: POST /api/v1/order → BUY
+        else ATS < 0 ve fiyat < SL desteği
+            PY->>PS: POST /api/v1/order → SELL
+        end
+    end
 ```
 
-**Python'a gönderilen `ctx` sözlüğü:**
+**Karar Mantığı:**
+- Yapı trendi **yukarı** (`ats > 0`) ise en yüksek skorlu direnç (SH) bulunur; fiyat üzerinde kapatırsa → **BUY**
+- Yapı trendi **aşağı** (`ats < 0`) ise en yüksek skorlu destek (SL) bulunur; fiyat altında kapatırsa → **SELL**
+- Aynı sembolde açık pozisyon varsa yeni emir açılmaz
+- `--dry-run` ile emirsiz analiz, `--once` ile tek seferlik çalıştırma
 
-```python
-{
-    "price": 50000.0,
-    "qty": 0.1,
-    "timestamp": 1691234567890,
-    "trend": {
-        "direction": "Bullish",   # Bullish | Bearish | Sideways
-        "adx": 32.5,
-        "fast_ema": 50100.0,
-        "slow_ema": 49800.0
-    },
-    "sr_levels": [...],       # Vec<SrLevel>
-    "fvgs": [...],            # Vec<Fvg>
-    "ms_breaks": [...],       # Vec<MsBreak>
-    "order_blocks": [...],    # Vec<OrderBlock>
-    "liquidity_pools": [...], # Vec<LiquidityPool>
-    "patterns": [...]         # Vec<Pattern>
-}
+```bash
+# Tek seferlik analiz
+python3 strategies/heiusdt_breakout.py --once
+
+# Analiz + kırılım simülasyonu (emir açmaz)
+python3 strategies/heiusdt_breakout.py --once --dry-run
+
+# Sürekli strateji (her 20 pencerede kontrol)
+python3 strategies/heiusdt_breakout.py
 ```
 
-**Örnek Strateji** ([test_strategy.py](./strategies/test_strategy.py)):
-- Bullish trend + BullishEngulfing → **BUY** emri
-- Bearish trend + BearishEngulfing → **SELL** emri
+**Env değişkenleri:** `HEIUSDT_SYMBOL`, `HEIUSDT_INTERVAL`, `HEIUSDT_LIMIT`, `HEIUSDT_CHECK_EVERY`, `HEIUSDT_QTY`
 
 ---
 
@@ -407,6 +455,7 @@ sequenceDiagram
 |------------|------|----------|------|
 | Tick Ring | `/dev/shm/demir_yumruk_ring` | 160,000 byte | Piyasa verisi (Trade/BookTicker/FundingRate) |
 | Order Ring | `/dev/shm/demir_yumruk_orders` | 10,000 byte | Strateji emirleri |
+| PriceFeed Ring | `/dev/shm/demir_yumruk_pricefeed` | 20,000 slot | Price-feed daemon fiyatları |
 
 **Slot yapısı:** `[8 byte generation] [4 byte data_len] [data bytes...]`
 
@@ -429,6 +478,16 @@ CREATE TABLE trades (
     pnl REAL,
     commission REAL,
     timestamp INTEGER
+);
+
+-- Funding rate kayıtları (mark + index fiyat)
+CREATE TABLE funding_rates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    mark_price REAL NOT NULL,
+    index_price REAL NOT NULL DEFAULT 0,
+    funding_rate REAL NOT NULL,
+    next_funding_time INTEGER NOT NULL
 );
 ```
 
@@ -500,7 +559,57 @@ CREATE TABLE trades (
 
 ## ⚙️ Operasyon ve Dağıtım
 
-### Hızlı Başlatma (Paper Sistemi)
+### 🖥️ tmux Çok-Terminal Başlatıcı (`scripts/cycle_tmux.sh`)
+
+Tüm sistem tek komutla 6 panelli bir tmux oturumu olarak başlar (`cycle`):
+
+```
+Pencere 0 — Trading:
+  ┌──────────────────────┬──────────────────────┐
+  │  📡 DATA             │  🛡️  PAPER-SERVICE    │
+  ├──────────────────────┼──────────────────────┤
+  │  🧠 STRATEGY         │  🔔 ALERT-SERVICE    │
+  ├──────────────────────┴──────────────────────┤
+  │  🛰️  LISTENER        │  💻 SHELL            │
+  └─────────────────────────────────────────────┘
+Pencere 1 — Monitor (CPU/RAM/GPU izleme)
+```
+
+```bash
+./scripts/cycle_tmux.sh          # derle + başlat + bağlan
+./scripts/cycle_tmux.sh kill     # tüm servisleri + ring buffer'ları temizle
+./scripts/cycle_tmux.sh status   # çalışan servislerin CPU/RAM durumu
+./scripts/cycle_tmux.sh attach   # mevcut oturuma bağlan
+```
+
+**Shell paneli yardımcı komutları** (`source scripts/cycle_env.sh`):
+- `cycle-start` / `cycle-kill` / `cycle-status` / `cycle-build`
+- `data-start|stop`, `strategy-start|stop`, `paper-start|stop`, `alert-start|stop`
+- `listener-start|stop|status` — açık pozisyon metrikleri
+- `paper-buy BTCUSDT 0.001`, `paper-sell`, `paper-balance`, `paper-positions`, `paper-health`
+- `detect-ms-start|stop|query BTCUSDT 15m`, `heiusdt-start|stop|query`
+- `monitor-start`, `db-trades`, `db-size`
+- `help-cycle` — tam komut listesi
+
+### 🛰️ Listener Katmanı (`scripts/listener.py`)
+
+> Açık pozisyonları paper-service'ten çeker, anlık metrik analizi yapar ve `/tmp/listener_metrics.json`'a yazar. Şu an placeholder metrikler içerir (gerçek metrikler sonra eklenecek).
+
+### 📦 Kurulum Paketi (`install.sh`)
+
+```bash
+./install.sh                # derle + ~/.cycle dizinine kur
+./install.sh --prefix /opt  # özel kurulum dizini
+./install.sh --only-build   # sadece derle
+./install.sh --package      # kurulum + .tar.gz paketi
+./install.sh --uninstall    # kaldır
+
+# Kurulan paketi kullan
+~/.cycle/bin/cycle start|stop|status
+source ~/.cycle/cycle-env.sh
+```
+
+### 🚀 Hızlı Başlatma (Paper Sistemi)
 
 ```bash
 # Tek komutla DATA + paper-service başlat
@@ -527,7 +636,7 @@ PAPER_ADMIN_USER=admin PAPER_ADMIN_PASS=changeme123 \
 PAPER_API_ADDR=127.0.0.1:8080 PAPER_INITIAL_USDT=100000 \
 cargo run --release -p paper-service
 
-# 3. Strategy terminali (Python stratejisi)
+# 3. Strategy terminali (HEIUSDT kırılım stratejisi)
 RUN_MODE=STRATEGY cargo run --release -p core
 
 # 4. Korelasyon terminali
@@ -535,6 +644,15 @@ RUN_MODE=CORRELATION WINDOW_SEC=10 TRACK_SEC=10 cargo run --release -p core
 
 # 5. Alert servisi
 cargo run --release -p alert-service -- --config alerts.toml
+
+# 6. Price feed daemon (Rust WS)
+cargo run --release -p price-feed
+
+# VEYA Python price feed (REST polling)
+python3 scripts/price_feed.py
+
+# 7. Detect-MS — MSMP 2.0 analiz API'si (:3002)
+cargo run --release -p detect-ms
 ```
 
 ### Soğuk Başlangıç (`cold-starter`)
@@ -562,12 +680,15 @@ cargo run --release -p alert-service -- --config alerts.toml
 ### Önkoşullar (Ubuntu/Debian)
 
 ```bash
-# Python geliştirme başlıkları (PyO3 için)
+# Python 3 (strateji/listener/price_feed scriptleri için)
 sudo apt-get update
-sudo apt-get install python3-dev python3-pip
+sudo apt-get install python3 python3-pip
 
 # Ses uyarıları için (alert-service)
 sudo apt-get install speech-dispatcher pulseaudio-utils
+
+# tmux (çok-terminal başlatıcı)
+sudo apt-get install tmux
 
 # Rust araç zinciri
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -594,6 +715,13 @@ PAPER_DB_PATH=./market_data.db
 
 # Opsiyonel: PostgreSQL (--features full)
 DATABASE_URL=postgresql://user:pass@localhost/paper_db
+
+# Price Feed
+PRICE_FEED_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT,HEIUSDT
+PRICE_FEED_PORT=3004
+
+# Detect-MS
+DETECT_MS_ADDR=127.0.0.1:3002
 ```
 
 ### Derleme
@@ -613,7 +741,7 @@ cargo kani --package formal_verification
 
 ## 📊 Konfigürasyon
 
-### `config/config_v6.toml`
+### `config/config_v6.toml` (ve `config_v5.toml`)
 
 ```toml
 [api]
@@ -629,12 +757,11 @@ max_positions = 100
 ## 🧪 Test ve Benchmark
 
 - **Birim testleri:** `core/tests/`, `adapter/tests/`
-- **Benchmark:** `core/benches/ring_bench.rs` — Ring buffer yazma throughput testi
+- **Benchmark:** `core/benches/ring_bench.rs`, `core/benches/tick_benchmark.rs` — Ring buffer + tick parse throughput
 - **Test verileri:** [`test_data.csv`](./test_data.csv) — Backtest simülasyonu için
 - **WebSocket testi:** [`test_ws.py`](./test_ws.py), [`test_depth.py`](./test_depth.py)
 - **Risk analizi:** [`scripts/risk_analysis.py`](./scripts/risk_analysis.py)
 - **GDPR silme testi:** [`scripts/gdpr_erasure_test.sh`](./scripts/gdpr_erasure_test.sh)
-
 ---
 
 ## 📚 Dokümantasyon
@@ -642,6 +769,7 @@ max_positions = 100
 | Dosya | İçerik |
 |-------|--------|
 | [complete_system_documentation.md](./docs/complete_system_documentation.md) | 30 KB — Tüm sistem mimarisi |
+| [bare_metal_plan.md](./docs/bare_metal_plan.md) | Düşük gecikme yol haritası (Faz 0–4) |
 | [code_reference.md](./docs/code_reference.md) | API referansı |
 | [ring_buffer_schema.md](./docs/ring_buffer_schema.md) | Ring buffer hafıza düzeni |
 | [adapter_schema.md](./docs/adapter_schema.md) | Borsa bağdaştırıcı API |
@@ -670,28 +798,37 @@ PROJE/
 │   └── src/                 # api, bridge, events, metrics, idempotency
 ├── alert-service/           # Sesli fiyat uyarı servisi
 │   └── src/                 # engine, audio, source, config
+├── price-feed/              # Anlık last/mark/index price daemon (:3004)
+│   └── src/main.rs          # WS → EventParser → ring → HTTP API
 ├── risk-worker/             # Risk matrisi & FinOps
-├── ohlcv-engine/            # OHLCV mum oluşturucu
+├── ohlcv-engine/            # OHLCV mum oluşturucu + Binance kline client
 ├── os-utils/                # Düşük seviye OS yardımcıları
 ├── cold-starter/            # Soğuk başlangıç (kline verisi)
 ├── cold-storage/            # SQLite işlem kaydı
 ├── detect-sr/               # Destek/Direnç + FVG
 ├── detect-trend/            # Trend (EMA + ADX)
-├── detect-ms/               # Piyasa Yapısı (BOS/CHoCH)
+├── detect-ms/               # MSMP 2.0 REST API (:3002)
 ├── detect-liquidity/        # Likidite havuzu tespiti
 ├── detect-pattern/          # Mum çubuğu paternleri
 ├── formal_verification/     # Kani Model Checker testleri
 ├── strategies/              # Python strateji dosyaları
-│   └── test_strategy.py
+│   └── heiusdt_breakout.py  # HEIUSDT kırılım stratejisi
 ├── scripts/                 # Başlatma/durdurma & analiz scriptleri
+│   ├── cycle_tmux.sh        # 6 panelli tmux başlatıcı
+│   ├── cycle_env.sh         # Shell yardımcı komutları
+│   ├── listener.py          # Anlık pozisyon metrikleri
+│   ├── monitor.sh           # Servis izleme paneli
+│   ├── price_feed.py        # Python price feed daemon
 │   ├── start_paper.sh
 │   ├── stop_paper.sh
 │   ├── risk_analysis.py
 │   └── gdpr_erasure_test.sh
+├── install.sh               # Kurulum paketi (~/.cycle)
 ├── k8s/                     # Kubernetes manifests + Chaos senaryoları
 ├── config/                  # Konfigürasyon dosyaları
+│   ├── config_v5.toml
 │   └── config_v6.toml
 ├── docs/                    # Teknik dokümantasyon
 ├── alerts.toml              # Alert servisi yapılandırması
-└── Cargo.toml               # Workspace tanımı (15 crate)
+└── Cargo.toml               # Workspace tanımı (16 crate)
 ```

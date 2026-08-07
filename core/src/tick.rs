@@ -64,9 +64,12 @@ impl EventParser {
         } else if stream.contains("@markPrice") {
             let symbol = data.get("s")?.as_str()?;
             let mark_price = data.get("p")?.as_str()?.parse::<Decimal>().ok()?;
+            let index_price = data.get("i").and_then(|v| v.as_str())
+                .and_then(|s| Decimal::from_str(s).ok())
+                .unwrap_or(mark_price);
             let funding_rate = data.get("r")?.as_str()?.parse::<Decimal>().ok().unwrap_or(Decimal::ZERO);
             let next_funding_time = data.get("T")?.as_u64().unwrap_or(0);
-            Some(OwnedEvent::new_funding_rate(symbol, mark_price, funding_rate, next_funding_time))
+            Some(OwnedEvent::new_funding_rate(symbol, mark_price, index_price, funding_rate, next_funding_time))
         } else if stream.ends_with("@bookTicker") {
             let symbol = data.get("s")?.as_str()?;
             let best_bid_price = data.get("b")?.as_str()?.parse::<Decimal>().ok()?;

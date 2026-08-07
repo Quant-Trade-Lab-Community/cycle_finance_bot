@@ -11,28 +11,46 @@ use std::process::Command;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 fn voice_cmd() -> String {
-    std::env::var("ALERT_VOICE_CMD").unwrap_or_else(|_| "spd-say -w".to_string())
+    std::env::var("ALERT_VOICE_CMD").unwrap_or_else(|_| "spd-say -w -l tr".to_string())
 }
 
 fn beep_cmd() -> String {
     std::env::var("ALERT_BEEP_CMD").unwrap_or_else(|_| "paplay".to_string())
 }
 
-/// Kısa bir beep WAV'i /tmp'e yazar.
+/// Windows "Microsoft neutral" bildirim sesi WAV'i /tmp'e yazar.
+/// Windows Notify System Generic: 3 kısa, yumuşak, tiz ton (A5-E6 aralığı).
 fn write_beep_wav() -> std::io::Result<std::path::PathBuf> {
     let sample_rate = 44100u32;
-    let duration_s = 0.35;
-    let n_samples = (sample_rate as f32 * duration_s) as usize;
-    let freq = 880.0f32;
 
-    let mut data = Vec::with_capacity(n_samples * 2);
-    for i in 0..n_samples {
-        let t = i as f32 / sample_rate as f32;
-        // 880 Hz sinüs + hızlı zarf (klik yok)
-        let env = (1.0f32 - t / duration_s).min(1.0);
-        let v = (2.0 * std::f32::consts::PI * freq * t).sin() * env * 0.6;
-        let s = (v * i16::MAX as f32) as i16;
-        data.extend_from_slice(&s.to_le_bytes());
+    // Microsoft neutral bildirim tonları (Hz, ms) — kısa ve net
+    // "ding… ding… ding" hissi veren üç vuruş
+    let notes: [(f32, f32); 3] = [
+        (1567.98, 0.090), // G6
+        (1318.51, 0.090), // E6
+        (1567.98, 0.140), // G6 (son vuruş biraz uzun)
+    ];
+
+    let mut data = Vec::new();
+    for (i, (freq, dur)) in notes.iter().enumerate() {
+        let n = (sample_rate as f32 * dur) as usize;
+        // Vuruşlar arası küçük sessizlik
+        if i > 0 {
+            let gap = (sample_rate as f32 * 0.045) as usize;
+            data.extend_from_slice(&vec![0u8; gap * 2]);
+        }
+        for j in 0..n {
+            let t = j as f32 / sample_rate as f32;
+            // Yumuşak zarf (0→1 hızlı, 1→0 yavaş) → "ding" hissi
+            let attack = (t / 0.012).min(1.0);
+            let release = (1.0 - t / *dur).min(1.0);
+            let env = attack * release;
+            // Hafif harmonik katman (temel + 2. harmonik) → metalik, doğal
+            let v = (2.0 * std::f32::consts::PI * freq * t).sin() * 0.55 * env
+                + (2.0 * std::f32::consts::PI * freq * 2.0 * t).sin() * 0.10 * env;
+            let s = (v * i16::MAX as f32) as i16;
+            data.extend_from_slice(&s.to_le_bytes());
+        }
     }
 
     let header: Vec<u8> = {
