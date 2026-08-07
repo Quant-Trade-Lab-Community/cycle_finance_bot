@@ -265,8 +265,8 @@ alert-stop() {
 # ── LISTENER (Anlık Pozisyon Metrikleri, pane 0.4) ──────────
 listener-start() {
   _start_guard
-  if pgrep -f "[l]istener.py" &>/dev/null; then
-    echo "⚠️  listener zaten çalışıyor (pid: $(pgrep -f '[l]istener.py' | head -1))"
+  if pgrep -x listener &>/dev/null; then
+    echo "⚠️  listener zaten çalışıyor (pid: $(pgrep -x listener | head -1))"
     return 1
   fi
   # Bağımlılık: paper-service gerekli
@@ -274,9 +274,9 @@ listener-start() {
     echo "⚠️  paper-service çalışmıyor — önce paper-start ile başlatın"
     return 1
   fi
-  _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && python3 scripts/listener.py" Enter
+  _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/listener" Enter
   sleep 2
-  if pgrep -f "[l]istener.py" &>/dev/null; then
+  if pgrep -x listener &>/dev/null; then
     echo "✅ LISTENER başlatıldı (pane 0.4)"
   else
     echo "❌ LISTENER başlatılamadı"
@@ -284,7 +284,7 @@ listener-start() {
 }
 listener-stop() {
   _start_guard
-  local p; p=$(pgrep -f "[l]istener.py" 2>/dev/null | head -1 || true)
+  local p; p=$(pgrep -x listener 2>/dev/null | head -1 || true)
   if [ -n "$p" ]; then
     pkill -TERM -f "[l]istener.py" 2>/dev/null
     sleep 1
@@ -296,7 +296,7 @@ listener-stop() {
 }
 listener-status() {
   _start_guard
-  local p; p=$(pgrep -f "[l]istener.py" 2>/dev/null | head -1 || true)
+  local p; p=$(pgrep -x listener 2>/dev/null | head -1 || true)
   if [ -n "$p" ]; then
     local cpu mem
     cpu=$(ps -p "$p" -o pcpu= 2>/dev/null | tr -d ' ')
@@ -443,7 +443,7 @@ correlation-start() {
 # ============================================================
 alert-list() {
   echo "=== alerts.toml — aktif uyarılar ==="
-  python3 "$CYCLE_ROOT/scripts/alerts_cli.py" list
+  "$CYCLE_ROOT/target/debug/alerts" list
   echo ""
   echo "Kullanım:"
   echo "  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]"
@@ -482,7 +482,7 @@ alert-add() {
   fi
   local voice_arg=()
   [ -n "$voice" ] && voice_arg=(--voice "$voice")
-  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" add \
+  _alert_apply "$("$CYCLE_ROOT/target/debug/alerts" add \
     --symbol "$sym" --condition "$cond" --price "$price" \
     "${voice_arg[@]}" --cooldown "$cooldown")"
 }
@@ -500,7 +500,7 @@ alert-update() {
   [ -n "$new" ] && args+=(--price "$new")
   [ -n "$voice" ] && args+=(--voice "$voice")
   [ -n "$cooldown" ] && args+=(--cooldown "$cooldown")
-  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" update "${args[@]}")"
+  _alert_apply "$("$CYCLE_ROOT/target/debug/alerts" update "${args[@]}")"
 }
 
 # Alarm sil
@@ -512,7 +512,7 @@ alert-remove() {
     echo "Kullanım: alert-remove <SYMBOL> <cond> <PRICE>"
     return 1
   fi
-  _alert_apply "$(python3 "$CYCLE_ROOT/scripts/alerts_cli.py" remove \
+  _alert_apply "$("$CYCLE_ROOT/target/debug/alerts" remove \
     --symbol "$sym" --condition "$cond" --price "$price")"
 }
 
@@ -613,7 +613,7 @@ detect-ms-log() {
 # ============================================================
 heiusdt-start() {
   _start_guard
-  if pgrep -f "[h]eiusdt_breakout.py" &>/dev/null; then
+  if pgrep -x heiusdt &>/dev/null; then
     echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1))"
     return 1
   fi
@@ -623,9 +623,9 @@ heiusdt-start() {
     return 1
   fi
   echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
-  _tmux_pane "🎯HEIUSDT" "cd $CYCLE_ROOT && python3 strategies/heiusdt_breakout.py" Enter
+  _tmux_pane "🎯HEIUSDT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/heiusdt" Enter
   sleep 2
-  if pgrep -f "[h]eiusdt_breakout.py" &>/dev/null; then
+  if pgrep -x heiusdt &>/dev/null; then
     echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1)]"
     echo "   Pencere: cycle → 🎯HEIUSDT"
   else
@@ -636,7 +636,7 @@ heiusdt-start() {
 heiusdt-stop() {
   _start_guard
   local pid
-  pid=$(pgrep -f "[h]eiusdt_breakout.py" 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
     pkill -TERM -f "[h]eiusdt_breakout.py" 2>/dev/null
     sleep 1
@@ -649,7 +649,7 @@ heiusdt-stop() {
 
 heiusdt-status() {
   local pid
-  pid=$(pgrep -f "[h]eiusdt_breakout.py" 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
     local cpu mem
     cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
@@ -682,7 +682,7 @@ heiusdt-wait() {
   echo "$sec" > /tmp/heiusdt_wait_sec.txt
   echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
   echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
-  if pgrep -f "[h]eiusdt_breakout.py" >/dev/null 2>&1; then
+  if pgrep -x heiusdt >/dev/null 2>&1; then
     echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
   fi
 }
@@ -690,9 +690,9 @@ heiusdt-wait() {
 heiusdt-query() {
   # Kullanım: heiusdt-query [--dry-run]
   if [ "${1:-}" = "--dry-run" ]; then
-    cd "$CYCLE_ROOT" && python3 strategies/heiusdt_breakout.py --once --dry-run
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once --dry-run
   else
-    cd "$CYCLE_ROOT" && python3 strategies/heiusdt_breakout.py --once
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once
   fi
 }
 

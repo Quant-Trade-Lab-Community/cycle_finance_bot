@@ -35,14 +35,14 @@ err()  { echo -e "${_R}✘${_N} $*"; }
 check_deps() {
   say "Bağımlılıklar kontrol ediliyor..."
   local missing=()
-  for c in cargo rustc python3 tmux curl jq; do
+  for c in cargo rustc tmux curl jq; do
     if ! command -v "$c" >/dev/null 2>&1; then
       missing+=("$c")
     fi
   done
   if [ ${#missing[@]} -gt 0 ]; then
     err "Eksik bağımlılıklar: ${missing[*]}"
-    echo "  Kurulum:  sudo apt install build-essential python3 tmux curl jq"
+    echo "  Kurulum:  sudo apt install build-essential tmux curl jq"
     echo "  Rust:     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
     exit 1
   fi
@@ -67,7 +67,7 @@ copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
     core paper-service paper-cli alert-service detect-ms
-    risk-worker cold-starter price-feed
+    risk-worker cold-starter price-feed heiusdt listener alerts risk_analysis
     detect-sr detect-trend detect-liquidity detect-pattern
   )
   local n=0
@@ -89,12 +89,8 @@ copy_assets() {
   cp "$ROOT/alerts.toml"          "$CONFIG_DIR/" 2>/dev/null || warn "alerts.toml yok"
   cp "$ROOT/config/"config_*.toml  "$CONFIG_DIR/" 2>/dev/null || true
 
-  for s in cycle_tmux.sh cycle_env.sh listener.py monitor.sh start_paper.sh stop_paper.sh; do
+  for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh; do
     [ -f "$ROOT/scripts/$s" ] && cp "$ROOT/scripts/$s" "$SCRIPTS_DIR/" || warn "scripts/$s yok"
-  done
-
-  for s in heiusdt_breakout.py; do
-    [ -f "$ROOT/strategies/$s" ] && cp "$ROOT/strategies/$s" "$STRATEGIES_DIR/" || warn "strategies/$s yok"
   done
 
   [ -f "$ROOT/test_data.csv" ] && cp "$ROOT/test_data.csv" "$DATA_DIR/" || true

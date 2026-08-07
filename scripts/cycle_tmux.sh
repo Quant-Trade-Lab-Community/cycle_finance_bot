@@ -181,7 +181,7 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 echo '🛰️   LISTENER  (Anlık Pozisyon Metrikleri)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
-cd $ROOT && python3 scripts/listener.py
+cd $ROOT && ./target/debug/listener
 " Enter
 
 # ── Panel 5: SHELL ───────────────────────────────────────────
@@ -209,7 +209,7 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 echo '🎯  HEIUSDT  (Kırılım Stratejisi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
-cd $ROOT && python3 strategies/heiusdt_breakout.py
+cd $ROOT && ./target/debug/heiusdt
 " Enter
 
 # ── Görsel ayarlar (global) ──────────────────────────────────

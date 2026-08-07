@@ -9,6 +9,7 @@ members = [
     "paper-service",
     "alert-service",
     "price-feed",
+    "heiusdt",
 ]
 resolver = "2"
 

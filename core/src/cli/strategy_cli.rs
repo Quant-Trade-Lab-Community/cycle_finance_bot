@@ -1,14 +1,13 @@
 //! STRATEGY terminali — HEIUSDT kırılım stratejisini çalıştırır.
 //!
-//! Strateji mantığı Python'da (`strategies/heiusdt_breakout.py`) çalışır:
-//! detect-ms'ten seviye/yapı analizi alır, kırılım koşullarını kontrol eder,
-//! paper-service'e emir açar. Bu modül Python sürecini spawn eder.
+//! Strateji Rust'ta (`heiusdt` crate) çalışır: detect-ms'ten seviye/yapı
+//! analizi alır, kırılım koşullarını kontrol eder, paper-service'e emir açar.
 
 use std::process::{Child, Command};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-const HEIUSDT_SCRIPT: &str = "/home/smhvz/Desktop/PROJE/strategies/heiusdt_breakout.py";
+const HEIUSDT_BIN: &str = "/home/smhvz/Desktop/PROJE/target/debug/heiusdt";
 
 struct StrategyChild {
     child: Child,
@@ -17,7 +16,7 @@ struct StrategyChild {
 pub fn start_strategy_cli() {
     println!("========================================");
     println!("🎯 STRATEGY ENGINE — HEIUSDT KIRILIM");
-    println!("  Script: {}", HEIUSDT_SCRIPT);
+    println!("  Binary: {}", HEIUSDT_BIN);
     println!("  detect-ms :3002 + paper-service :8080");
     println!("========================================");
 
@@ -85,14 +84,13 @@ pub fn start_strategy_cli() {
 }
 
 fn spawn_strategy() -> Option<StrategyChild> {
-    match Command::new("python3")
-        .arg(HEIUSDT_SCRIPT)
+    match Command::new(HEIUSDT_BIN)
         .current_dir("/home/smhvz/Desktop/PROJE")
         .spawn()
     {
         Ok(child) => Some(StrategyChild { child }),
         Err(e) => {
-            eprintln!("❌ Python süreci başlatılamadı: {}", e);
+            eprintln!("❌ Rust stratejisi başlatılamadı: {}", e);
             None
         }
     }
