@@ -13,18 +13,84 @@
 
 use std::collections::VecDeque;
 
-// ── Sabitler (Θ — sembol bazında yeniden kalibre edilmeli) ──
-pub const LAMBDA: f64 = 0.015;       // WLOBI decay
-pub const THETA_VOL: f64 = 2.5;      // Delta velocity eşiği
-pub const ALPHA_BUCKET: f64 = 0.75;  // aVPIN bucket sabiti
-pub const K_ABS: usize = 100;        // absorption penceresi (trade)
-pub const N_BUCKET: usize = 50;      // aVPIN bucket sayısı
-pub const ICEBERG_THRESHOLD: f64 = 1.2; // IDM eşiği
-pub const EFP_THRESHOLD: f64 = 0.05; // execution footprint eşiği
-pub const NOISE_CORR_THRESHOLD: f64 = 0.85; // Lee-Ready gürültü filtresi
+// ── Metrik parametreleri (Θ) — shell'den değiştirilebilir ─────
+// /tmp/listener_metrics.conf dosyasından okunur (listenconfig komutu).
+pub const CONFIG_FILE: &str = "/tmp/listener_metrics.conf";
 
-// Alpha Basket ağırlıkları (γ)
-const GAMMA: [f64; 6] = [0.0, 0.4, -0.3, 0.5, 0.6, -0.35];
+#[derive(Debug, Clone)]
+pub struct MetricsConfig {
+    pub lambda: f64,           // WLOBI decay
+    pub theta_vol: f64,        // Delta velocity eşiği
+    pub alpha_bucket: f64,     // aVPIN bucket sabiti
+    pub k_abs: usize,          // absorption penceresi (trade)
+    pub n_bucket: usize,       // aVPIN bucket sayısı
+    pub ice_threshold: f64,    // IDM eşiği
+    pub efp_threshold: f64,    // execution footprint eşiği
+    pub noise_corr: f64,       // Lee-Ready gürültü filtresi
+    pub delta_window_sec: usize, // ΔV penceresi (saniye)
+    pub gamma: [f64; 6],       // Alpha Basket ağırlıkları
+}
+
+impl Default for MetricsConfig {
+    fn default() -> Self {
+        Self {
+            lambda: 0.015,
+            theta_vol: 2.5,
+            alpha_bucket: 0.75,
+            k_abs: 100,
+            n_bucket: 50,
+            ice_threshold: 1.2,
+            efp_threshold: 0.05,
+            noise_corr: 0.85,
+            delta_window_sec: 60,
+            gamma: [0.0, 0.4, -0.3, 0.5, 0.6, -0.35],
+        }
+    }
+}
+
+impl MetricsConfig {
+    /// /tmp/listener_metrics.conf dosyasından parametreleri yükler.
+    /// Format: key = value  (bir satırda bir parametre)
+    pub fn load() -> Self {
+        let mut cfg = Self::default();
+        let content = match std::fs::read_to_string(CONFIG_FILE) {
+            Ok(c) => c,
+            Err(_) => return cfg,
+        };
+        for line in content.lines() {
+            let t = line.trim();
+            if t.is_empty() || t.starts_with('#') {
+                continue;
+            }
+            let (k, v) = match t.split_once('=') {
+                Some(x) => x,
+                None => continue,
+            };
+            let k = k.trim();
+            let v = v.trim();
+            let f = |d: f64| v.parse::<f64>().unwrap_or(d);
+            match k {
+                "lambda" => cfg.lambda = f(cfg.lambda),
+                "theta_vol" => cfg.theta_vol = f(cfg.theta_vol),
+                "alpha_bucket" => cfg.alpha_bucket = f(cfg.alpha_bucket),
+                "k_abs" => cfg.k_abs = v.parse::<usize>().unwrap_or(cfg.k_abs),
+                "n_bucket" => cfg.n_bucket = v.parse::<usize>().unwrap_or(cfg.n_bucket),
+                "ice_threshold" => cfg.ice_threshold = f(cfg.ice_threshold),
+                "efp_threshold" => cfg.efp_threshold = f(cfg.efp_threshold),
+                "noise_corr" => cfg.noise_corr = f(cfg.noise_corr),
+                "delta_window_sec" => cfg.delta_window_sec = v.parse::<usize>().unwrap_or(cfg.delta_window_sec),
+                "gamma0" => cfg.gamma[0] = f(cfg.gamma[0]),
+                "gamma1" => cfg.gamma[1] = f(cfg.gamma[1]),
+                "gamma2" => cfg.gamma[2] = f(cfg.gamma[2]),
+                "gamma3" => cfg.gamma[3] = f(cfg.gamma[3]),
+                "gamma4" => cfg.gamma[4] = f(cfg.gamma[4]),
+                "gamma5" => cfg.gamma[5] = f(cfg.gamma[5]),
+                _ => {}
+            }
+        }
+        cfg
+    }
+}
 
 // ── Derinlik kademesi ────────────────────────────────────────
 #[derive(Debug, Clone, Copy, Default)]
@@ -65,6 +131,7 @@ pub struct SymbolMetrics {
     // EfP
     last_depth_total: f64,
     // sonuçlar
+    pub cfg: MetricsConfig,
     pub wlobi: f64,
     pub slope_ask: f64,
     pub slope_bid: f64,
@@ -104,6 +171,7 @@ impl Default for SymbolMetrics {
             var_r: VecDeque::new(),
             var_x: VecDeque::new(),
             last_depth_total: 0.0,
+            cfg: MetricsConfig::load(),
             wlobi: 0.0,
             slope_ask: 0.0,
             slope_bid: 0.0,
@@ -122,6 +190,24 @@ impl Default for SymbolMetrics {
 }
 
 impl SymbolMetrics {
+    /// Config dosyasını yeniden yükler (shell'den değiştirilen parametreleri uygular)
+    pub fn reload_config(&mut self) {
+        self.cfg = MetricsConfig::load();
+        // Pencere sınırlarını yeni değerlere kırp
+        while self.eff_delta_hist.len() > self.cfg.delta_window_sec {
+            self.eff_delta_hist.pop_front();
+        }
+        while self.trade_signs.len() > self.cfg.k_abs {
+            self.trade_signs.pop_front();
+        }
+        while self.bucket_vbuy.len() > self.cfg.n_bucket {
+            self.bucket_vbuy.pop_front();
+        }
+        while self.bucket_vsell.len() > self.cfg.n_bucket {
+            self.bucket_vsell.pop_front();
+        }
+    }
+
     // ══ AŞAMA 0: Lee-Ready Signing ═══════════════════════════
     pub fn lee_ready_sign(&mut self, price: f64) -> i8 {
         let mid = self.mid;
@@ -169,7 +255,7 @@ impl SymbolMetrics {
         let mut w_bid = 0.0;
         let mut w_ask = 0.0;
         for i in 0..5 {
-            let w = (-LAMBDA * (i as f64 + 1.0)).exp();
+            let w = (-self.cfg.lambda * (i as f64 + 1.0)).exp();
             w_bid += w * self.bids[i].qty;
             w_ask += w * self.asks[i].qty;
         }
@@ -206,7 +292,7 @@ impl SymbolMetrics {
         // Saniyelik velocity
         let sec = ts_ms / 1000;
         if sec != self.last_delta_time {
-            if self.eff_delta_hist.len() >= 60 {
+            if self.eff_delta_hist.len() >= self.cfg.delta_window_sec {
                 self.eff_delta_hist.pop_front();
             }
             self.eff_delta_hist.push_back(self.eff_delta);
@@ -222,7 +308,7 @@ impl SymbolMetrics {
     // ══ AŞAMA 3: Absorption Ratio ════════════════════════════
     pub fn update_absorption(&mut self, qty: f64, sign: i8) {
         self.trade_signs.push_back((qty, sign));
-        if self.trade_signs.len() > K_ABS {
+        if self.trade_signs.len() > self.cfg.k_abs {
             self.trade_signs.pop_front();
         }
         let mut buy = 0.0;
@@ -265,10 +351,10 @@ impl SymbolMetrics {
         } else {
             self.bucket_vsell.push_back(qty);
         }
-        if self.bucket_vbuy.len() > N_BUCKET {
+        if self.bucket_vbuy.len() > self.cfg.n_bucket {
             self.bucket_vbuy.pop_front();
         }
-        if self.bucket_vsell.len() > N_BUCKET {
+        if self.bucket_vsell.len() > self.cfg.n_bucket {
             self.bucket_vsell.pop_front();
         }
 
@@ -278,7 +364,7 @@ impl SymbolMetrics {
         let avg_vol = total_vol / n_trades;
 
         // Dinamik hacim bucket'ı: B_vol = α · σ_parkinson · V̄
-        let b_vol = ALPHA_BUCKET * parkinson.max(1e-9) * avg_vol.max(1e-9);
+        let b_vol = self.cfg.alpha_bucket * parkinson.max(1e-9) * avg_vol.max(1e-9);
 
         let sum_buy: f64 = self.bucket_vbuy.iter().sum();
         let sum_sell: f64 = self.bucket_vsell.iter().sum();
@@ -344,13 +430,13 @@ impl SymbolMetrics {
 
         // A_t = γ0 + γ1·(Abs-1) + γ2·(-WLOBI) + γ3·(0.7-aVPIN)
         //        + γ4·sign(-EffDelta)·1{|ΔV|<θ} - γ5·Perm
-        let not_exhausted = (self.delta_velocity.abs() < THETA_VOL) as i32 as f64;
-        let a = GAMMA[0]
-            + GAMMA[1] * z_abs
-            + GAMMA[2] * (-z_wlobi)
-            + GAMMA[3] * (0.7 - z_avpin)
-            + GAMMA[4] * (-z_effdelta).signum() * not_exhausted
-            - GAMMA[5] * z_perm;
+        let not_exhausted = (self.delta_velocity.abs() < self.cfg.theta_vol) as i32 as f64;
+        let a = self.cfg.gamma[0]
+            + self.cfg.gamma[1] * z_abs
+            + self.cfg.gamma[2] * (-z_wlobi)
+            + self.cfg.gamma[3] * (0.7 - z_avpin)
+            + self.cfg.gamma[4] * (-z_effdelta).signum() * not_exhausted
+            - self.cfg.gamma[5] * z_perm;
 
         self.alpha_score = a;
         self.p_long = 1.0 / (1.0 + (-a).exp());

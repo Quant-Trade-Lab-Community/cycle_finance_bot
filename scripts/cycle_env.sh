@@ -45,6 +45,9 @@ help-cycle() {
   echo -e "  ${_C}listener-start${_N}      Pane 0.4'te başlat"
   echo -e "  ${_C}listener-stop${_N}       Durdur"
   echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
+  echo -e "  ${_C}listenconfig-list${_N}   Metrik parametrelerini göster"
+  echo -e "  ${_C}listenconfig-set KEY VAL${_N}  Parametre değiştir (lambda, k_abs, gamma...) "
+  echo -e "  ${_C}listenconfig-reset${_N}  Varsayılanlara dön"
   echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
 
   echo -e "\n${_Y}━━━  💹 PRICE-FEED  (WS→Ring, Anlık Last/Mark/Index)  ━━━━━━━━━━━━━━━━${_N}"
@@ -286,9 +289,9 @@ listener-stop() {
   _start_guard
   local p; p=$(pgrep -x listener 2>/dev/null | head -1 || true)
   if [ -n "$p" ]; then
-    pkill -TERM -f "[l]istener.py" 2>/dev/null
+    pkill -TERM -x listener 2>/dev/null
     sleep 1
-    pkill -KILL -f "[l]istener.py" 2>/dev/null || true
+    pkill -KILL -x listener 2>/dev/null || true
     echo "✅ LISTENER durduruldu [pid:$p]"
   else
     echo "ℹ️  LISTENER çalışmıyor"
@@ -309,6 +312,79 @@ listener-status() {
 listener-log() {
   tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
 }
+
+# ── Listener metrik parametreleri (shell'den ayarlanabilir) ──
+# Config dosyası: /tmp/listener_metrics.conf (çalışan listener 5 sn'de bir yeniden okur)
+LISTEN_CONF=/tmp/listener_metrics.conf
+
+# listenconfig-list  → tüm parametreleri göster
+# listenconfig-set lambda 0.02   → parametre değiştir
+# listenconfig-reset          → varsayılanlara dön
+listenconfig-list() {
+  _start_guard
+  local conf="$LISTEN_CONF"
+  if [ -f "$conf" ]; then
+    echo "=== Listener metrik parametreleri ($conf) ==="
+    cat "$conf"
+  else
+    echo "ℹ️  Config dosyası yok — varsayılanlar kullanılıyor:"
+    echo "  lambda = 0.015        (WLOBI decay)"
+    echo "  theta_vol = 2.5       (Delta velocity eşiği)"
+    echo "  alpha_bucket = 0.75   (aVPIN bucket sabiti)"
+    echo "  k_abs = 100           (absorption penceresi, trade)"
+    echo "  n_bucket = 50         (aVPIN bucket sayısı)"
+    echo "  ice_threshold = 1.2   (Iceberg eşiği)"
+    echo "  efp_threshold = 0.05  (Execution footprint eşiği)"
+    echo "  noise_corr = 0.85     (Lee-Ready gürültü filtresi)"
+    echo "  delta_window_sec = 60 (ΔV penceresi, saniye)"
+    echo "  gamma0..gamma5        (Alpha Basket ağırlıkları)"
+  fi
+}
+
+listenconfig-set() {
+  _start_guard
+  local key="${1:-}" val="${2:-}"
+  if [ -z "$key" ] || [ -z "$val" ]; then
+    echo "Kullanım: listenconfig-set <key> <value>"
+    echo "Örn: listenconfig-set lambda 0.02 | listenconfig-set k_abs 200"
+    echo "     listenconfig-set gamma1 0.5 | listenconfig-set delta_window_sec 120"
+    return 1
+  fi
+  local valid_keys="lambda theta_vol alpha_bucket k_abs n_bucket ice_threshold efp_threshold noise_corr delta_window_sec gamma0 gamma1 gamma2 gamma3 gamma4 gamma5"
+  if ! echo "$valid_keys" | grep -qw "$key"; then
+    echo "❌ Geçersiz parametre: $key"
+    echo "Geçerli: $valid_keys"
+    return 1
+  fi
+  # k_abs, n_bucket, delta_window_sec tam sayı olmalı
+  if echo "k_abs n_bucket delta_window_sec" | grep -qw "$key"; then
+    if ! echo "$val" | grep -qE '^[0-9]+$'; then
+      echo "❌ $key tam sayı olmalı"; return 1
+    fi
+  else
+    if ! echo "$val" | grep -qE '^-?[0-9]+(\.[0-9]+)?$'; then
+      echo "❌ $key sayı olmalı"; return 1
+    fi
+  fi
+  # Eski değeri değiştir veya ekle
+  if grep -q "^${key} *=" "$LISTEN_CONF" 2>/dev/null; then
+    sed -i "s|^${key} *=.*|${key} = ${val}|" "$LISTEN_CONF"
+  else
+    echo "${key} = ${val}" >> "$LISTEN_CONF"
+  fi
+  echo "✅ $key = $val kaydedildi ($LISTEN_CONF)"
+  echo "   Çalışan listener 5 sn'de bir yeniden okur. list-restart ile hemen uygula."
+}
+
+listenconfig-reset() {
+  _start_guard
+  rm -f "$LISTEN_CONF"
+  echo "✅ Varsayılan parametrelere dönüldü (config dosyası silindi)"
+}
+
+# Kısayollar
+listener-config() { listenconfig-list; }
+listener-set() { listenconfig-set "$@"; }
 
 # ── PRICE-FEED (WS → ring buffer, anlık last/mark/index price) ──
 pricefeed-start() {

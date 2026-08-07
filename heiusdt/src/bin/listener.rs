@@ -84,6 +84,10 @@ fn main() {
         }
 
         if last_render.elapsed().as_millis() as u64 >= REFRESH_MS {
+            // Shell'den değiştirilen parametreleri uygula
+            for m in symbols.values_mut() {
+                m.reload_config();
+            }
             render(&symbols, tick_count, depth_count);
             tick_count = 0;
             depth_count = 0;
