@@ -25,6 +25,7 @@ import urllib.request
 import urllib.error
 
 DETECT_MS_URL = os.environ.get("DETECT_MS_URL", "http://127.0.0.1:3002")
+PRICE_FEED_URL = os.environ.get("PRICE_FEED_URL", "http://127.0.0.1:3004")
 PAPER_API = os.environ.get("PAPER_API", "http://127.0.0.1:8080")
 PAPER_USER = os.environ.get("PAPER_ADMIN_USER", "admin")
 PAPER_PASS = os.environ.get("PAPER_ADMIN_PASS", "changeme123")
@@ -81,6 +82,18 @@ def fetch_analysis():
     return http_json(url)
 
 
+def fetch_price_feed(symbol):
+    """Price-feed'ten anlık fiyat alır (last → mark → index → ask fallback)."""
+    d = http_json(f"{PRICE_FEED_URL}/api/lastprice/{symbol}")
+    if "error" in d:
+        return None, d["error"]
+    p = d.get("price", {})
+    for k in ("last", "mark", "index", "ask"):
+        if p.get(k):
+            return float(p[k]), None
+    return None, "price-feed'te fiyat yok"
+
+
 def best_level(levels, level_type):
     """En yüksek priority_score'a sahip SH (direnç) veya SL (destek) seviyesi."""
     cands = [l for l in levels if l.get("level_type") == level_type]
@@ -89,14 +102,18 @@ def best_level(levels, level_type):
     return max(cands, key=lambda l: float(l.get("priority_score", 0)))
 
 
-def evaluate(data):
-    """Kırılım koşulu sağlanırsa ('BUY'|'SELL'), değilse None döndürür."""
+def evaluate(data, price=None):
+    """Kırılım koşulu sağlanırsa ('BUY'|'SELL'), değilse None döndürür.
+
+    price: price-feed'ten gelen anlık fiyat; yoksa detect-ms current_price.
+    """
     if "error" in data:
         return None, f"detect-ms hatası: {data['error']}"
     if not data.get("levels"):
         return None, "Seviye yok"
 
-    price = float(data.get("current_price", 0))
+    if price is None:
+        price = float(data.get("current_price", 0))
     ats = float(data.get("ats", 0))
     trend = data.get("trend_label", "")
     log = (f"Fiyat={price}  ATS={ats:.4f}  Trend={trend}  "
@@ -134,8 +151,13 @@ def analyze_once():
     token = auth["access_token"]
 
     data = fetch_analysis()
-    signal, msg = evaluate(data)
+    pf_price, pf_err = fetch_price_feed(SYMBOL)
+    signal, msg = evaluate(data, price=pf_price)
     print(f"[{time.strftime('%H:%M:%S')}] {SYMBOL} {INTERVAL} {LIMIT} pencere")
+    if pf_price is not None:
+        print(f"  💹 price-feed: {pf_price}")
+    elif pf_err:
+        print(f"  ⚠️  price-feed: {pf_err} (detect-ms fiyatı kullanıldı)")
     print(f"  {msg}")
 
     if signal is None:

@@ -103,4 +103,40 @@ pub fn is_ring_alive() -> bool {
     ring.get_head() > 0
 }
 
+/// Price-feed servisinden (:3004) periyodik fiyat çeker ve sink'e iletir.
+/// `last` → `mark` → `index` → `ask` önceliğiyle fiyatı kullanır.
+pub fn spawn_pricefeed_source(sink: PriceSink, symbols: Vec<String>, refresh_ms: u64) {
+    let base = std::env::var("PRICE_FEED_URL").unwrap_or_else(|_| "http://127.0.0.1:3004".to_string());
+    std::thread::spawn(move || {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(3))
+            .build()
+            .expect("reqwest client");
+        loop {
+            for sym in &symbols {
+                let url = format!("{base}/api/lastprice/{}", sym.to_uppercase());
+                match client.get(&url).send() {
+                    Ok(resp) => {
+                        if let Ok(v) = resp.json::<serde_json::Value>() {
+                            if let Some(price) = v.pointer("/price")
+                                .and_then(|p| p.get("last").or(p.get("mark")).or(p.get("index")).or(p.get("ask")))
+                                .and_then(|x| x.as_f64())
+                            {
+                                if price > 0.0 {
+                                    if let Some(d) = rust_decimal::Decimal::from_f64_retain(price) {
+                                        let rounded = d.round_dp(6);
+                                        let _ = sink.send((sym.to_uppercase(), rounded));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => {}
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(refresh_ms));
+        }
+    });
+}
+
 pub type SharedPriceSink = Arc<PriceSink>;

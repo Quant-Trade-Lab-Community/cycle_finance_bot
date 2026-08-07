@@ -1,6 +1,6 @@
 # Sesli uyarı örnek yapılandırması
 # Veri kaynağı: "ring" (DATA terminali) veya "binance" (bağımsız doğrudan WS)
-data_source = "ring"
+data_source = "pricefeed"
 
 [[alerts]]
 symbol = "BTCUSDT"

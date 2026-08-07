@@ -21,6 +21,7 @@ const ORDER_RING_CAPACITY: usize = 10_000;
 /// Ring buffer'lardan actor'e veri taşıyan okuyucuları başlatır.
 pub fn spawn_ring_bridge(actor_tx: UnboundedSender<ActorCommand>) {
     spawn_tick_reader(actor_tx.clone());
+    spawn_pricefeed_reader(actor_tx.clone());
     spawn_order_reader(actor_tx);
 }
 
@@ -59,6 +60,58 @@ fn spawn_tick_reader(actor_tx: UnboundedSender<ActorCommand>) {
                                 funding_rate,
                                 timestamp: next_funding_time.max(now_ms()),
                             });
+                        }
+                        _ => {}
+                    }
+                }
+                cursor += 1;
+            } else {
+                std::hint::spin_loop();
+            }
+        }
+    });
+}
+
+/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) okuyup
+/// actor'e fiyat güncellemesi olarak iletir. DATA terminali kapalı olsa bile
+/// fiyat beslemesini sağlar.
+fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
+    std::thread::spawn(move || {
+        let gen_ring = GenerationalRingBuffer::with_name("/demir_yumruk_pricefeed", 20_000);
+        let mut cursor = gen_ring.get_head();
+
+        loop {
+            if let Some(slot) = gen_ring.read_slot(cursor) {
+                let mut data = slot.data[..slot.len as usize].to_vec();
+                if let Some(event) = EventParser::parse(&mut data) {
+                    match event.payload {
+                        EventType::Trade { price, .. } => {
+                            let symbol = decode_symbol(&event.symbol);
+                            let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price });
+                        }
+                        EventType::BookTicker { best_ask_price, best_bid_price, .. } => {
+                            let price = if best_ask_price > Decimal::ZERO {
+                                best_ask_price
+                            } else {
+                                best_bid_price
+                            };
+                            if price > Decimal::ZERO {
+                                let symbol = decode_symbol(&event.symbol);
+                                let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price });
+                            }
+                        }
+                        EventType::FundingRate { mark_price, index_price, funding_rate, next_funding_time } => {
+                            let symbol = decode_symbol(&event.symbol);
+                            let _ = actor_tx.send(ActorCommand::MarkPriceUpdate {
+                                symbol: symbol.clone(),
+                                mark_price,
+                                funding_rate,
+                                timestamp: next_funding_time.max(now_ms()),
+                            });
+                            // index price'ı da ayrı fiyat güncellemesi olarak ilet
+                            if index_price > Decimal::ZERO {
+                                let _ = actor_tx.send(ActorCommand::PriceUpdate { symbol, price: index_price });
+                            }
                         }
                         _ => {}
                     }

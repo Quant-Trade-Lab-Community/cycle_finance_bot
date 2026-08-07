@@ -67,7 +67,7 @@ copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
     core paper-service paper-cli alert-service detect-ms
-    risk-worker cold-starter
+    risk-worker cold-starter price-feed
     detect-sr detect-trend detect-liquidity detect-pattern
   )
   local n=0

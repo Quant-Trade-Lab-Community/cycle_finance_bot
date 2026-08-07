@@ -65,6 +65,12 @@ async fn main() {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             }
         });
+    } else if config.data_source == "pricefeed" {
+        let symbols = if config.symbols.is_empty() { config.unique_symbols() } else { config.symbols.clone() };
+        let refresh = std::env::var("ALERT_PRICE_FEED_REFRESH_MS")
+            .ok().and_then(|v| v.parse().ok()).unwrap_or(500);
+        println!("[ALERT] Veri kaynağı: PRICE-FEED (:3004), yenileme: {}ms", refresh);
+        source::spawn_pricefeed_source(price_tx.clone(), symbols, refresh);
     } else {
         if !source::is_ring_alive() {
             println!("⚠️ tick ring boş — DATA terminali (RUN_MODE=DATA) çalışıyor mu?");
