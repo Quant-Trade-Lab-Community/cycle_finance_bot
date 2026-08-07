@@ -66,11 +66,11 @@ async fn main() {
             }
         });
     } else if config.data_source == "pricefeed" {
-        let symbols = if config.symbols.is_empty() { config.unique_symbols() } else { config.symbols.clone() };
-        let refresh = std::env::var("ALERT_PRICE_FEED_REFRESH_MS")
-            .ok().and_then(|v| v.parse().ok()).unwrap_or(500);
-        println!("[ALERT] Veri kaynağı: PRICE-FEED (:3004), yenileme: {}ms", refresh);
-        source::spawn_pricefeed_source(price_tx.clone(), symbols, refresh);
+        if !source::is_ring_alive() {
+            println!("⚠️ price-feed ring boş — price-feed servisi çalışıyor mu? (pricefeed-start)");
+        }
+        println!("[ALERT] Veri kaynağı: PRICE-FEED ring (gerçek zamanlı, spin-loop)");
+        source::spawn_pricefeed_ring_source(price_tx.clone());
     } else {
         if !source::is_ring_alive() {
             println!("⚠️ tick ring boş — DATA terminali (RUN_MODE=DATA) çalışıyor mu?");
@@ -82,7 +82,9 @@ async fn main() {
     let engine_for_task = engine.clone();
     tokio::spawn(async move {
         while let Ok((symbol, price)) = price_rx.recv_async().await {
-            engine_for_task.on_price(&symbol, price);
+            if price > Decimal::ZERO {
+                engine_for_task.on_price(&symbol, price);
+            }
         }
     });
 

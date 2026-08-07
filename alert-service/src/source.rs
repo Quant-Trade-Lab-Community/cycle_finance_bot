@@ -103,38 +103,56 @@ pub fn is_ring_alive() -> bool {
     ring.get_head() > 0
 }
 
-/// Price-feed servisinden (:3004) periyodik fiyat çeker ve sink'e iletir.
-/// `last` → `mark` → `index` → `ask` önceliğiyle fiyatı kullanır.
-pub fn spawn_pricefeed_source(sink: PriceSink, symbols: Vec<String>, refresh_ms: u64) {
-    let base = std::env::var("PRICE_FEED_URL").unwrap_or_else(|_| "http://127.0.0.1:3004".to_string());
+/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) SPIN-LOOP
+/// ile okur ve sink'e iletir. Poll gecikmesi yoktur — gerçek zamanlı.
+pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
     std::thread::spawn(move || {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(3))
-            .build()
-            .expect("reqwest client");
+        let gen_ring = proje_core::memory::ring_buffer::GenerationalRingBuffer::with_name(
+            "/demir_yumruk_pricefeed", 20_000,
+        );
+        let mut cursor = gen_ring.get_head();
+
         loop {
-            for sym in &symbols {
-                let url = format!("{base}/api/lastprice/{}", sym.to_uppercase());
-                match client.get(&url).send() {
-                    Ok(resp) => {
-                        if let Ok(v) = resp.json::<serde_json::Value>() {
-                            if let Some(price) = v.pointer("/price")
-                                .and_then(|p| p.get("last").or(p.get("mark")).or(p.get("index")).or(p.get("ask")))
-                                .and_then(|x| x.as_f64())
-                            {
-                                if price > 0.0 {
-                                    if let Some(d) = rust_decimal::Decimal::from_f64_retain(price) {
-                                        let rounded = d.round_dp(6);
-                                        let _ = sink.send((sym.to_uppercase(), rounded));
-                                    }
-                                }
+            if let Some(slot) = gen_ring.read_slot(cursor) {
+                let mut data = slot.data[..slot.len as usize].to_vec();
+                if let Some(event) = proje_core::tick::EventParser::parse(&mut data) {
+                    use proje_core::ring_buffer::EventType;
+                    let sym = decode_symbol(&event.symbol);
+                    if sym.is_empty() { cursor += 1; continue; }
+                    match event.payload {
+                        EventType::Trade { price, .. } => {
+                            let _ = sink.send((sym, price));
+                        }
+                        EventType::BookTicker { best_ask_price, best_bid_price, .. } => {
+                            let price = if best_ask_price > Decimal::ZERO {
+                                best_ask_price
+                            } else {
+                                best_bid_price
+                            };
+                            if price > Decimal::ZERO {
+                                let _ = sink.send((sym, price));
                             }
                         }
+                        EventType::FundingRate { mark_price, index_price, .. } => {
+                            let _ = sink.send((sym.clone(), mark_price));
+                            if index_price > Decimal::ZERO {
+                                let _ = sink.send((sym, index_price));
+                            }
+                        }
+                        _ => {}
                     }
-                    Err(_) => {}
+                }
+                cursor += 1;
+            } else {
+                // Slot overwrite olmuş olabilir (üretici hızlı) — cursor'ı
+                // üreticinin güncel konumuna taşı, asla takılı kalma.
+                let head = gen_ring.get_head();
+                if head > cursor {
+                    cursor = head;
+                } else {
+                    std::hint::spin_loop();
                 }
             }
-            std::thread::sleep(std::time::Duration::from_millis(refresh_ms));
         }
     });
 }

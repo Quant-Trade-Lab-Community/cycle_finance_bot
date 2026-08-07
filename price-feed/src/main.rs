@@ -99,6 +99,7 @@ async fn ws_pump(tx: Sender<Vec<u8>>, symbols: Vec<String>) {
         .flat_map(|s| {
             let s = s.to_lowercase();
             vec![
+                format!("{}@markPrice@1s", s),
                 format!("{}@trade", s),
                 format!("{}@bookTicker", s),
             ]

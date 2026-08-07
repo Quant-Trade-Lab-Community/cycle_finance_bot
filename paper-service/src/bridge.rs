@@ -118,7 +118,13 @@ fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
                 }
                 cursor += 1;
             } else {
-                std::hint::spin_loop();
+                // Slot overwrite olmuş olabilir (üretici hızlı) — cursor'ı taşı.
+                let head = gen_ring.get_head();
+                if head > cursor {
+                    cursor = head;
+                } else {
+                    std::hint::spin_loop();
+                }
             }
         }
     });

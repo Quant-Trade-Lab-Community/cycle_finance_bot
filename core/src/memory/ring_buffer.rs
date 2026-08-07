@@ -102,9 +102,12 @@ impl GenerationalRingBuffer {
             let len = if data.len() > 246 { 246 } else { data.len() as u16 };
 
             let slot_ptr = self.slots.add(index);
-            (*slot_ptr).seq = seq;
+            // Önce veriyi ve len'i yaz, seq en sona kalsın ki okuyucu
+            // yarım/tutarsız slot okumasın (torn-read koruması).
             (*slot_ptr).len = len;
             ptr::copy_nonoverlapping(data.as_ptr(), (*slot_ptr).data.as_mut_ptr(), len as usize);
+            std::sync::atomic::fence(Ordering::Release);
+            (*slot_ptr).seq = seq;
 
             // Release order ensures all writes to the slot are visible before head is incremented
             (*self.header).head.store(seq + 1, Ordering::Release);
@@ -121,17 +124,25 @@ impl GenerationalRingBuffer {
     #[inline(always)]
     pub fn read_slot(&self, seq: u64) -> Option<MarketDataSlot> {
         let index = (seq % self.capacity as u64) as usize;
-        
+
         let slot = unsafe {
             let slot_ptr = self.slots.add(index);
-            *slot_ptr
+            // İlk oku: seq uyuyorsa veri tam yazılmış demektir (push seq'i en son yazar).
+            let s = *slot_ptr;
+            if s.seq == seq {
+                // Çift kontrol: kopyalama sırasında üretici aynı slotu ezmesin diye.
+                let again = *slot_ptr;
+                if again.seq == seq {
+                    Some(again)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         };
 
         // Generational check: if the sequence doesn't match, we've been overwritten by the producer
-        if slot.seq == seq {
-            Some(slot)
-        } else {
-            None
-        }
+        slot
     }
 }
