@@ -47,6 +47,13 @@ help-cycle() {
   echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
   echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
 
+  echo -e "\n${_Y}━━━  💹 PRICE-FEED  (WS→Ring, Anlık Last/Mark/Index)  ━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)"
+  echo -e "  ${_C}pricefeed-stop${_N}      Durdur"
+  echo -e "  ${_C}pricefeed-status${_N}    Çalışıyor mu? CPU/RAM + health"
+  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query HEIUSDT)"
+  echo -e "  ${_C}pricefeed-log${_N}       Canlı log izle"
+
   echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}data-live${_N}            Canlı Binance WS başlat (RUN_MODE=DATA)"
   echo -e "  ${_C}data-backtest${_N}        CSV backtest başlat"
@@ -297,6 +304,51 @@ listener-status() {
 }
 listener-log() {
   tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
+}
+
+# ── PRICE-FEED (WS → ring buffer, anlık last/mark/index price) ──
+pricefeed-start() {
+  _start_guard
+  if pgrep -x "price-feed" &>/dev/null; then
+    echo "⚠️  price-feed zaten çalışıyor (pid: $(pgrep -x price-feed | head -1))"
+    return 1
+  fi
+  cd "$CYCLE_ROOT" && cargo build -p price-feed 2>&1 | tail -1
+  setsid nohup "$CYCLE_ROOT/target/debug/price-feed" > /tmp/price_feed.log 2>&1 < /dev/null &
+  sleep 3
+  if curl -s -m 2 http://127.0.0.1:3004/health >/dev/null 2>&1; then
+    echo "✅ PRICE-FEED başlatıldı → http://127.0.0.1:3004/api/lastprice"
+  else
+    echo "❌ PRICE-FEED başlatılamadı:"; tail -5 /tmp/price_feed.log
+  fi
+}
+pricefeed-stop() {
+  _start_guard
+  local p; p=$(pgrep -x "price-feed" 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ price-feed durduruldu [pid:$p]"; else echo "ℹ️  price-feed çalışmıyor"; fi
+}
+pricefeed-status() {
+  _start_guard
+  local p; p=$(pgrep -x "price-feed" 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    local cpu mem
+    cpu=$(ps -p "$p" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$p" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ PRICE-FEED ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]"
+    curl -s -m 2 http://127.0.0.1:3004/health
+    echo
+  else
+    echo "✘  PRICE-FEED durdurulmuş"
+  fi
+}
+pricefeed-query() {
+  _start_guard
+  local sym="${1:-BTCUSDT}"
+  curl -s -m 3 "http://127.0.0.1:3004/api/lastprice/$sym" | python3 -m json.tool 2>/dev/null \
+    || echo "❌ Servis yanıt vermiyor — pricefeed-start ile başlat."
+}
+pricefeed-log() {
+  tail -f /tmp/price_feed.log
 }
 
 # ============================================================
