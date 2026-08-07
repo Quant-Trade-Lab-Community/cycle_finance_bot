@@ -59,6 +59,14 @@ help-cycle() {
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
   echo -e "  ${_C}alert-reload${_N}         Alert servisini yeniden başlat"
 
+  echo -e "\n${_Y}━━━  📈 DETECT-MS  (Market Structure Engine :3002)  ━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}detect-ms-start${_N}      Servisi arka planda başlat (port 3002)"
+  echo -e "  ${_C}detect-ms-stop${_N}       Servisi durdur"
+  echo -e "  ${_C}detect-ms-status${_N}     Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}detect-ms-query${_N}      BTCUSDT 15m analiz (JSON çıktı)"
+  echo -e "  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu"
+  echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
+
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 1)"
 
@@ -217,6 +225,74 @@ db-trades() {
 }
 db-size() {
   du -sh "$CYCLE_ROOT/market_data.db" 2>/dev/null
+}
+
+# ============================================================
+#  DETECT-MS  —  Market Structure Multi-Protocol Engine
+#  REST API: http://127.0.0.1:3002/api/ms?symbol=BTCUSDT&interval=15m
+# ============================================================
+DETECT_MS_ADDR="${DETECT_MS_ADDR:-127.0.0.1:3002}"
+
+detect-ms-start() {
+  if pgrep -x "detect-ms" &>/dev/null; then
+    echo "⚠️  detect-ms zaten çalışıyor (pid: $(pgrep -x detect-ms))"
+    echo "   → detect-ms-stop ile önce durdur"
+    return 1
+  fi
+
+  # Derle (yoksa)
+  if [ ! -f "$CYCLE_ROOT/target/debug/detect-ms" ]; then
+    echo "🔨 detect-ms derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p detect-ms 2>&1 | tail -5
+  fi
+
+  echo "🚀 detect-ms başlatılıyor → http://$DETECT_MS_ADDR"
+  cd "$CYCLE_ROOT"
+  nohup ./target/debug/detect-ms > /tmp/detect_ms.log 2>&1 &
+  local pid=$!
+  sleep 1
+  if kill -0 "$pid" 2>/dev/null; then
+    echo "✅ detect-ms başladı [pid: $pid]"
+    echo "   API: http://$DETECT_MS_ADDR/api/ms?symbol=BTCUSDT&interval=15m"
+  else
+    echo "❌ detect-ms başlatılamadı. Log:"
+    tail -10 /tmp/detect_ms.log
+  fi
+}
+
+detect-ms-stop() {
+  if pgrep -x "detect-ms" &>/dev/null; then
+    pkill -TERM -x "detect-ms" && echo "✅ detect-ms durduruldu"
+  else
+    echo "⚠️  detect-ms zaten çalışmıyor"
+  fi
+}
+
+detect-ms-status() {
+  local pid
+  pid=$(pgrep -x "detect-ms" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ detect-ms ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "   API: http://$DETECT_MS_ADDR/api/ms?symbol=BTCUSDT&interval=15m"
+  else
+    echo "✘  detect-ms durdurulmuş"
+  fi
+}
+
+# Sorgu kısayolları
+detect-ms-query() {
+  # Kullanım: detect-ms-query [SYMBOL] [INTERVAL] [LIMIT]
+  local sym="${1:-BTCUSDT}" itv="${2:-15m}" lim="${3:-200}"
+  echo "📡 Sorgu: $sym $itv (limit: $lim) → http://$DETECT_MS_ADDR"
+  curl -s "http://$DETECT_MS_ADDR/api/ms?symbol=${sym}&interval=${itv}&limit=${lim}" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. detect-ms-start ile başlat."
+}
+
+detect-ms-log() {
+  tail -f /tmp/detect_ms.log
 }
 
 # ── Yüklendiğini bildir ──────────────────────────────────────
