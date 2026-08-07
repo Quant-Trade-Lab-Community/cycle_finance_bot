@@ -66,7 +66,7 @@ fn spawn_tick_reader(actor_tx: UnboundedSender<ActorCommand>) {
                 }
                 cursor += 1;
             } else {
-                std::hint::spin_loop();
+                std::thread::sleep(std::time::Duration::from_micros(500));
             }
         }
     });
@@ -123,7 +123,7 @@ fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
                 if head > cursor {
                     cursor = head;
                 } else {
-                    std::hint::spin_loop();
+                    std::thread::sleep(std::time::Duration::from_micros(500));
                 }
             }
         }
@@ -164,7 +164,7 @@ fn spawn_order_reader(actor_tx: UnboundedSender<ActorCommand>) {
 
                 cursor += 1;
             } else {
-                std::hint::spin_loop();
+                std::thread::sleep(std::time::Duration::from_micros(500));
             }
         }
     });

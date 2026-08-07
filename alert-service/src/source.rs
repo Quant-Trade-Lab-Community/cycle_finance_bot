@@ -41,7 +41,7 @@ pub fn spawn_ring_source(sink: PriceSink) {
                 }
                 cursor += 1;
             } else {
-                std::hint::spin_loop();
+                std::thread::sleep(std::time::Duration::from_micros(500));
             }
         }
     });
@@ -150,7 +150,7 @@ pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
                 if head > cursor {
                     cursor = head;
                 } else {
-                    std::hint::spin_loop();
+                    std::thread::sleep(std::time::Duration::from_micros(500));
                 }
             }
         }
