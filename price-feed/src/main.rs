@@ -99,7 +99,6 @@ async fn ws_pump(tx: Sender<Vec<u8>>, symbols: Vec<String>) {
         .flat_map(|s| {
             let s = s.to_lowercase();
             vec![
-                format!("{}@markPrice@1s", s),
                 format!("{}@trade", s),
                 format!("{}@bookTicker", s),
             ]
@@ -311,7 +310,8 @@ async fn main() {
     let symbols_ws = symbols.clone();
     tokio::spawn(async move { ws_pump(tx, symbols_ws).await });
 
-    // Mark/Index REST döngüsü (fstream WS markPrice sessiz olduğundan)
+    // Mark/Index REST döngüsü — Binance fstream markPrice WS stream'i sessiz
+    // olduğundan premiumIndex'i çok sık (200ms) çekerek pratikte gecikmesiz.
     {
         let client = reqwest::Client::new();
         let state = state.clone();
@@ -319,7 +319,7 @@ async fn main() {
         tokio::spawn(async move {
             loop {
                 fetch_premium_index(&client, &symbols_rest, state.clone()).await;
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
             }
         });
     }
