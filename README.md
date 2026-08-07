@@ -149,13 +149,26 @@ Rust'ta yazılmış; detect-ms seviye/yapı analizi + price-feed anlık fiyatın
 
 ---
 
-## 🛰️ Listener — Anlık Metrik Analizi
+## 🛰️ Listener — Mikro-Yapı Metrik Analizi
 
-> ⚠️ **Pozisyon izleyici DEĞİLDİR.** Data merkezinden (price-feed :3004) gelen verilerle sistemde tanımlı **her sembol** için anlık metrik hesaplar.
+> ⚠️ **Pozisyon izleyici DEĞİLDİR.** Veri kaynağı **DATA merkezi** (`/dev/shm/demir_yumruk_ring`). Sistemde tanımlı her sembol için tick-by-tick **mikro-yapı metrikleri** hesaplar.
 
-- Her 2 sn'de price-feed'ten tüm sembollerin `last/mark/index/bid/ask` verilerini çeker
+**Hesaplanan metrikler** (tam formüller ve yorumlar için → [microstructure_metrics.md](./docs/microstructure_metrics.md)):
+
+| Metrik | Anlamı |
+|--------|--------|
+| **WLOBI** | Emir defteri likidite dengesizliği (üstel ağırlıklı) |
+| **SLP_ASK/BID** | Likidite eğimi (derinliğin fiyata göre log-türevi) |
+| **EffΔ** | Efektif delta — normalize agresif akış yönü |
+| **ΔV** | Delta velocity — akış ivmelenme hızı (tükenme sinyali) |
+| **ABS** | Absorption ratio — pasif emilim / gizli birikim |
+| **aVPIN** | Mikro-yapı toksisitesi (bilgili trader baskınlığı) |
+| **PERM/Temp** | Hasbrouck kalıcı/geçici etki ayrıştırması |
+| **EfP** | Execution footprint — büyük oyuncu zorlaması |
+| **P(LONG) + SİNYAL** | Alpha basket → ▲ LONG / ▼ SHORT / · NÖTR |
+
 - Tablo çizer + `/tmp/listener_metrics.json`'a yazar
-- **Metrikler ŞU AN placeholder** (gerçek metrikler sonra eklenecek)
+- Metrik parametreleri (Θ) sembol bazında kalibre edilmelidir
 
 ```bash
 ./target/debug/listener
