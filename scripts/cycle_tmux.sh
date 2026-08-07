@@ -5,13 +5,17 @@
 #
 #  Pencere 0 — Trading (5 panel):
 #    ┌──────────────────────┬──────────────────────┐
-#    │  📡 DATA             │  🛡️  PAPER-SERVICE    │
+#    │  🛡️  PAPER-SERVICE   │  🧠 STRATEGY         │
 #    ├──────────────────────┼──────────────────────┤
-#    │  🧠 STRATEGY         │  🔔 ALERT-SERVICE    │
+#    │  🛰️  LISTENER        │  ⚠️  RISK            │
 #    ├──────────────────────┴──────────────────────┤
 #    │  💻 SHELL  (help-cycle, paper-buy, ...)     │
 #    └─────────────────────────────────────────────┘
-#  Pencere 1 — Monitor (CPU/RAM/GPU izleme)
+#  Pencere 1 — 📡 DATA   (sekme terminal)
+#  Pencere 2 — 🔔 ALERT  (sekme terminal)
+#  Pencere 3 — Monitor  (CPU/RAM/GPU izleme)
+#  Pencere 4 — DETECT-MS (MSMP :3002)
+#  Pencere 5 — HEIUSDT (Kırılım stratejisi)
 # ============================================================
 set -euo pipefail
 
@@ -104,34 +108,21 @@ tmux new-session -d -s "$SESSION" -x 220 -y 50
 tmux rename-window -t "$SESSION:0" "Trading"
 
 # ── Panel düzeni ─────────────────────────────────────────────
-# 0=sol-üst  1=sağ-üst  2=sol-orta  3=sağ-orta
-# 4=LISTENER  5=RISK  6=alt(SHELL)
-tmux split-window -t "$SESSION:0"    -h
+# 0=sol-üst  2=sağ-üst  1=sol-alt  3=sağ-alt  4=alt(SHELL)
+tmux split-window -t "$SESSION:0"    -v -p 78
+tmux split-window -t "$SESSION:0.0"  -h
 tmux split-window -t "$SESSION:0.0"  -v
-tmux split-window -t "$SESSION:0.1"  -v
-tmux split-window -t "$SESSION:0"    -v -p 42
-tmux split-window -t "$SESSION:0.4"  -v -p 50
-tmux split-window -t "$SESSION:0.5"  -v -p 50
+tmux split-window -t "$SESSION:0.2"  -v
 
 # ── Panel başlıkları ─────────────────────────────────────────
-tmux select-pane -t "$SESSION:0.0" -T "📡 DATA"
-tmux select-pane -t "$SESSION:0.1" -T "🛡️  PAPER"
+tmux select-pane -t "$SESSION:0.0" -T "🛡️  PAPER"
 tmux select-pane -t "$SESSION:0.2" -T "🧠 STRATEGY"
-tmux select-pane -t "$SESSION:0.3" -T "🔔 ALERT"
-tmux select-pane -t "$SESSION:0.4" -T "🛰️  LISTENER"
-tmux select-pane -t "$SESSION:0.5" -T "⚠️  RISK"
-tmux select-pane -t "$SESSION:0.6" -T "💻 SHELL"
+tmux select-pane -t "$SESSION:0.1" -T "🛰️  LISTENER"
+tmux select-pane -t "$SESSION:0.3" -T "⚠️  RISK"
+tmux select-pane -t "$SESSION:0.4" -T "💻 SHELL"
 
-# ── Panel 0: DATA ────────────────────────────────────────────
+# ── Panel 0: PAPER-SERVICE ───────────────────────────────────
 tmux send-keys -t "$SESSION:0.0" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '📡  DATA TERMİNALİ  (Binance WS)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-cd $ROOT && RUN_MODE=DATA ./target/debug/core
-" Enter
-
-# ── Panel 1: PAPER-SERVICE ───────────────────────────────────
-tmux send-keys -t "$SESSION:0.1" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🛡️   PAPER SERVICE  (REST API :8080)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -155,8 +146,39 @@ sleep 3
 cd $ROOT && RUN_MODE=STRATEGY ./target/debug/core
 " Enter
 
-# ── Panel 3: ALERT-SERVICE ───────────────────────────────────
+# ── Panel 1: LISTENER ─────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.1" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && ./target/debug/listener
+" Enter
+
+# ── Panel 3: RISK ─────────────────────────────────────────────
 tmux send-keys -t "$SESSION:0.3" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '⚠️   RİSK ANALİZİ  (market_data.db)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && ./target/debug/risk_analysis --watch
+" Enter
+
+# ── Panel 4: SHELL ───────────────────────────────────────────
+tmux send-keys -t "$SESSION:0.4" "source /tmp/cycle_init.sh" Enter
+
+# ── Pencere 1: DATA (sekme terminal) ─────────────────────────
+tmux new-window -t "$SESSION:1" -n "📡 DATA"
+tmux send-keys -t "$SESSION:1" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📡  DATA TERMİNALİ  (Binance WS)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && RUN_MODE=DATA ./target/debug/core
+" Enter
+
+# ── Pencere 2: ALERT (sekme terminal) ────────────────────────
+tmux new-window -t "$SESSION:2" -n "🔔 ALERT"
+tmux send-keys -t "$SESSION:2" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -178,35 +200,14 @@ help-cycle
 INITEOF
 chmod +x /tmp/cycle_init.sh
 
-# ── Panel 4: LISTENER ─────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.4" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && ./target/debug/listener
-" Enter
+# ── Pencere 3: MONITOR ───────────────────────────────────────
+tmux new-window -t "$SESSION:3" -n "Monitor"
+tmux send-keys -t "$SESSION:3" "bash '$ROOT/scripts/monitor.sh'" Enter
+tmux select-pane -t "$SESSION:3" -T "Monitor"
 
-# ── Panel 5: RISK ─────────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.5" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '⚠️   RİSK ANALİZİ  (market_data.db)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && ./target/debug/risk_analysis --watch
-" Enter
-
-# ── Panel 6: SHELL ───────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.6" "source /tmp/cycle_init.sh" Enter
-
-# ── Pencere 1: MONITOR ───────────────────────────────────────
-tmux new-window -t "$SESSION:1" -n "Monitor"
-tmux send-keys -t "$SESSION:1" "bash '$ROOT/scripts/monitor.sh'" Enter
-tmux select-pane -t "$SESSION:1" -T "Monitor"
-
-# ── Pencere 2: DETECT-MS ─────────────────────────────────────
-tmux new-window -t "$SESSION:2" -n "DETECT-MS"
-tmux send-keys -t "$SESSION:2" "
+# ── Pencere 4: DETECT-MS ─────────────────────────────────────
+tmux new-window -t "$SESSION:4" -n "DETECT-MS"
+tmux send-keys -t "$SESSION:4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -214,8 +215,8 @@ sleep 2
 cd $ROOT && ./target/debug/detect-ms
 " Enter
 
-# ── Pencere 3: HEIUSDT STRATEJİ ─────────────────────────────
-tmux new-window -t "$SESSION:3" -n "HEIUSDT"
+# ── Pencere 5: HEIUSDT STRATEJİ ─────────────────────────────
+tmux new-window -t "$SESSION:5" -n "HEIUSDT"
 tmux send-keys -t "$SESSION:3" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🎯  HEIUSDT  (Kırılım Stratejisi)'
@@ -234,7 +235,7 @@ tmux set-option -t "$SESSION" status-interval 1
 tmux set-option -t "$SESSION" status-style          "bg=colour232,fg=colour245"
 tmux set-option -t "$SESSION" status-left           "#[bg=colour25,fg=colour255,bold]  🏛️  Cycle Finance  #[bg=colour232,fg=colour245] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=colour244]Ctrl+B→ #[fg=colour39]0#[fg=colour244]:Terminal  #[fg=colour196]1#[fg=colour244]:Monitor  #[fg=colour240]│  #[fg=colour250]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=colour244]Ctrl+B→ #[fg=colour39]0#[fg=colour244]:Trading  #[fg=colour45]1#[fg=colour244]:DATA  #[fg=colour214]2#[fg=colour244]:ALERT  #[fg=colour196]3#[fg=colour244]:Monitor  #[fg=colour240]│  #[fg=colour250]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   55
 
 # Window sekme renkleri
@@ -242,46 +243,36 @@ tmux set-option -t "$SESSION" window-status-format          "#[fg=colour240] #{w
 tmux set-option -t "$SESSION" window-status-current-format  "#[bg=colour25,fg=colour255,bold] #{window_index}:#{window_name} "
 
 # ── Per-pane renk temaları ───────────────────────────────────
-# 📡 DATA      → Mavi tema    (bg: koyu mavi  | kenarlık: parlak cyan)
-tmux select-pane -t "$SESSION:0.0" -P "bg=colour17,fg=colour255"
-tmux set-option -t "$SESSION:0.0" -p pane-active-border-style "fg=colour39,bold"
-tmux set-option -t "$SESSION:0.0" -p pane-border-style        "fg=colour27"
-
 # 🛡️  PAPER     → Yeşil tema   (bg: koyu yeşil | kenarlık: parlak yeşil)
-tmux select-pane -t "$SESSION:0.1" -P "bg=colour22,fg=colour255"
-tmux set-option -t "$SESSION:0.1" -p pane-active-border-style "fg=colour46,bold"
-tmux set-option -t "$SESSION:0.1" -p pane-border-style        "fg=colour28"
+tmux select-pane -t "$SESSION:0.0" -P "bg=colour22,fg=colour255"
+tmux set-option -t "$SESSION:0.0" -p pane-active-border-style "fg=colour46,bold"
+tmux set-option -t "$SESSION:0.0" -p pane-border-style        "fg=colour28"
 
 # 🧠 STRATEGY  → Mor tema     (bg: koyu mor   | kenarlık: parlak magenta)
 tmux select-pane -t "$SESSION:0.2" -P "bg=colour53,fg=colour255"
 tmux set-option -t "$SESSION:0.2" -p pane-active-border-style "fg=colour171,bold"
 tmux set-option -t "$SESSION:0.2" -p pane-border-style        "fg=colour55"
 
-# 🔔 ALERT     → Turuncu tema (bg: koyu kahve | kenarlık: turuncu)
-tmux select-pane -t "$SESSION:0.3" -P "bg=colour52,fg=colour255"
-tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=colour214,bold"
-tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=colour130"
-
 # 🛰️  LISTENER   → Camgöbeği tema (bg: koyu turkuaz | kenarlık: cyan)
-tmux select-pane -t "$SESSION:0.4" -P "bg=colour23,fg=colour255"
-tmux set-option -t "$SESSION:0.4" -p pane-active-border-style "fg=colour45,bold"
-tmux set-option -t "$SESSION:0.4" -p pane-border-style        "fg=colour36"
+tmux select-pane -t "$SESSION:0.1" -P "bg=colour23,fg=colour255"
+tmux set-option -t "$SESSION:0.1" -p pane-active-border-style "fg=colour45,bold"
+tmux set-option -t "$SESSION:0.1" -p pane-border-style        "fg=colour36"
 
 # ⚠️  RISK       → Kırmızı tema  (bg: koyu bordo | kenarlık: kırmızı)
-tmux select-pane -t "$SESSION:0.5" -P "bg=colour52,fg=colour255"
-tmux set-option -t "$SESSION:0.5" -p pane-active-border-style "fg=colour196,bold"
-tmux set-option -t "$SESSION:0.5" -p pane-border-style        "fg=colour124"
+tmux select-pane -t "$SESSION:0.3" -P "bg=colour52,fg=colour255"
+tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=colour196,bold"
+tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=colour124"
 
 # 💻 SHELL     → Antrasit tema (bg: çok koyu  | kenarlık: açık gri)
-tmux select-pane -t "$SESSION:0.6" -P "bg=colour233,fg=colour252"
-tmux set-option -t "$SESSION:0.6" -p pane-active-border-style "fg=colour244,bold"
-tmux set-option -t "$SESSION:0.6" -p pane-border-style        "fg=colour238"
+tmux select-pane -t "$SESSION:0.4" -P "bg=colour233,fg=colour252"
+tmux set-option -t "$SESSION:0.4" -p pane-active-border-style "fg=colour244,bold"
+tmux set-option -t "$SESSION:0.4" -p pane-border-style        "fg=colour238"
 
 # Pane başlık formatı — renk kodlu
 tmux set-option -t "$SESSION:0" pane-border-format \
-  "#{?#{==:#{pane_index},0},#[fg=colour39 bold],#{?#{==:#{pane_index},1},#[fg=colour46 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour214 bold],#{?#{==:#{pane_index},4},#[fg=colour45 bold],#{?#{==:#{pane_index},5},#[fg=colour196 bold],#[fg=colour244 bold]}}}}}}} #{pane_title} #[default]"
+  "#{?#{==:#{pane_index},0},#[fg=colour46 bold],#{?#{==:#{pane_index},1},#[fg=colour45 bold],#{?#{==:#{pane_index},2},#[fg=colour171 bold],#{?#{==:#{pane_index},3},#[fg=colour196 bold],#{?#{==:#{pane_index},4},#[fg=colour244 bold],#[fg=colour244 bold]}}}}}} #{pane_title} #[default]"
 
 # ── Terminal penceresine dön ve bağlan ───────────────────────
 tmux select-window -t "$SESSION:0"
-tmux select-pane  -t "$SESSION:0.6"
+tmux select-pane  -t "$SESSION:0.4"
 tmux attach-session -t "$SESSION"

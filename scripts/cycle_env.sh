@@ -42,7 +42,7 @@ help-cycle() {
   echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}listener-start${_N}      Pane 0.4'te başlat"
+  echo -e "  ${_C}listener-start${_N}      Pane 0.1'de başlat"
   echo -e "  ${_C}listener-stop${_N}       Durdur"
   echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
   echo -e "  ${_C}listenconfig-list${_N}   Metrik parametrelerini göster"
@@ -51,7 +51,7 @@ help-cycle() {
   echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
 
   echo -e "\n${_Y}━━━  ⚠️  RİSK ANALİZİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}risk-start${_N}           Pane 0.5'te başlat (5 sn yenileme)"
+  echo -e "  ${_C}risk-start${_N}           Pane 0.3'te başlat (5 sn yenileme)"
   echo -e "  ${_C}risk-stop${_N}            Durdur"
   echo -e "  ${_C}risk-query${_N}           Tek seferlik analiz çalıştır"
 
@@ -121,8 +121,12 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → ok tuşu${_N}     Panel değiştir"
   echo -e "  ${_B}Ctrl+B → z${_N}           Paneli tam ekran yap / küçült"
   echo -e "  ${_B}Ctrl+B → d${_N}           Session'ı arka plana al"
-  echo -e "  ${_B}Ctrl+B → 0${_N}           Terminal sekmesi"
-  echo -e "  ${_B}Ctrl+B → 1${_N}           Monitor sekmesi"
+  echo -e "  ${_B}Ctrl+B → 0${_N}           Trading sekmesi (5 panel)"
+  echo -e "  ${_B}Ctrl+B → 1${_N}           📡 DATA sekmesi"
+  echo -e "  ${_B}Ctrl+B → 2${_N}           🔔 ALERT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 3${_N}           Monitor sekmesi"
+  echo -e "  ${_B}Ctrl+B → 4${_N}           DETECT-MS sekmesi"
+  echo -e "  ${_B}Ctrl+B → 5${_N}           HEIUSDT sekmesi"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -161,23 +165,25 @@ cycle-build-full() {
 }
 
 # ============================================================
-#  SİSTEMLERİ TEK TEK AÇ / KAPAT  (6 panelli Trading penceresinde)
-#  Her servis kendi pane'inde başlar: yeni sekme/pencere açılmaz.
+#  SİSTEMLERİ TEK TEK AÇ / KAPAT  (5 panelli Trading penceresi)
+#  DATA ve ALERT ayrı sekme (pencere) olarak açılır.
+#  Her servis kendi pane'inde başlar.
 # ============================================================
 # Yardımcı: Trading penceresindeki bir pane'e komut gönder
-# Servis → pane haritası: 0.0=DATA 0.1=PAPER 0.2=STRATEGY 0.3=ALERT 0.4=LISTENER 0.5=RISK
+# Servis → hedef: 0.0=PAPER 0.2=STRATEGY 0.1=LISTENER 0.3=RISK 0.4=SHELL
+#                1=DATA sekmesi  2=ALERT sekmesi
 _tmux_pane() {
   local name="$1"; shift
   local session="cycle"
   local pane
   case "$name" in
-    "📡DATA")   pane="0.0" ;;
-    "🛡️PAPER")  pane="0.1" ;;
+    "📡DATA")   pane="1" ;;
+    "🛡️PAPER")  pane="0.0" ;;
     "🧠STRATEGY") pane="0.2" ;;
-    "🔔ALERT")  pane="0.3" ;;
-    "🛰️LISTENER") pane="0.4" ;;
-    "⚠️RISK")  pane="0.5" ;;
-    "💻SHELL")  pane="0.6" ;;
+    "🔔ALERT")  pane="2" ;;
+    "🛰️LISTENER") pane="0.1" ;;
+    "⚠️RISK")  pane="0.3" ;;
+    "💻SHELL")  pane="0.4" ;;
     *)
       # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -218,7 +224,7 @@ data-start() {
   cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
   rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
   _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/core" Enter
-  echo "✅ DATA başlatıldı (pane 0.0)"
+  echo "✅ DATA başlatıldı (sekme 1 — 📡 DATA)"
 }
 data-stop() {
   _start_guard
@@ -249,7 +255,7 @@ paper-start() {
   _tmux_pane "🛡️PAPER" \
     "cd $CYCLE_ROOT && PAPER_ADMIN_USER=${PAPER_ADMIN_USER:-admin} PAPER_ADMIN_PASS=${PAPER_ADMIN_PASS:-changeme123} PAPER_API_ADDR=${PAPER_API_ADDR:-127.0.0.1:8080} PAPER_INITIAL_USDT=${PAPER_INITIAL_USDT:-100000} PAPER_DB_PATH=/tmp/paper_live.db PAPER_SLED_PATH=$CYCLE_ROOT/paper_wal ./target/debug/paper-service" \
     Enter
-  echo "✅ PAPER-SERVICE başlatıldı (pane 0.1, http://127.0.0.1:8080)"
+  echo "✅ PAPER-SERVICE başlatıldı (pane 0.0, http://127.0.0.1:8080)"
 }
 paper-stop() {
   _start_guard
@@ -263,7 +269,7 @@ alert-start() {
   if pgrep -x "alert-service" &>/dev/null; then echo "⚠️  alert-service zaten çalışıyor"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p alert-service 2>&1 | tail -1
   _tmux_pane "🔔ALERT" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter
-  echo "✅ ALERT-SERVICE başlatıldı (pane 0.3)"
+  echo "✅ ALERT-SERVICE başlatıldı (sekme 2 — 🔔 ALERT)"
 }
 alert-stop() {
   _start_guard
@@ -271,7 +277,7 @@ alert-stop() {
   if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ alert-service durduruldu [pid:$p]"; else echo "ℹ️  alert-service çalışmıyor"; fi
 }
 
-# ── LISTENER (Anlık Metrik Analizi, pane 0.4) ──────────
+# ── LISTENER (Anlık Metrik Analizi, pane 0.1) ──────────
 listener-start() {
   _start_guard
   if pgrep -x listener &>/dev/null; then
@@ -286,7 +292,7 @@ listener-start() {
   _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/listener" Enter
   sleep 2
   if pgrep -x listener &>/dev/null; then
-    echo "✅ LISTENER başlatıldı (pane 0.4)"
+    echo "✅ LISTENER başlatıldı (pane 0.1)"
   else
     echo "❌ LISTENER başlatılamadı"
   fi
@@ -319,7 +325,7 @@ listener-log() {
   tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
 }
 
-# ── RISK (Anlık risk analizi, pane 0.5) ──────────────────────
+# ── RISK (Anlık risk analizi, pane 0.3) ──────────────────────
 risk-start() {
   _start_guard
   if pgrep -x risk_analysis &>/dev/null; then
@@ -328,7 +334,7 @@ risk-start() {
   fi
   _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && ./target/debug/risk_analysis --watch" Enter
   sleep 2
-  echo "✅ RISK başlatıldı (pane 0.5)"
+  echo "✅ RISK başlatıldı (pane 0.3)"
 }
 risk-stop() {
   _start_guard
