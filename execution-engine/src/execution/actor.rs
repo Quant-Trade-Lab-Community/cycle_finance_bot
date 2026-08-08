@@ -86,6 +86,11 @@ pub enum Command {
         enabled: bool,
         tx: oneshot::Sender<Result<(), String>>,
     },
+    /// Kill switch aç/kapat. Kapatırken devre kesici de sıfırlanır (kilitlenmeyi önler).
+    SetKillSwitch {
+        enabled: bool,
+        tx: oneshot::Sender<Result<(), String>>,
+    },
     /// Borsa ile tam yeniden eşitleme (bağlantı kopması / gap sonrası).
     Resync,
 }
@@ -224,6 +229,20 @@ impl ExecutionActor {
                 let res = self.set_multi_assets(enabled).await;
                 let _ = tx.send(res.map_err(|e| e.to_string()));
             }
+            Command::SetKillSwitch { enabled, tx } => {
+                let res = if enabled {
+                    self.kill_switch.engage()
+                } else {
+                    self.kill_switch.release()
+                };
+                // Kill switch kapatılırken devre kesiciyi de sıfırla: aksi halde
+                // kilitli kesici her emri reddedip switch'i yeniden açardı.
+                if !enabled {
+                    self.risk.reset_breaker();
+                    info!("Kill switch kapatıldı — devre kesici sıfırlandı");
+                }
+                let _ = tx.send(res.map_err(|e| e.to_string()));
+            }
             Command::Resync => {
                 if let Err(e) = self.resync().await {
                     error!("ExecutionActor: resync hatası: {e}");
@@ -234,12 +253,30 @@ impl ExecutionActor {
 
     // ── Emir gönderim akışı ──────────────────────────────────────
 
-    async fn submit_order(&mut self, order: OrderRequest) -> Result<OrderAck, ExecError> {
+    async fn submit_order(&mut self, mut order: OrderRequest) -> Result<OrderAck, ExecError> {
         if !self.snapshot.read().ready {
             return Err(ExecError::NotReady("hesap borsa ile eşitlenmedi".into()));
         }
         if self.kill_switch.is_open() {
             return Err(ExecError::Risk("kill switch açık — emir reddedildi".into()));
+        }
+        // USDT bazlı büyüklük → coin miktarına çevir.
+        // Binance USDT-M futures quoteOrderQty'yi kabul etmediği için (-1102)
+        // mark fiyatından quantity hesaplanır, normal MARKET emri gönderilir.
+        if let Some(qoq) = order.quote_order_qty {
+            let mark = self.current_mark(&order.symbol).await?;
+            if mark <= Decimal::ZERO {
+                return Err(ExecError::Preflight(format!(
+                    "USDT emir için {} mark fiyatı yok",
+                    order.symbol
+                )));
+            }
+            order.quantity = qoq / mark;
+            order.quote_order_qty = None;
+            info!(
+                "quoteOrderQty {qoq} USDT → quantity {} @ mark {mark} ({})",
+                order.quantity, order.symbol
+            );
         }
         // Market emri için snapshot'ta bilinen mark fiyatını risk kapısına besle.
         if order.price.is_none()
@@ -325,6 +362,23 @@ impl ExecutionActor {
                 Err(e)
             }
         }
+    }
+
+    /// Sembol için güncel mark fiyatı: snapshot pozisyonu varsa oradan,
+    /// yoksa Binance ticker'dan.
+    async fn current_mark(&self, symbol: &str) -> Result<Decimal, ExecError> {
+        if let Some(p) = self
+            .snapshot
+            .read()
+            .positions
+            .iter()
+            .find(|p| p.symbol.eq_ignore_ascii_case(symbol))
+        {
+            if p.mark_price > Decimal::ZERO {
+                return Ok(p.mark_price);
+            }
+        }
+        self.client.ticker_price(symbol).await
     }
 
     async fn submit_batch(&mut self, orders: Vec<OrderRequest>) -> Result<Vec<OrderAck>, ExecError> {

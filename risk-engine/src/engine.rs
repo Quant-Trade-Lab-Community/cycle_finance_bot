@@ -242,6 +242,12 @@ impl RiskEngine {
         RiskDecision::Approved { intent }
     }
 
+    /// Ardışık red sayısı bu eşiği geçerse kill switch otomatik devreye girer.
+    /// (Burada dokümantasyon amacıyla; gerçek kullanım `policy` üzerindendir.)
+    pub fn reset_breaker(&self) {
+        self.breaker.lock().reset();
+    }
+
     /// Onaylanan emri "fiilen gönderildi" olarak işaretler (rate-limit penceresi).
     /// `evaluate` onay sonrası zaten kaydeder; bu metot dış çağrılar (batch) içindir.
     pub fn record_approved(&self) {

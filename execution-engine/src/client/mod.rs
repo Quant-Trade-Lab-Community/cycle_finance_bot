@@ -76,6 +76,19 @@ impl BinanceClient {
         })
     }
 
+    /// Anlık fiyat (USDT-M futures). `quoteOrderQty` desteklenmediğinden
+    /// USDT büyüklüğü bu fiyattan coin miktarına çevrilir.
+    pub async fn ticker_price(&self, symbol: &str) -> Result<Decimal> {
+        let v = self
+            .http
+            .request(Method::GET, "/fapi/v1/ticker/price", vec![qp("symbol", symbol)], None, 0)
+            .await?;
+        v.get("price")
+            .and_then(|x| x.as_str())
+            .and_then(|s| s.parse::<Decimal>().ok())
+            .ok_or_else(|| ExecError::InvalidResponse("ticker price missing".into()))
+    }
+
     pub async fn exchange_info(&self) -> Result<ExchangeInfo> {
         let v = self.http.request(Method::GET, "/fapi/v1/exchangeInfo", vec![], None, 0).await?;
         serde_json::from_value(v).map_err(ExecError::Json)

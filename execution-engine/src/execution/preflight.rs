@@ -73,27 +73,6 @@ impl Preflight {
         let mut normalized = order.clone();
         normalized.symbol = symbol.clone();
 
-        // USDT bazlı büyüklük (quoteOrderQty) — yalnızca MARKET emirlerde.
-        if let Some(qoq) = normalized.quote_order_qty {
-            if order.order_type != OrderType::Market {
-                return Err(ExecError::Preflight(
-                    "quoteOrderQty yalnızca MARKET emirlerde kullanılır".into(),
-                ));
-            }
-            if qoq <= Decimal::ZERO {
-                return Err(ExecError::Preflight("quoteOrderQty pozitif olmalı".into()));
-            }
-            if let Some(f) = info.filter("MIN_NOTIONAL")
-                && let SymbolFilter::MinNotional { notional: min_n, .. } = f
-                && min_n > &Decimal::ZERO
-                && qoq < *min_n
-            {
-                return Err(ExecError::Preflight(format!(
-                    "quoteOrderQty {qoq} < MIN_NOTIONAL {min_n} ({symbol})"
-                )));
-            }
-        }
-
         // Miktar: precizyon + step + min/max.
         let qty = normalize_quantity(&info, normalized.quantity)?;
         normalized.quantity = qty;

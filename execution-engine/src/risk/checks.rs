@@ -65,6 +65,11 @@ impl RiskChecks {
         self.engine.record_approved();
     }
 
+    /// Devre kesici sayacını sıfırlar (kill switch kapatılınca çağrılır).
+    pub fn reset_breaker(&self) {
+        self.engine.reset_breaker();
+    }
+
     // ── Snapshot senkronizasyonu ──
 
     /// Resync sonrası borsa gerçeğini risk state'ine yansıtır.

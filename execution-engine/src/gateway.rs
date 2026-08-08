@@ -255,6 +255,18 @@ impl EngineHandle {
         rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
     }
 
+    /// Kill switch aç/kapat. Kapatırken devre kesici sıfırlanır.
+    pub async fn set_kill_switch(&self, enabled: bool) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SetKillSwitch { enabled, tx })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "kill switch yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
     pub fn snapshot(&self) -> AccountSnapshot {
         self.snapshot.read().clone()
     }

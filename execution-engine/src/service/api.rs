@@ -213,7 +213,9 @@ pub struct PlaceOrderRequest {
     pub side: String,
     #[serde(rename = "type")]
     pub order_type: String,
-    pub quantity: Decimal,
+    /// Coin bazlı miktar (quoteOrderQty kullanınca gönderilmez).
+    #[serde(default)]
+    pub quantity: Option<Decimal>,
     /// MARKET emirlerde USDT bazlı büyüklük (quantity yerine quoteOrderQty).
     #[serde(default)]
     pub quote_order_qty: Option<Decimal>,
@@ -242,11 +244,17 @@ fn parse_enum<T: serde::de::DeserializeOwned>(s: &str) -> Result<T, String> {
 }
 
 fn build_order(req: PlaceOrderRequest) -> Result<OrderRequest, String> {
+    if req.quantity.is_none() && req.quote_order_qty.is_none() {
+        return Err("quantity veya quote_order_qty gerekli".into());
+    }
+    if req.quantity.is_some() && req.quote_order_qty.is_some() {
+        return Err("quantity ve quote_order_qty birlikte verilemez".into());
+    }
     Ok(OrderRequest {
         symbol: req.symbol.to_uppercase(),
         side: parse_enum::<OrderSide>(&req.side)?,
         order_type: parse_enum::<OrderType>(&req.order_type)?,
-        quantity: req.quantity,
+        quantity: req.quantity.unwrap_or_default(),
         quote_order_qty: req.quote_order_qty,
         price: req.price,
         stop_price: req.stop_price,
@@ -698,12 +706,8 @@ pub struct KillSwitchRequest {
 }
 
 async fn set_kill_switch(State(state): State<Arc<AppState>>, Json(req): Json<KillSwitchRequest>) -> impl IntoResponse {
-    let res = if req.enabled {
-        state.engine.kill_switch.engage()
-    } else {
-        state.engine.kill_switch.release()
-    };
-    match res {
+    // Actor üzerinden gider: kapatırken devre kesici de sıfırlanır.
+    match state.engine.set_kill_switch(req.enabled).await {
         Ok(()) => (StatusCode::OK, Json(serde_json::json!({ "kill_switch": req.enabled }))).into_response(),
         Err(e) => api_err(StatusCode::INTERNAL_SERVER_ERROR, format!("kill switch hatası: {e}")),
     }
