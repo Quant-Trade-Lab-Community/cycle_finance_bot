@@ -82,7 +82,7 @@ impl<'de> Deserialize<'de> for PositionRisk {
             #[serde(rename = "isolatedMargin")]
             isolated_margin: Option<String>,
             #[serde(rename = "isAutoAddMargin")]
-            is_auto_add_margin: Option<bool>,
+            is_auto_add_margin: Option<String>,
             #[serde(rename = "positionInitialMargin")]
             position_initial_margin: Option<String>,
             #[serde(rename = "maintMargin")]
@@ -107,7 +107,7 @@ impl<'de> Deserialize<'de> for PositionRisk {
             max_notional: dec(r.max_notional.as_deref()),
             margin_type: r.margin_type.unwrap_or_else(|| "CROSSED".into()),
             isolated_margin: dec(r.isolated_margin.as_deref()),
-            is_auto_add_margin: r.is_auto_add_margin.unwrap_or(false),
+            is_auto_add_margin: r.is_auto_add_margin.as_deref().map(|s| s == "true").unwrap_or(false),
             position_initial_margin: dec(r.position_initial_margin.as_deref()),
             maint_margin: dec(r.maint_margin.as_deref()),
             isolated_wallet: dec(r.isolated_wallet.as_deref()),

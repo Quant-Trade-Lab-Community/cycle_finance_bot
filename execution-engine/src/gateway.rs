@@ -5,7 +5,9 @@
 
 use crate::config::TradingMode;
 use crate::metrics::Metrics;
-use crate::order::{BinanceOrderResponse, OrderAck, OrderRequest};
+use crate::order::{
+    BinanceOrderResponse, OrderAck, OrderPositionSide, OrderRequest, OrderSide, OrderType,
+};
 use crate::risk::kill_switch::KillSwitch;
 use crate::state::snapshot::AccountSnapshot;
 use crate::types::account::MarginType;
@@ -88,13 +90,77 @@ impl EngineHandle {
             .map_err(|_| "yanıt kanalı kapandı".to_string())?
     }
 
+    /// Sembolün açık pozisyonlarını kapatır (hedge modda LONG+SHORT; `position_side`
+    /// verilirse yalnızca o taraf). Dönen değer kapatılan pozisyon sayısıdır.
+    pub async fn close_symbol(
+        &self,
+        symbol: &str,
+        position_side: Option<&str>,
+    ) -> Result<usize, String> {
+        let positions = self.snapshot.read().positions.clone();
+        let targets: Vec<_> = positions
+            .iter()
+            .filter(|p| p.symbol.eq_ignore_ascii_case(symbol) && !p.position_amt.is_zero())
+            .filter(|p| match position_side {
+                Some(s) => p.position_side.eq_ignore_ascii_case(s),
+                None => true,
+            })
+            .cloned()
+            .collect();
+        if targets.is_empty() {
+            return Ok(0);
+        }
+        let mut closed = 0usize;
+        for p in targets {
+            // Pozitif amt = LONG → SELL ile kapat; negatif = SHORT → BUY ile kapat.
+            let side = if p.position_amt.is_sign_positive() {
+                OrderSide::Sell
+            } else {
+                OrderSide::Buy
+            };
+            let order = OrderRequest {
+                symbol: p.symbol.clone(),
+                side,
+                order_type: OrderType::Market,
+                quantity: p.position_amt.abs(),
+                position_side: match p.position_side.as_str() {
+                    "LONG" => OrderPositionSide::Long,
+                    "SHORT" => OrderPositionSide::Short,
+                    _ => OrderPositionSide::Both,
+                },
+                client_order_id: Some(format!("close_{}_{}", p.symbol, now_ms())),
+                ..Default::default()
+            };
+            self.submit_order(order).await?;
+            closed += 1;
+        }
+        Ok(closed)
+    }
+
+    /// Tüm açık pozisyonları kapatır. Dönen değer kapatılan pozisyon sayısıdır.
+    pub async fn close_all(&self) -> Result<usize, String> {
+        let positions = self.snapshot.read().positions.clone();
+        let symbols: std::collections::HashSet<String> = positions
+            .iter()
+            .filter(|p| !p.position_amt.is_zero())
+            .map(|p| p.symbol.clone())
+            .collect();
+        if symbols.is_empty() {
+            return Ok(0);
+        }
+        let mut total = 0usize;
+        for symbol in symbols {
+            total += self.close_symbol(&symbol, None).await?;
+        }
+        Ok(total)
+    }
+
     pub async fn query_order(
         &self,
         symbol: &str,
         order_id: Option<i64>,
         client_order_id: Option<&str>,
-    ) -> Result<BinanceOrderResponse, String> {
-        let (tx, rx) = oneshot::channel();
+    ) -> Result<BinanceOrderResponse, String> {        let (tx, rx) = oneshot::channel();
         self.cmd_tx
             .send(Command::QueryOrder {
                 symbol: symbol.to_string(),
@@ -289,4 +355,11 @@ impl Gateway for PaperGateway {
     fn mode(&self) -> TradingMode {
         TradingMode::Paper
     }
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }

@@ -170,7 +170,8 @@ pub struct SymbolInfo {
     pub order_types: Vec<String>,
     pub time_in_force: Vec<String>,
     pub filters: Vec<SymbolFilter>,
-    pub trigger_protect: bool,
+    /// Binance bunu STRING olarak döndürür (örn. "0.0500") — Decimal parse edilir.
+    pub trigger_protect: Decimal,
     pub maintenance_margin_percent: Decimal,
     pub required_margin_percent: Decimal,
 }
@@ -217,7 +218,7 @@ impl<'de> Deserialize<'de> for SymbolInfo {
             #[serde(rename = "filters")]
             filters: Vec<SymbolFilter>,
             #[serde(rename = "triggerProtect")]
-            trigger_protect: Option<bool>,
+            trigger_protect: Option<String>,
             #[serde(rename = "maintenanceMarginPercent")]
             maintenance_margin_percent: Option<String>,
             #[serde(rename = "requiredMarginPercent")]
@@ -235,11 +236,14 @@ impl<'de> Deserialize<'de> for SymbolInfo {
             contract_type: r.contract_type.unwrap_or_default(),
             quantity_precision: r.quantity_precision.unwrap_or(0),
             price_precision: r.price_precision.unwrap_or(0),
-            margin_trading_supported: r.margin_trading_supported.unwrap_or(false),
+            // Binance futures exchangeInfo'da marginTradingSupported alanı YOKTUR
+            // (spot alanıdır). Futures'ta tüm semboller marj destekli olduğundan
+            // alan eksikse varsayılan TRUE kabul edilir.
+            margin_trading_supported: r.margin_trading_supported.unwrap_or(true),
             order_types: r.order_types.unwrap_or_default(),
             time_in_force: r.time_in_force.unwrap_or_default(),
             filters: r.filters,
-            trigger_protect: r.trigger_protect.unwrap_or(false),
+            trigger_protect: dec(r.trigger_protect.as_deref()),
             maintenance_margin_percent: dec(r.maintenance_margin_percent.as_deref()),
             required_margin_percent: dec(r.required_margin_percent.as_deref()),
         })

@@ -19,6 +19,8 @@ members = [
     "services-engine/paper-service",
     "services-engine/alert-service",
     "services-engine/price-feed",
+    "services-engine/exec-console",
+    "ai-engine",
 ]
 exclude = ["tests", "unused_services"]
 resolver = "2"

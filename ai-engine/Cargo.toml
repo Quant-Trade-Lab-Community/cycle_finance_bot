@@ -1,0 +1,23 @@
+[package]
+name = "ai-engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ai_engine"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+reqwest = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+transport = { path = "../cycle-engine/transport" }
+risk-engine = { path = "../risk-engine" }
+calc-ind = { version = "0.1.0", path = "../services-engine/calc-ind" }

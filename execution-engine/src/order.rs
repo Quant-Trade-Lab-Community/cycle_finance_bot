@@ -267,6 +267,9 @@ pub struct OrderRequest {
     pub side: OrderSide,
     pub order_type: OrderType,
     pub quantity: Decimal,
+    /// MARKET emirlerde USDT bazlı büyüklük (quantity yerine quoteOrderQty).
+    /// Set edildiğinde `quantity` yok sayılır (Binance yalnızca MARKET kabul eder).
+    pub quote_order_qty: Option<Decimal>,
     pub price: Option<Decimal>,
     pub time_in_force: Option<TimeInForce>,
     /// Hedge modda LONG/SHORT; one-way modda BOTH.
@@ -295,6 +298,7 @@ impl Default for OrderRequest {
             side: OrderSide::Buy,
             order_type: OrderType::Limit,
             quantity: Decimal::ZERO,
+            quote_order_qty: None,
             price: None,
             time_in_force: None,
             position_side: OrderPositionSide::Both,

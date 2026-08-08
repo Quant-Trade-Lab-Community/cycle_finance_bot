@@ -1,0 +1,48 @@
+# AI Engine — Cycle Finance yapay zeka katmanı konfigürasyonu.
+# Yol: AI_CONFIG env veya kök dizindeki ai.toml.
+# API anahtarları ENV'de tutulur: OPENAI_API_KEY / ANTHROPIC_API_KEY (.env)
+
+[providers]
+# openai | anthropic | none (none = fail-safe HOLD, LLM çağrılmaz)
+provider = "none"
+openai_model = "gpt-4o-mini"
+anthropic_model = "claude-sonnet-4-20250514"
+temperature = 0.2
+max_tokens = 2048
+timeout_secs = 60
+
+[schedule]
+interval_secs = 60
+symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HEIUSDT"]
+approval_wait_secs = 60
+
+[execution]
+# paper | live | both | none
+mode = "paper"
+# auto | human (human = /tmp/ai_approve.txt onayı beklenir)
+approval = "auto"
+execd_url = "http://127.0.0.1:3010"
+execd_user = "admin"
+execd_password = "changeme123"
+paper_url = "http://127.0.0.1:8080"
+paper_admin_user = "admin"
+paper_admin_pass = "changeme123"
+# Deterministik emir boyutu üst sınırı (USDT) — LLM'den bağımsız güvenlik ağı.
+max_notional_usdt = 1000
+
+[risk]
+enable_risk_gate = true
+# risk_score >= 0.8 ise emir otomatik reddedilir.
+anomaly_veto = true
+risk_config_path = "risk.toml"
+initial_balance_usdt = 100000
+
+[context]
+price_feed_url = "http://127.0.0.1:3004"
+detect_ms_url = "http://127.0.0.1:3002"
+calc_ind_url = "http://127.0.0.1:3007"
+# İsteğe bağlı haber kaynağı (JSON). Boşsa duygu agent'ı nötr kalır.
+news_feed_url = ""
+indicator_interval = "1m"
+structure_interval = "1m"
+structure_limit = 100

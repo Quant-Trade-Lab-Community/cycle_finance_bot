@@ -68,7 +68,7 @@ copy_bins() {
   local bins=(
     core paper-service paper-cli alert-service detect-ms
     risk-worker cold-starter price-feed breakout-strategy listener alerts risk_analysis
-    calc-ind
+    calc-ind ai-engine exec-console stream-ohlcv cycle-splash
   )
   local n=0
   for b in "${bins[@]}"; do
@@ -88,9 +88,10 @@ copy_assets() {
   say "Yapılandırma ve script'ler kopyalanıyor..."
   cp "$ROOT/alerts.toml"          "$CONFIG_DIR/" 2>/dev/null || warn "alerts.toml yok"
   cp "$ROOT/risk.toml"            "$CONFIG_DIR/" 2>/dev/null || warn "risk.toml yok"
+  cp "$ROOT/ai.toml"              "$CONFIG_DIR/" 2>/dev/null || warn "ai.toml yok"
   cp "$ROOT/additional-services/config/"config_*.toml  "$CONFIG_DIR/" 2>/dev/null || true
 
-  for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh; do
+  for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh tmux_clipboard_paste.sh; do
     [ -f "$ROOT/additional-services/scripts/$s" ] && cp "$ROOT/additional-services/scripts/$s" "$SCRIPTS_DIR/" || warn "scripts/$s yok"
   done
 
@@ -116,22 +117,72 @@ write_launcher() {
 #!/usr/bin/env bash
 # Cycle Finance başlatıcı
 CYCLE_ROOT="$PKG_DIR"
+export CYCLE_ROOT
+export BIN_DIR="$BIN_DIR"
+export CYCLE_CONFIG_DIR="$CONFIG_DIR"
+export CYCLE_SCRIPTS_DIR="$SCRIPTS_DIR"
+export PATH="$BIN_DIR:\$PATH"
 case "\${1:-}" in
-  start)  exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" ;;
-  stop)   exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" kill ;;
-  status) exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" status ;;
-  env)    echo "source \$CYCLE_ROOT/cycle-env.sh" ;;
+  start)   exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" ;;
+  stop)    exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" kill ;;
+  status)  exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" status ;;
+  attach)  exec "\$CYCLE_ROOT/scripts/cycle_tmux.sh" attach ;;
+  console) exec "\$BIN_DIR/exec-console" ;;
+  env)     echo "source \$CYCLE_ROOT/cycle-env.sh" ;;
   *)
     echo "Cycle Finance — kullanım:"
-    echo "  cycle start    Tüm sistemi tmux ile başlat"
-    echo "  cycle stop     Tüm sistemi durdur"
-    echo "  cycle status   Servis durumları"
-    echo "  cycle env      Ortamı yükle (source \$CYCLE_ROOT/cycle-env.sh)"
+    echo "  cycle start     Tüm sistemi tmux ile başlat"
+    echo "  cycle stop      Tüm sistemi durdur"
+    echo "  cycle status    Servis durumları"
+    echo "  cycle attach    Oturuma bağlan"
+    echo "  cycle console   executiond elle komut konsolu"
+    echo "  cycle env       Ortamı yükle (source \$CYCLE_ROOT/cycle-env.sh)"
     ;;
 esac
 LAUNCH
   chmod +x "$BIN_DIR/cycle"
   ok "Başlatıcı oluşturuldu: $BIN_DIR/cycle"
+}
+
+# ── Uygulama menüsü girişi (diğer uygulamalar gibi açılır) ────
+write_icon() {
+  mkdir -p "$PKG_DIR/share/icons"
+  cat > "$PKG_DIR/share/icons/cycle-finance.svg" <<ICONEOF
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#0a0a0a"/>
+  <text x="64" y="52" font-family="monospace" font-size="34" font-weight="bold" text-anchor="middle" fill="#00ff41">▲▼</text>
+  <rect x="30" y="58" width="10" height="42" fill="#00ff41"/>
+  <rect x="46" y="70" width="10" height="30" fill="#ff3355"/>
+  <rect x="62" y="50" width="10" height="50" fill="#00ff41"/>
+  <rect x="78" y="64" width="10" height="36" fill="#ff3355"/>
+  <rect x="94" y="44" width="10" height="56" fill="#00ff41"/>
+  <text x="64" y="112" font-family="monospace" font-size="12" text-anchor="middle" fill="#00cc33">CYCLE FINANCE</text>
+</svg>
+ICONEOF
+  ok "Simge oluşturuldu: $PKG_DIR/share/icons/cycle-finance.svg"
+}
+
+write_desktop() {
+  local apps_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  mkdir -p "$apps_dir"
+  cat > "$apps_dir/cycle-finance.desktop" <<DESKEOF
+[Desktop Entry]
+Type=Application
+Name=Cycle Finance
+GenericName=Kripto Ticaret Sistemi
+Comment=Cycle Finance tmux ortamını başlatır (veri, strateji, execution)
+Exec=$BIN_DIR/cycle start
+Icon=$PKG_DIR/share/icons/cycle-finance.svg
+Terminal=true
+Categories=Finance;Office;
+Keywords=kripto;trade;binance;tmux;
+StartupNotify=false
+DESKEOF
+  chmod +x "$apps_dir/cycle-finance.desktop"
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$apps_dir" 2>/dev/null || true
+  fi
+  ok "Uygulama menüsü girişi: $apps_dir/cycle-finance.desktop"
 }
 
 # ── Paketle ──────────────────────────────────────────────────
@@ -173,6 +224,8 @@ copy_bins
 copy_assets
 write_env
 write_launcher
+write_icon
+write_desktop
 
 echo ""
 echo "════════════════════════════════════════════════════════"

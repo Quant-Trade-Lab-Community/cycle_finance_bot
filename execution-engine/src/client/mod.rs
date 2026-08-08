@@ -373,10 +373,15 @@ pub fn order_params(order: &OrderRequest) -> Vec<(String, String)> {
         qp("symbol", &order.symbol),
         qp("side", order.side.binance_str()),
         qp("type", order.order_type.binance_str()),
-        qp("quantity", order.quantity),
         qp("positionSide", order.position_side.binance_str()),
         qp("newOrderRespType", order.new_order_resp_type.unwrap_or(crate::order::NewOrderRespType::Result).binance_str()),
     ];
+    // MARKET emirlerde USDT bazlı büyüklük: quantity yerine quoteOrderQty.
+    if let Some(qoq) = order.quote_order_qty {
+        p.push(qp("quoteOrderQty", qoq));
+    } else {
+        p.push(qp("quantity", order.quantity));
+    }
     if let Some(price) = order.price {
         p.push(qp("price", price));
     }

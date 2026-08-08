@@ -43,6 +43,20 @@ help-cycle() {
   echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi"
   echo -e "  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)"
 
+  echo -e "\n${_Y}━━━  🤖 AI ENGINE (LLM Agent Katmanı)  ━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}ai-start${_N}           AI Engine'i başlat (ai.toml + OpenAI/Anthropic)"
+  echo -e "  ${_R}ai-stop${_N}            Durdur"
+  echo -e "  ${_C}ai-status${_N}          Çalışıyor mu? CPU/RAM + son döngü"
+  echo -e "  ${_C}ai-approve${_N}         HITL modunda bekleyen emri onayla (echo approve)"
+  echo -e "  ${_C}ai-reject${_N}          HITL modunda bekleyen emri reddet"
+  echo -e "  ${_C}ai-log${_N}             Canlı log izle"
+
+  echo -e "\n${_Y}━━━  🖥️  EXEC CONSOLE (Execution Engine elle komut)  ━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}exec-console-start${_N}   Konsolu tmux sekmesinde başlat (executiond :3010)"
+  echo -e "  ${_R}exec-console-stop${_N}    Durdur"
+  echo -e "  ${_C}exec-console-status${_N}  Çalışıyor mu? CPU/RAM"
+  echo -e "  ${_C}exec-console-log${_N}     Konsol penceresine geç (Ctrl+B → 13)"
+
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
   echo -e "  ${_C}listener-stop${_N}       Durdur"
@@ -816,6 +830,127 @@ calc-ind-status() {
   else
     echo "✘  calc-ind durdurulmuş"
   fi
+}
+
+# ============================================================
+#  AI ENGINE (LLM Agent Katmanı — ai.toml + OpenAI/Anthropic)
+#  Bağımlılık: price-feed (:3004), detect-ms (:3002), calc-ind (:3007), paper (:8080)
+# ============================================================
+AI_ADDR="${AI_ADDR:-127.0.0.1:3110}"
+
+ai-start() {
+  _start_guard
+  if pgrep -x "ai-engine" &>/dev/null; then
+    echo "⚠️  ai-engine zaten çalışıyor (pid: $(pgrep -x ai-engine | head -1))"
+    echo "   → ai-stop ile önce durdur"
+    return 1
+  fi
+  if [ ! -f "$CYCLE_ROOT/target/debug/ai-engine" ]; then
+    echo "🔨 ai-engine derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p ai-engine 2>&1 | tail -5
+  fi
+  echo "🚀 ai-engine başlatılıyor → http://$AI_ADDR"
+  _tmux_pane "🤖AI" "cd $CYCLE_ROOT && ./target/debug/ai-engine" Enter
+  sleep 1
+  if pgrep -x ai-engine &>/dev/null; then
+    echo "✅ ai-engine başladı [pid: $(pgrep -x ai-engine | head -1)]"
+    echo "   Status: http://$AI_ADDR/api/status"
+  else
+    echo "❌ ai-engine başlatılamadı. (OPENAI_API_KEY / ANTHROPIC_API_KEY gerekli olabilir)"
+  fi
+}
+
+ai-stop() {
+  _start_guard
+  if pgrep -x "ai-engine" &>/dev/null; then
+    pkill -TERM -x "ai-engine" && echo "✅ ai-engine durduruldu"
+  else
+    echo "⚠️  ai-engine zaten çalışmıyor"
+  fi
+}
+
+ai-status() {
+  local pid
+  pid=$(pgrep -x "ai-engine" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ ai-engine ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    curl -s -m 2 "http://$AI_ADDR/api/status" | python3 -m json.tool 2>/dev/null \
+      || echo "   (status API yanıt vermiyor)"
+  else
+    echo "✘  ai-engine durdurulmuş"
+  fi
+}
+
+# HITL onayı — /tmp/ai_approve.txt üzerinden
+ai-approve() {
+  echo "approve" > /tmp/ai_approve.txt
+  echo "✅ Onay verildi — bekleyen emir icra edilecek."
+}
+
+ai-reject() {
+  echo "reject" > /tmp/ai_approve.txt
+  echo "❌ Onay reddedildi."
+}
+
+ai-log() {
+  # ai-engine tmux içinde çalıştığında log'u tmux penceresinden izlemek daha iyidir.
+  echo "ℹ️  ai-engine tmux penceresinde çalışıyor; log için pencereye geçin:"
+  echo "   tmux select-window -t cycle:12   (veya Ctrl-b + 12)"
+}
+
+# ============================================================
+#  EXEC CONSOLE (executiond :3010 elle komut konsolu)
+# ============================================================
+exec-console-start() {
+  _start_guard
+  if pgrep -x "exec-console" &>/dev/null; then
+    echo "⚠️  exec-console zaten çalışıyor (pid: $(pgrep -x exec-console | head -1))"
+    return 1
+  fi
+  if [ ! -f "$CYCLE_ROOT/target/debug/exec-console" ]; then
+    echo "🔨 exec-console derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p exec-console 2>&1 | tail -5
+  fi
+  echo "🚀 exec-console başlatılıyor (executiond :3010 bağlantılı)..."
+  _tmux_pane "🖥️CONSOLE" "cd $CYCLE_ROOT && ./target/debug/exec-console" Enter
+  sleep 1
+  if pgrep -x exec-console &>/dev/null; then
+    echo "✅ exec-console başladı [pid: $(pgrep -x exec-console | head -1)]"
+    echo "   Sekme: Ctrl+B → 13  |  Komutlar: help"
+  else
+    echo "❌ exec-console başlatılamadı. (executiond çalışıyor mu? EXEC_ADMIN_PASS doğru mu?)"
+  fi
+}
+
+exec-console-stop() {
+  _start_guard
+  if pgrep -x "exec-console" &>/dev/null; then
+    pkill -TERM -x "exec-console" && echo "✅ exec-console durduruldu"
+  else
+    echo "⚠️  exec-console zaten çalışmıyor"
+  fi
+}
+
+exec-console-status() {
+  local pid
+  pid=$(pgrep -x "exec-console" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ exec-console ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "   Sekme: Ctrl+B → 13"
+  else
+    echo "✘  exec-console durdurulmuş"
+  fi
+}
+
+exec-console-log() {
+  echo "ℹ️  Konsol tmux penceresinde çalışıyor; geçmek için:"
+  echo "   tmux select-window -t cycle:13   (veya Ctrl-b + 13)"
 }
 
 # Sorgu kısayolları

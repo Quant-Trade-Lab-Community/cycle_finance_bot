@@ -16,11 +16,14 @@
 #  Pencere 9 — BREAKOUT (Kırılım stratejisi)
 #  Pencere 10 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
 #  Pencere 11 — CALC-IND (indikatör hesaplama motoru :3007)
+#  Pencere 12 — 🤖 AI (LLM agent katmanı, ai.toml + OpenAI/Anthropic)
+#  Pencere 13 — 🖥️ CONSOLE (executiond elle komut konsolu)
 # ============================================================
 set -euo pipefail
 
 SESSION="cycle"
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Kurulu pakette CYCLE_ROOT, kaynak ağacında varsayılan olarak betiğin konumundan bulunur.
+ROOT="${CYCLE_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
 # ── Binary dizini: varsayılan release; debug için BIN_DIR=./target/debug ver ──
 BIN="${BIN_DIR:-$ROOT/target/release}"
@@ -29,12 +32,16 @@ case "$BIN" in
   *release*) BUILD_ARGS="--release" ;;
 esac
 
+# ── Kurulu paket dizinleri (kaynak ağacına göre varsayılan) ──
+CONFIG_DIR="${CYCLE_CONFIG_DIR:-$ROOT}"
+SCRIPTS_DIR="${CYCLE_SCRIPTS_DIR:-$ROOT/additional-services/scripts}"
+
 # ── Env varsayılanları ───────────────────────────────────────
 PAPER_API_ADDR="${PAPER_API_ADDR:-127.0.0.1:8080}"
 PAPER_ADMIN_USER="${PAPER_ADMIN_USER:-admin}"
 PAPER_ADMIN_PASS="${PAPER_ADMIN_PASS:-changeme123}"
 PAPER_INITIAL_USDT="${PAPER_INITIAL_USDT:-100000}"
-ALERT_CONFIG="${ALERT_CONFIG:-$ROOT/alerts.toml}"
+ALERT_CONFIG="${ALERT_CONFIG:-$CONFIG_DIR/alerts.toml}"
 
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 full_cleanup() {
@@ -91,10 +98,14 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
   exit 0
 fi
 
-# ── Derleme ──────────────────────────────────────────────────
-echo "🔨 Derleniyor..."
-cd "$ROOT"
-cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv 2>&1 | tail -5
+# ── Derleme (yalnızca kaynak ağacında) ────────────────────────
+if [ -f "$ROOT/Cargo.toml" ]; then
+  echo "🔨 Derleniyor..."
+  cd "$ROOT"
+  cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p ai-engine -p exec-console 2>&1 | tail -5
+else
+  echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
+fi
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
@@ -122,7 +133,7 @@ export CYCLE_ROOT='$ROOT'
 export CYCLE_API='http://$PAPER_API_ADDR'
 export CYCLE_USER='$PAPER_ADMIN_USER'
 export CYCLE_PASS='$PAPER_ADMIN_PASS'
-source '$ROOT/additional-services/scripts/cycle_env.sh'
+source '$SCRIPTS_DIR/cycle_env.sh'
 help-cycle
 INITEOF
 chmod +x /tmp/cycle_init.sh
@@ -202,7 +213,7 @@ cd $ROOT && \
 
 # ── Pencere 7: MONITOR ──────────────────────────────────────
 tmux new-window -t "$SESSION:7" -n "Monitor"
-tmux send-keys -t "$SESSION:7" "bash '$ROOT/additional-services/scripts/monitor.sh'" Enter
+tmux send-keys -t "$SESSION:7" "bash '$SCRIPTS_DIR/monitor.sh'" Enter
 
 # ── Pencere 8: DETECT-MS ────────────────────────────────────
 tmux new-window -t "$SESSION:8" -n "DETECT-MS"
@@ -244,15 +255,40 @@ sleep 2
 cd $ROOT && $BIN/calc-ind
 " Enter
 
+# ── Pencere 12: AI ENGINE ───────────────────────────────────
+tmux new-window -t "$SESSION:12" -n "🤖 AI"
+tmux send-keys -t "$SESSION:12" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🤖  AI ENGINE  (LLM Agent Katmanı)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $CONFIG_DIR && $BIN/ai-engine
+" Enter
+
+# ── Pencere 13: EXEC CONSOLE ────────────────────────────────
+tmux new-window -t "$SESSION:13" -n "🖥️ CONSOLE"
+tmux send-keys -t "$SESSION:13" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🖥️  EXEC CONSOLE  (executiond :3010)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $ROOT && $BIN/exec-console
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" status-interval 1
+
+# ── Pano yapıştırma: Ctrl+V / Ctrl+Shift+V → OS panosunu yapıştır ──
+tmux bind -n C-v run-shell "$SCRIPTS_DIR/tmux_clipboard_paste.sh" 2>/dev/null || true
+tmux bind -n C-S-v run-shell "$SCRIPTS_DIR/tmux_clipboard_paste.sh" 2>/dev/null || true
+tmux set-option -g set-clipboard on 2>/dev/null || true
 
 # Status bar — Matrix yeşili / siyah
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:STRAT #[fg=#00ff41]1#[fg=#00cc33]:LISTEN #[fg=#00ff41]2#[fg=#00cc33]:RISK #[fg=#00ff41]4#[fg=#00cc33]:DATA #[fg=#00ff41]5#[fg=#00cc33]:ALERT #[fg=#00ff41]6#[fg=#00cc33]:PAPER #[fg=#00ff41]7#[fg=#00cc33]:Mon #[fg=#00ff41]10#[fg=#00cc33]:STREAM #[fg=#00ff41]11#[fg=#00cc33]:CALC #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:STRAT #[fg=#00ff41]1#[fg=#00cc33]:LISTEN #[fg=#00ff41]2#[fg=#00cc33]:RISK #[fg=#00ff41]4#[fg=#00cc33]:DATA #[fg=#00ff41]5#[fg=#00cc33]:ALERT #[fg=#00ff41]6#[fg=#00cc33]:PAPER #[fg=#00ff41]7#[fg=#00cc33]:Mon #[fg=#00ff41]10#[fg=#00cc33]:STREAM #[fg=#00ff41]11#[fg=#00cc33]:CALC #[fg=#00ff41]12#[fg=#00cc33]:AI #[fg=#00ff41]13#[fg=#00cc33]:CONSOLE #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
 # Window sekme renkleri — matrix

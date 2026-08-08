@@ -107,6 +107,11 @@ impl HttpClient {
             };
 
             let mut req = self.inner.request(method.clone(), &url).timeout(self.timeout);
+            // İmzalı isteklerde API anahtarı X-MBX-APIKEY başlığıyla gider.
+            // (Bu başlık olmadan Binance -2014 "API-key format invalid" döner.)
+            if let Some(s) = signer {
+                req = req.header("X-MBX-APIKEY", s.api_key());
+            }
             if method == reqwest::Method::POST || method == reqwest::Method::PUT {
                 req = req.header("content-type", "application/x-www-form-urlencoded");
             }

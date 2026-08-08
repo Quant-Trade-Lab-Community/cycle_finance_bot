@@ -265,6 +265,7 @@ DELETE /api/v1/orders/{cid}    → clientOrderId ile iptal
 DELETE /api/v1/orders/open?symbol= → sembolün tümünü iptal
 PUT    /api/v1/orders/{cid}    → modify (fiyat/miktar/stop)
 GET    /api/v1/account | /positions | /balances | /income | /funding
+POST   /api/v1/positions/close   → pozisyon kapat (body: {symbol?, position_side?})
 GET    /api/v1/force-orders | /commission-rate/{s} | /adl/{s} | /trading-status
 GET    /api/v1/exchange-info/{s}
 PUT    /api/v1/symbols/{s}/leverage · /margin-type · POST /symbols/{s}/margin
@@ -284,6 +285,31 @@ curl -s -X POST http://127.0.0.1:3010/api/v1/orders \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"client_order_id":"strat-1","symbol":"BTCUSDT","side":"BUY","type":"MARKET",
        "quantity":"0.001","position_side":"BOTH"}'
+```
+
+**USDT bazlı emir** (MARKET + `quote_order_qty`): miktarı coin yerine USDT büyüklüğüyle verirsin.
+
+```bash
+curl -s -X POST http://127.0.0.1:3010/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"symbol":"TUTUSDT","side":"BUY","type":"MARKET","quote_order_qty":"6","position_side":"LONG"}'
+```
+
+**Pozisyon kapatma** (body'de symbol yoksa TÜMÜ):
+
+```bash
+# Tek sembol (her iki taraf)
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"symbol":"TUTUSDT"}'
+# Tek sembol + tek taraf (hedge)
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"symbol":"TUTUSDT","position_side":"SHORT"}'
+# TÜM açık pozisyonlar
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{}'
 ```
 
 ### CLI (`exec-cli`)
@@ -425,7 +451,7 @@ source additional-services/scripts/cycle_env.sh
 help-cycle   # komut listesi
 ```
 
-Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `risk-worker-start`, `monitor-start`.
+Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `risk-worker-start`, `monitor-start`, `ai-start`.
 
 ---
 
@@ -445,6 +471,88 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-st
 | 9 — BREAKOUT | Kırılım stratejisi |
 | 10 — STREAM-OHLCV | Canlı OHLCV mum akışı |
 | 11 — CALC-IND | İndikatör hesaplama motoru |
+| 12 — 🤖 AI | LLM agent katmanı (OpenAI/Anthropic) |
+| 13 — 🖥️ CONSOLE | executiond elle komut konsolu |
+
+---
+
+## 🤖 AI Engine (LLM Agent Katmanı)
+
+Rust-native `ai-engine` servisi, mevcut veri/yürütme altyapısını kullanarak çoklu LLM agent'ı çalıştırır:
+
+```
+ring'ler + REST (price-feed/detect-ms/calc-ind/paper) → context.rs → agent'lar
+        🧠 SIGNAL → ⚠️ RISK → 📰 SENTIMENT → 🤝 COORDINATOR → risk gate → icra
+        icra: paper (order ring :8080) ve/veya canlı (executiond :3010)
+```
+
+### Agent'lar
+
+| Agent | Görev |
+|---|---|
+| 🧠 SIGNAL | Fiyat + indikatör + yapı bağlamından BUY/SELL/HOLD |
+| ⚠️ RISK | Risk skoru, `veto` (fail-safe), `max_size_bps` boyut sınırı |
+| 📰 SENTIMENT | Dış haber kaynağından duygu skoru (-1..+1) |
+| 🤝 COORDINATOR | 3 agent çıktısını sentezler; risk veto her zaman öncelikli |
+
+### Konfigürasyon (`ai.toml` + env)
+
+- `.env`: `OPENAI_API_KEY` (OpenAI) veya `ANTHROPIC_API_KEY` (Anthropic) — repo'ya girmez.
+- `ai.toml`: provider, model, periyot, semboller, icra modu, risk kapısı, bağlam URL'leri.
+- `provider = "none"` → LLM çağrılmaz, her karar fail-safe HOLD (boru hattını test eder).
+
+### İcra modları
+
+- `mode = "paper"` (varsayılan): emir `/cycle_finance_orders` ring'ine yazılır → paper-service icra eder.
+- `mode = "live"`: executiond :3010 üzerinden (JWT + `POST /api/v1/orders`).
+- `mode = "both"`: ikisine de gönderir; `none`: sadece izler.
+- `approval = "human"`: emir gönderilmeden önce `ai-approve` / `ai-reject` ile insan onayı bekler.
+
+### Çalıştırma
+
+```bash
+ai-start      # tmux pencere 12'de başlat
+ai-status     # durum + son döngü (http://127.0.0.1:3110/api/status)
+ai-stop
+```
+
+Bağımlılık: `price-feed` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) ve `paper-service` (:8080) çalışıyor olmalı.
+
+### Güvenlik (canlı mod)
+
+- LLM başarısız → HOLD (fail-closed), asla kör emir yok.
+- `max_notional_usdt` deterministik boyut tavanı LLM çıktısından bağımsızdır.
+- Risk agent'ı `veto` veya `risk_score ≥ 0.8` → emir otomatik red.
+- `RiskEngine` (risk.toml) gate'i: notional/exposure/daily-loss/kill-switch.
+- Varsayılan `mode="paper"`; canlıya geçiş `ai.toml` ile bilinçli yapılır.
+
+---
+
+## 🖥️ Exec Console (Elle Komut Katmanı)
+
+`services-engine/exec-console`, executiond (:3010) REST API'sine JWT ile bağlanan interaktif bir konsoldur. Komutlar Binance'e değil, executiond'nin preflight/risk katmanından geçerek gider.
+
+```bash
+exec-console-start     # tmux sekmesi 13'te başlat
+exec-console-status
+exec-console-stop
+```
+
+Sekmede `help` yazın. Başlıca komutlar:
+
+| Komut | Açıklama |
+|---|---|
+| `health` / `mode` / `risk` / `kill on\|off` | Durum + kill switch |
+| `account` / `balance` / `positions [SYM]` | Hesap |
+| `buy SYM QTY\|--usdt N [--pos LONG\|SHORT]` / `sell ...` | Market emir (USDT büyüklük de olur) |
+| `order SYM SIDE TYPE QTY\|--usdt N [--price] [--stop] [--tif] [--pos] [--reduce] [--close]` | Tam emir |
+| `orders` / `query` / `cancel` / `cancelall` / `modify` | Emir yönetimi |
+| `close SYM [LONG\|SHORT]` | Sembolün açık pozisyon(lar)ını kapat |
+| `closeall` | TÜM açık pozisyonları kapat |
+| `leverage` / `margintype` / `margin` / `hedge` / `multiass` | Hesap yapılandırma |
+| `funding` / `income` / `forceorders` / `exinfo` / `commission` / `adl` / `tradingstatus` | Borsa sorguları |
+
+Hedge modda emirlerde `--pos LONG|SHORT` verilmelidir.
 
 ---
 

@@ -18,31 +18,59 @@ ENV_FILE="${EXEC_ENV_FILE:-$(cd "$(dirname "$0")/../.." && pwd)/.env}"
 TESTNET_BASE="https://testnet.binancefuture.com"
 TESTNET_WS="wss://stream.binancefuture.com"
 
+# Önceki yapıştırmadan artık satır başı kalıntılarını terminal tamponundan atar.
+# CRLF pano yapıştırınca ilk read '\r'de biter, kalan '\n' bir sonraki read'i
+# boş yutardı — bu yüzden her okumadan önce tamponu temizle.
+drain_input() {
+    local ch
+    while read -r -t 0 -s -n 1 ch 2>/dev/null; do :; done
+}
+
+trim() {
+    local v="$1"
+    v="${v#"${v%%[![:space:]]*}"}"   # öndeki boşlukları kırp
+    v="${v%"${v##*[![:space:]]}"}"   # arkadaki boşlukları kırp
+    printf '%s' "$v"
+}
+
 prompt_key() {
     local label="$1"
     local value
+    # İpuçları stderr'e gider; sadece girilen değer stdout'a döner ($( ) yakalamasın).
+    echo "  İpucu: yapıştırmak için Ctrl+Shift+V (Linux) veya Ctrl+V (tmux bağı)." >&2
+    echo "  Girdiğiniz karakterler EKRANA YAZILMAZ (güvenlik) — yapıştırın, Enter." >&2
     while :; do
+        drain_input
         read -rsp "$label: " value
-        echo
+        echo >&2
+        # Bracketed-paste artıkları + satır sonlarını temizle (pano yapıştırınca)
+        value="${value//$'\e[200~'/}"
+        value="${value//$'\e[201~'/}"
+        value="${value//$'\r'/}"
+        value="${value//$'\n'/}"
+        value="$(trim "$value")"
         if [[ -n "$value" ]]; then
             break
         fi
-        echo "  Boş olamaz, tekrar dene."
+        echo "  Boş olamaz, tekrar dene." >&2
     done
     printf '%s' "$value"
 }
 
 write_env() {
     local key="$1" val="$2"
+    local tmp="${ENV_FILE}.tmp"
     if grep -qE "^${key}=" "$ENV_FILE" 2>/dev/null; then
-        # awk ile sadece ilgili satırı değiştir (varsa diğerleri korunur).
+        # awk ile sadece ilgili satırı değiştir; dosyadaki \r kalıntılarını da temizle.
         awk -v k="$key" -v v="$val" '
-            BEGIN{ found=0 }
+            { gsub(/\r$/, ""); }
             $0 ~ "^"k"=" { print k "=" v; found=1; next }
             { print }
             END{ if (!found) print k "=" v }
-        ' "$ENV_FILE" > "${ENV_FILE}.tmp" && mv "${ENV_FILE}.tmp" "$ENV_FILE"
+        ' "$ENV_FILE" > "$tmp" && mv "$tmp" "$ENV_FILE"
     else
+        # Satır sonu kalıntılarını temizle, sonra ekle.
+        sed -i 's/\r$//' "$ENV_FILE" 2>/dev/null || true
         printf '%s=%s\n' "$key" "$val" >> "$ENV_FILE"
     fi
 }
@@ -82,6 +110,25 @@ case "${1:-}" in
         echo "Binance Futures API anahtarları — ekrana yazılmaz."
         api_key=$(prompt_key "BINANCE_API_KEY")
         secret=$(prompt_key "BINANCE_SECRET_KEY")
+
+        if [[ -z "$api_key" || -z "$secret" ]]; then
+            echo "  ✘ Anahtar(lar) boş — hiçbir şey kaydedilmedi. Tekrar dene." >&2
+            exit 1
+        fi
+
+        # Maskeli doğrulama — yanlış yapıştırma burada yakalanır.
+        mask() { local v="$1"; [[ -z "$v" ]] && echo "(boş)" || echo "${v:0:4}****${v: -4}"; }
+        echo
+        echo "  Girilen anahtarlar:"
+        echo "    BINANCE_API_KEY    = $(mask "$api_key")  (uzunluk: ${#api_key})"
+        echo "    BINANCE_SECRET_KEY = $(mask "$secret")  (uzunluk: ${#secret})"
+        drain_input
+        read -rsp "  Kaydetmek için 'EVET' yazın, iptal için Enter: " onay
+        echo
+        if [[ "$onay" != "EVET" ]]; then
+            echo "İptal edildi — hiçbir şey yazılmadı."
+            exit 0
+        fi
 
         write_env "BINANCE_API_KEY" "$api_key"
         write_env "BINANCE_SECRET_KEY" "$secret"

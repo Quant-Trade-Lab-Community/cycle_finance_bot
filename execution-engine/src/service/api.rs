@@ -110,6 +110,7 @@ pub fn router(app: Arc<AppState>) -> Router {
         .route("/api/v1/account", get(get_account))
         .route("/api/v1/positions", get(get_positions))
         .route("/api/v1/positions/{symbol}", get(get_position_symbol))
+        .route("/api/v1/positions/close", post(close_positions))
         .route("/api/v1/balances", get(get_balances))
         .route("/api/v1/income", get(get_income))
         .route("/api/v1/funding", get(get_funding))
@@ -213,6 +214,9 @@ pub struct PlaceOrderRequest {
     #[serde(rename = "type")]
     pub order_type: String,
     pub quantity: Decimal,
+    /// MARKET emirlerde USDT bazlı büyüklük (quantity yerine quoteOrderQty).
+    #[serde(default)]
+    pub quote_order_qty: Option<Decimal>,
     #[serde(default)]
     pub price: Option<Decimal>,
     #[serde(default)]
@@ -243,6 +247,7 @@ fn build_order(req: PlaceOrderRequest) -> Result<OrderRequest, String> {
         side: parse_enum::<OrderSide>(&req.side)?,
         order_type: parse_enum::<OrderType>(&req.order_type)?,
         quantity: req.quantity,
+        quote_order_qty: req.quote_order_qty,
         price: req.price,
         stop_price: req.stop_price,
         time_in_force: req
@@ -445,6 +450,39 @@ async fn get_position_symbol(State(state): State<Arc<AppState>>, Path(symbol): P
 async fn get_balances(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let snap = state.engine.snapshot();
     (StatusCode::OK, Json(snap.account.assets)).into_response()
+}
+
+// ── Pozisyon kapatma ────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct ClosePositionsRequest {
+    /// Boşsa TÜM açık pozisyonlar kapatılır.
+    #[serde(default)]
+    pub symbol: Option<String>,
+    /// Hedge modda taraf: LONG | SHORT (opsiyonel, boşsa her iki taraf).
+    #[serde(default)]
+    pub position_side: Option<String>,
+}
+
+async fn close_positions(State(state): State<Arc<AppState>>, Json(req): Json<ClosePositionsRequest>) -> impl IntoResponse {
+    let res = match req.symbol.as_deref() {
+        Some(sym) => {
+            state.engine.close_symbol(sym, req.position_side.as_deref()).await
+        }
+        None => {
+            if req.position_side.is_some() {
+                return api_err(
+                    StatusCode::BAD_REQUEST,
+                    "position_side yalnızca symbol ile birlikte kullanılır",
+                );
+            }
+            state.engine.close_all().await
+        }
+    };
+    match res {
+        Ok(closed) => (StatusCode::OK, Json(serde_json::json!({ "closed": closed }))).into_response(),
+        Err(e) => api_err(StatusCode::BAD_REQUEST, e),
+    }
 }
 
 // ── Borsa salt-okunur sorgular ──────────────────────────────────

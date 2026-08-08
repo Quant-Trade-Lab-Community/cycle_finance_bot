@@ -36,7 +36,10 @@ enum Command {
         side: String,
         #[arg(value_parser = ["LIMIT", "MARKET", "STOP", "STOP_MARKET", "TAKE_PROFIT", "TAKE_PROFIT_MARKET", "TRAILING_STOP_MARKET", "LIMIT_MAKER"])]
         order_type: String,
-        quantity: Decimal,
+        quantity: Option<Decimal>,
+        /// MARKET emirlerde USDT bazlı büyüklük (quantity yerine quoteOrderQty).
+        #[arg(long)]
+        usdt: Option<Decimal>,
         #[arg(long)]
         price: Option<Decimal>,
         #[arg(long)]
@@ -149,6 +152,7 @@ async fn main() -> Result<()> {
             side,
             order_type,
             quantity,
+            usdt,
             price,
             stop_price,
             tif,
@@ -157,11 +161,19 @@ async fn main() -> Result<()> {
             close_position,
             client_order_id,
         } => {
+            if quantity.is_none() && usdt.is_none() {
+                return Err(ExecError::Other("quantity veya --usdt gerekli".into()));
+            }
+            if quantity.is_some() && usdt.is_some() {
+                return Err(ExecError::Other("quantity ve --usdt birlikte verilemez".into()));
+            }
+            let qty = quantity.unwrap_or_default();
             let order = OrderRequest {
                 symbol: symbol.to_uppercase(),
                 side: parse_enum(&side)?,
                 order_type: parse_enum(&order_type)?,
-                quantity,
+                quantity: qty,
+                quote_order_qty: usdt,
                 price,
                 stop_price,
                 time_in_force: tif.as_deref().map(parse_enum::<TimeInForce>).transpose()?,
@@ -171,7 +183,7 @@ async fn main() -> Result<()> {
                 client_order_id,
                 ..Default::default()
             };
-            println!("Emir gönderiliyor: {} {} {} {} @ {:?}", symbol, side, order_type, quantity, price);
+            println!("Emir gönderiliyor: {} {} {} qty={} usdt={:?} @ {:?}", symbol, side, order_type, qty, usdt, price);
             let resp = c.place_order(&order).await?;
             println!("OK: orderId={} status={} cid={}", resp.order_id, resp.status, resp.client_order_id);
         }
