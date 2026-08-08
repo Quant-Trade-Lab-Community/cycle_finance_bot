@@ -1,4 +1,4 @@
-# 🏛️ Demir Yumruk 2.0 — Yüksek Frekanslı Alım-Satım Sistemi
+# 🏛️ Cycle Finance — Yüksek Frekanslı Alım-Satım Sistemi
 
 > **High-Frequency Trading / Market Structure Analysis Platform**
 > Rust monorepo · event-driven mimari · düşük gecikme hedefli
@@ -25,7 +25,7 @@
 
 ## 📖 Genel Bakış
 
-**Demir Yumruk 2.0**, Binance Futures verisi üzerinde gerçek zamanlı piyasa yapısı analizi yapan ve **kırılım (breakout) sinyalleri** üreten yüksek frekanslı bir alım-satım platformudur.
+**Cycle Finance**, Binance Futures verisi üzerinde gerçek zamanlı piyasa yapısı analizi yapan ve **kırılım (breakout) sinyalleri** üreten yüksek frekanslı bir alım-satım platformudur.
 
 Ana akış:
 
@@ -287,7 +287,7 @@ cargo test --workspace
 
 - **CI** (`.github/workflows/test-suite.yml`): `cargo test --release`, `cargo check --all-features`, `cargo bench` (WCET 750µs), kaos testleri (Chaos Mesh, erişilebilirse)
 - **K8s** (`additional-services/k8s/`): deployment + chaos senaryoları (DNS/network partition/NTP drift)
-- **TLA+** (`additional-services/formal_verification/`): `DemirYumruk.tla` + `.cfg`
+- **TLA+** (`additional-services/formal_verification/`): `CycleFinance.tla` + `.cfg`
 
 ---
 

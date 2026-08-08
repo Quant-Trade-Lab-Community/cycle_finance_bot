@@ -2,7 +2,7 @@
 EXTENDS Naturals, Sequences, TLC
 
 (* 
-  TLA+ Model for Demir Yumruk 2.0 Lock-Free Tick Processing.
+  TLA+ Model for Cycle Finance Lock-Free Tick Processing.
   Proves that ticks produced by the network adapter are eventually consumed
   by the core without deadlocks (Liveness) and without dropping (Safety).
 *)
