@@ -223,7 +223,7 @@ data-start() {
   _start_guard
   if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
-  rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+  rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
   _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/core" Enter
   echo "✅ DATA başlatıldı (sekme 1 — 📡 DATA)"
 }

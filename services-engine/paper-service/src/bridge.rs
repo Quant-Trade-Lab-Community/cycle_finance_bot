@@ -1,8 +1,8 @@
 //! PAPER sistemini DATA/STRATEGY terminallerine bağlayan köprü.
 //!
-//! - Price-feed ring (`/demir_yumruk_pricefeed`) → `ActorCommand::MarkPriceUpdate`
+//! - Price-feed ring (`/cycle_finance_pricefeed`) → `ActorCommand::MarkPriceUpdate`
 //!   (tek fiyat kaynağı: mark price; dolum/likidasyon bunun üzerinden yapılır)
-//! - Order ring (`/demir_yumruk_orders`) → `ActorCommand::SubmitOrder`
+//! - Order ring (`/cycle_finance_orders`) → `ActorCommand::SubmitOrder`
 //!
 //! Her iki okuyucu da ayrı thread'de spin-loop ile çalışır (zero-copy).
 
@@ -22,12 +22,12 @@ pub fn spawn_ring_bridge(actor_tx: UnboundedSender<ActorCommand>) {
     spawn_order_reader(actor_tx);
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) okuyup
+/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) okuyup
 /// actor'e mark price güncellemesi olarak iletir. Tek veri kaynağı budur;
 /// dolum ve likidasyon yalnızca mark price ile yapılır.
 fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/demir_yumruk_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
         let mut cursor = gen_ring.get_head();
 
         loop {

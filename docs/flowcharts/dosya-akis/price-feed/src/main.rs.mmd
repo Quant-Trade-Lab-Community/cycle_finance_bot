@@ -1,6 +1,6 @@
 graph TD
     A([Başlangıç]) --> B[resolve_symbols: PRICE_FEED_SYMBOLS env veya alerts.toml'dan yükle]
-    B --> C[GenerationalRingBuffer /demir_yumruk_pricefeed oluştur]
+    B --> C[GenerationalRingBuffer /cycle_finance_pricefeed oluştur]
     C --> D[FeedState + RwLock oluştur]
     D --> E[flume::bounded kuyruk 262144 oluştur]
 

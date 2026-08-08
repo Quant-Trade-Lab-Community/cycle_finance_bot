@@ -1,6 +1,6 @@
 //! Microstructure Metrics — kurumsal tick-by-tick metrik çekirdeği.
 //!
-//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/demir_yumruk_ring`). price-feed KULLANILMAZ.
+//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/cycle_finance_ring`). price-feed KULLANILMAZ.
 //!
 //! Aşamalar:
 //!   0. Lee-Ready Signing (trade yönü)

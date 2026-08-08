@@ -18,7 +18,7 @@ pub const WS_BACKOFF_CAP_SECS: f64 = 10.0;
 pub const BINANCE_REST: &str = "https://fapi.binance.com";
 pub const BINANCE_WS: &str = "wss://fstream.binance.com/stream";
 
-pub const RING_NAME: &str = "/demir_yumruk_scout";
+pub const RING_NAME: &str = "/cycle_finance_scout";
 pub const RING_CAPACITY: usize = 20_000;
 
 pub fn now_ts() -> f64 {

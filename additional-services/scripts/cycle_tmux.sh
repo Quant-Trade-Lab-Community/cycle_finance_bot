@@ -47,7 +47,7 @@ full_cleanup() {
       echo "  ✔ $proc durduruldu"
     fi
   done
-  for f in /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders; do
+  for f in /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders; do
     [ -f "$f" ] && rm -f "$f" && echo "  ✔ $f silindi" || true
   done
   echo "✅ Temizlik tamamlandı."
@@ -105,7 +105,7 @@ for proc in core paper-service alert-service; do
     echo "  ✔ $proc durduruldu"
   fi
 done
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 echo "  ✔ Ring buffer'lar temizlendi"
 sleep 1
 

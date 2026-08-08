@@ -42,7 +42,7 @@ unsafe impl Sync for GenerationalRingBuffer {}
 
 impl GenerationalRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        Self::with_name("/demir_yumruk_ring", capacity)
+        Self::with_name("/cycle_finance_ring", capacity)
     }
 
     /// Belirtilen POSIX shm nesnesi üzerinde ring buffer oluşturur/açar.

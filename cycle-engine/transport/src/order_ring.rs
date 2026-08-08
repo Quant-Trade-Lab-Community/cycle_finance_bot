@@ -66,7 +66,7 @@ unsafe impl Sync for OrderRingBuffer {}
 
 impl OrderRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        let name = CString::new("/demir_yumruk_orders").unwrap();
+        let name = CString::new("/cycle_finance_orders").unwrap();
         
         let header_size = std::mem::size_of::<OrderSharedHeader>();
         let header_aligned = (header_size + 63) & !63;

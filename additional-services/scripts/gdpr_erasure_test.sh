@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GDPR/KVKK Right to Erasure Simulation Script for Demir Yumruk 2.0
+# GDPR/KVKK Right to Erasure Simulation Script for Cycle Finance 2.0
 # Simulates physically wiping a user's data from ClickHouse.
 
 set -e

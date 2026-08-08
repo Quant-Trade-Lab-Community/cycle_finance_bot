@@ -1,6 +1,6 @@
 //! Veri kaynakları: `(symbol, price)` akışı üreten kaynaklar.
 //!
-//! - **ring**: mevcut DATA terminalinin tick ring'ini okur (`/dev/shm/demir_yumruk_ring`)
+//! - **ring**: mevcut DATA terminalinin tick ring'ini okur (`/dev/shm/cycle_finance_ring`)
 //! - **binance**: doğrudan Binance Futures WS'ine abone olur (bağımsız çalışır)
 
 use flume::Sender;
@@ -102,12 +102,12 @@ pub fn is_ring_alive() -> bool {
     ring.get_head() > 0
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) SPIN-LOOP
+/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) SPIN-LOOP
 /// ile okur ve sink'e iletir. Poll gecikmesi yoktur — gerçek zamanlı.
 pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
     std::thread::spawn(move || {
         let gen_ring = transport::ring_buffer::GenerationalRingBuffer::with_name(
-            "/demir_yumruk_pricefeed", 20_000,
+            "/cycle_finance_pricefeed", 20_000,
         );
         let mut cursor = gen_ring.get_head();
 

@@ -1,4 +1,4 @@
---------------------------- MODULE DemirYumruk ---------------------------
+--------------------------- MODULE CycleFinance ---------------------------
 EXTENDS Naturals, Sequences, TLC
 
 (* 

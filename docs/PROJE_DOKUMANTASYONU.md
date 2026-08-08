@@ -189,8 +189,8 @@
 │   │   └── risk_tests.rs
 │   └── Cargo.toml
 ├── formal_verification
-│   ├── DemirYumruk.cfg
-│   └── DemirYumruk.tla
+│   ├── CycleFinance.cfg
+│   └── CycleFinance.tla
 ├── .github
 │   └── workflows
 │       └── test-suite.yml
@@ -293,7 +293,7 @@
 
 ## 2.1 Genel Bakış
 
-**Demir Yumruk 2.0**, Binance Futures verisini tüketen, **düşük gecikme/high-throughput** odaklı, katmanlı bir Rust **trading sistemidir**. 22 workspace üyesi crates + 1 independant (msi-fanctl betiği). Kod ne Türkçe hem İngilizce yorum stiline sahip; akışkanlar mekaniği (Navier–Stokes) tabanlı bir algılama servisi (`detect-trb`) dahil olmak üzere **üç nesil** mimari tek repo'da yan yana yaşıyor.
+**Cycle Finance 2.0**, Binance Futures verisini tüketen, **düşük gecikme/high-throughput** odaklı, katmanlı bir Rust **trading sistemidir**. 22 workspace üyesi crates + 1 independant (msi-fanctl betiği). Kod ne Türkçe hem İngilizce yorum stiline sahip; akışkanlar mekaniği (Navier–Stokes) tabanlı bir algılama servisi (`detect-trb`) dahil olmak üzere **üç nesil** mimari tek repo'da yan yana yaşıyor.
 
 ### 1.1 Çalışma Alanı (Workspace)
 
@@ -338,14 +338,14 @@ Binance WS (fstream) ── raw JSON ──▶ simd_json EventParser ──▶ D
 
 | Servis | Port | Çıktı formatı |
 |---|---|---|
-| price-feed | 3004 | HTTP JSON + `/dev/shm/demir_yumruk_pricefeed` |
+| price-feed | 3004 | HTTP JSON + `/dev/shm/cycle_finance_pricefeed` |
 | detect-trend | 3001 | HTTP JSON |
 | detect-ms | 3002 | HTTP JSON |
 | detect-liquidity | 3003 | HTTP JSON |
 | detect-pattern | 3004 | HTTP JSON |
 | detect-wyckoff | 3005 | HTTP JSON |
 | detect-trb | 3006 | HTTP JSON |
-| scout-service | — | shm ring `/dev/shm/demir_yumruk_scout` + probe |
+| scout-service | — | shm ring `/dev/shm/cycle_finance_scout` + probe |
 | paper-service | 8080 | REST/JWT |
 | ohlcv-engine | 3000 | HTTP JSON klines |
 | alert-service | — | sesli (WAV/paplay veya spd-say) |
@@ -521,7 +521,7 @@ CSV (symbol,price,quantity,ts) → sahte event stream → ring'e push; "canlı v
 
 ## 5.2 `price-feed/` — Bağımsız Veri Daemon'ı
 
-- Binance Futures WS (`@trade` + `@bookTicker`) → aynı parser/validator/wire zinciri → **kendi shm ring'i** `/dev/shm/demir_yumruk_pricefeed` (20k slot)
+- Binance Futures WS (`@trade` + `@bookTicker`) → aynı parser/validator/wire zinciri → **kendi shm ring'i** `/dev/shm/cycle_finance_pricefeed` (20k slot)
 - REST `premiumIndex` poll (200ms, tüm semboller seri) → mark/index günceller
 - `GET /api/lastprice`, `/api/lastprice/{SYM}`, `/health` (axum, default :3004)
 - `/tmp/price_feed.json` — 1 sn'de bir tam dump (cold-start için)
@@ -635,7 +635,7 @@ Tek geçiş (i in 2..n) üçlü pencere ile: Hammer, Shooting Star, Engulfing (b
 - `SymbolState`: 3sn kayan pencere; `price_score = (bps/s × ticks/s) / spread`
 - Depth Manager: 2sn'de top-60 sembole `depth10@100ms` aboneliği yeniden dengeler (eski task abort)
 - `Verdict` (5): GUCLU (eff≥0.05 ∧ score≥30), IYI, NORMAL, BOT/GURULTU (eff<0.01 ∧ ob>200), ZAYIF
-- Çıktı: `wire::encode` → `/dev/shm/demir_yumruk_scout`; `bin/probe.rs` tüketici
+- Çıktı: `wire::encode` → `/dev/shm/cycle_finance_scout`; `bin/probe.rs` tüketici
 
 ## 7.2 `heiusdt` — HEIUSDT Breakout Stratejisi
 
@@ -679,7 +679,7 @@ Tek geçiş (i in 2..n) üçlü pencere ile: Hammer, Shooting Star, Engulfing (b
 - `events.rs`: `EventStore` trait; `InMemoryEventStore`, `SledEventStore` (counter anahtarı `__counter`), `open_wal_store` fallback in-memory
 - `postgres_store.rs` (feature `full`): `domain_events` (BIGSERIAL+JSONB) + `account_snapshots` (1000 event'te snapshot)
 - `metrics.rs`: atomics + `/metrics` Prometheus (order_place_total, failures, liquidation, funding, fills)
-- `bridge.rs`: `spawn_pricefeed_reader` — `/demir_yumruk_pricefeed` spin-loop → Decode (Trade/BookTicker/Funding) → `ActorCommand::MarkPriceUpdate`; `spawn_order_reader` — `/demir_yumruk_orders` → `SubmitOrder` + blocking_recv sonuç
+- `bridge.rs`: `spawn_pricefeed_reader` — `/cycle_finance_pricefeed` spin-loop → Decode (Trade/BookTicker/Funding) → `ActorCommand::MarkPriceUpdate`; `spawn_order_reader` — `/cycle_finance_orders` → `SubmitOrder` + blocking_recv sonuç
 - `bin/paper_cli.rs`: REST istemci (status/positions/history/liquidation/order), önce login
 - `tests/actor_e2e.rs`: 8 senaryo (market fill + event, limit cross, MarketUnavailable, min size, hedge coexist, isolated marj)
 
@@ -714,18 +714,18 @@ Tek geçiş (i in 2..n) üçlü pencere ile: Hammer, Shooting Star, Engulfing (b
 
 # 🔟 FORMAL DOĞRULAMA & ALTYAPI
 
-## 10.1 TLA+ (`formal_verification/DemirYumruk.tla`)
+## 10.1 TLA+ (`formal_verification/CycleFinance.tla`)
 
 Lock-free veri hattının soyut modeli:
 - `queue` (bounded 1000) + `ticks_in`/`ticks_out`
 - Eylemler `Produce` / `Consume`; `Next = Produce ∨ Consume`; `WF_vars(Consume)` fairness
 - **Safety**: `ticks_out ≤ ticks_in` (sahte tick yok)
 - **Liveness**: `ticks_in = n ~> ticks_out = n` (her tick nihayet tüketilir)
-- `DemirYumruk.cfg`: SPECIFICATION Spec, INVARIANT Safety, PROPERTY Liveness
+- `CycleFinance.cfg`: SPECIFICATION Spec, INVARIANT Safety, PROPERTY Liveness
 
 ## 10.2 Kubernetes & Chaos Mesh (`k8s/`)
 
-- `deployment.yaml`: `demir-yumruk-core`, 1 replica, 4CPU/4Gi, cgroupv2, **SYS_NICE** (RT thread), probe'lar
+- `deployment.yaml`: `cycle-finance-core`, 1 replica, 4CPU/4Gi, cgroupv2, **SYS_NICE** (RT thread), probe'lar
 - `chaos_network_partition.yaml`: redis-cluster 10sn partition, @5m
 - `chaos_dns_failure.yaml`: binance DNS 5dk hata, @30m
 - `chaos_ntp_drift.yaml`: +10sn NTP drift (TimeChaos), @15m — imza/zamanlama hatalarını test
@@ -6882,7 +6882,7 @@ esac
 ├── config/config_v5.toml
 
 ```toml
-# API v5 Configuration for Demir Yumruk 2.0
+# API v5 Configuration for Cycle Finance 2.0
 [api]
 version = "v5"
 endpoint = "wss://stream.binance.com:9443/ws"
@@ -6895,7 +6895,7 @@ max_positions = 100
 ├── config/config_v6.toml
 
 ```toml
-# API v6 Configuration for Demir Yumruk 2.0 (Blue/Green Deployment)
+# API v6 Configuration for Cycle Finance 2.0 (Blue/Green Deployment)
 [api]
 version = "v6"
 endpoint = "wss://stream.binance.com:9443/ws/v6"
@@ -7849,7 +7849,7 @@ unsafe impl Sync for OrderRingBuffer {}
 
 impl OrderRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        let name = CString::new("/demir_yumruk_orders").unwrap();
+        let name = CString::new("/cycle_finance_orders").unwrap();
         
         let header_size = std::mem::size_of::<OrderSharedHeader>();
         let header_aligned = (header_size + 63) & !63;
@@ -8029,7 +8029,7 @@ unsafe impl Sync for GenerationalRingBuffer {}
 
 impl GenerationalRingBuffer {
     pub fn new(capacity: usize) -> Self {
-        Self::with_name("/demir_yumruk_ring", capacity)
+        Self::with_name("/cycle_finance_ring", capacity)
     }
 
     /// Belirtilen POSIX shm nesnesi üzerinde ring buffer oluşturur/açar.
@@ -10109,7 +10109,7 @@ fn push_and_read(ring: &GenerationalRingBuffer, ev: &OwnedEvent) -> Option<Owned
 
 #[test]
 fn ring_trade_roundtrip() {
-    let ring = GenerationalRingBuffer::with_name("/demir_yumruk_test_trade", 4096);
+    let ring = GenerationalRingBuffer::with_name("/cycle_finance_test_trade", 4096);
     let ev = OwnedEvent::new_trade("BTCUSDT", Decimal::from_str("67234.50").unwrap(),
         Decimal::from_str("0.001500").unwrap(), 1_766_800_000_000, true);
     let got = push_and_read(&ring, &ev).expect("roundtrip");
@@ -10128,7 +10128,7 @@ fn ring_trade_roundtrip() {
 
 #[test]
 fn ring_depth20_roundtrip() {
-    let ring = GenerationalRingBuffer::with_name("/demir_yumruk_test_depth", 4096);
+    let ring = GenerationalRingBuffer::with_name("/cycle_finance_test_depth", 4096);
     let mut bids = [(Decimal::ZERO, Decimal::ZERO); 20];
     let mut asks = [(Decimal::ZERO, Decimal::ZERO); 20];
     for i in 0..20 {
@@ -10150,7 +10150,7 @@ fn ring_depth20_roundtrip() {
 fn ring_overwrite_generation() {
     // Aynı slot üzerine yazınca generational seq sayesinde eski okuma geçersiz olur.
     // Önceki koşulardan kalan shm state'ine dayanmamak için head'den göreli çalış.
-    let ring = GenerationalRingBuffer::with_name("/demir_yumruk_test_gen", 2);
+    let ring = GenerationalRingBuffer::with_name("/cycle_finance_test_gen", 2);
     let base = ring.get_head();
     let trade = OwnedEvent::new_trade("BTCUSDT", Decimal::ONE, Decimal::ONE, 1, false);
     let mut frame = [0u8; wire::MAX_FRAME_SIZE];
@@ -19218,7 +19218,7 @@ impl PhaseSpace {
 // ============================================================================
 // İki kaynak:
 //   1. SQLite (market_data.db) → tarihsel tick'ler → OHLCV gruplandırma
-//   2. GenerationalRingBuffer (/dev/shm/demir_yumruk_ring) → canlı tick'ler
+//   2. GenerationalRingBuffer (/dev/shm/cycle_finance_ring) → canlı tick'ler
 //
 // Her iki kaynaktan elde edilen InflowData dizisi NSSolver'a beslenir.
 // ============================================================================
@@ -19440,7 +19440,7 @@ fn aggregate_to_inflows(
 /// Ring buffer'ın son `max_ticks` tick'ini okur ve
 /// sembol filtresiyle InflowData üretir.
 ///
-/// Ring buffer /dev/shm/demir_yumruk_ring üzerinde yazar.
+/// Ring buffer /dev/shm/cycle_finance_ring üzerinde yazar.
 /// Bu fonksiyon core ring buffer'ı salt okunur şekilde tüketir.
 pub fn drain_ring_buffer(symbol: &str, max_ticks: usize) -> Vec<InflowData> {
     // Ring buffer'ı aç (varsa — core çalışmıyorsa graceful döner)
@@ -21589,9 +21589,9 @@ fn now_ms() -> u64 {
 ```rust
 //! PAPER sistemini DATA/STRATEGY terminallerine bağlayan köprü.
 //!
-//! - Price-feed ring (`/demir_yumruk_pricefeed`) → `ActorCommand::MarkPriceUpdate`
+//! - Price-feed ring (`/cycle_finance_pricefeed`) → `ActorCommand::MarkPriceUpdate`
 //!   (tek fiyat kaynağı: mark price; dolum/likidasyon bunun üzerinden yapılır)
-//! - Order ring (`/demir_yumruk_orders`) → `ActorCommand::SubmitOrder`
+//! - Order ring (`/cycle_finance_orders`) → `ActorCommand::SubmitOrder`
 //!
 //! Her iki okuyucu da ayrı thread'de spin-loop ile çalışır (zero-copy).
 
@@ -21611,12 +21611,12 @@ pub fn spawn_ring_bridge(actor_tx: UnboundedSender<ActorCommand>) {
     spawn_order_reader(actor_tx);
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) okuyup
+/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) okuyup
 /// actor'e mark price güncellemesi olarak iletir. Tek veri kaynağı budur;
 /// dolum ve likidasyon yalnızca mark price ile yapılır.
 fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/demir_yumruk_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
         let mut cursor = gen_ring.get_head();
 
         loop {
@@ -23271,7 +23271,7 @@ async fn main() {
 ```rust
 //! Veri kaynakları: `(symbol, price)` akışı üreten kaynaklar.
 //!
-//! - **ring**: mevcut DATA terminalinin tick ring'ini okur (`/dev/shm/demir_yumruk_ring`)
+//! - **ring**: mevcut DATA terminalinin tick ring'ini okur (`/dev/shm/cycle_finance_ring`)
 //! - **binance**: doğrudan Binance Futures WS'ine abone olur (bağımsız çalışır)
 
 use flume::Sender;
@@ -23373,12 +23373,12 @@ pub fn is_ring_alive() -> bool {
     ring.get_head() > 0
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/demir_yumruk_pricefeed`) SPIN-LOOP
+/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) SPIN-LOOP
 /// ile okur ve sink'e iletir. Poll gecikmesi yoktur — gerçek zamanlı.
 pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
     std::thread::spawn(move || {
         let gen_ring = transport::ring_buffer::GenerationalRingBuffer::with_name(
-            "/demir_yumruk_pricefeed", 20_000,
+            "/cycle_finance_pricefeed", 20_000,
         );
         let mut cursor = gen_ring.get_head();
 
@@ -23463,7 +23463,7 @@ flume = "0.11"
 //! Mimari, DATA terminaliyle birebir aynıdır:
 //!   Binance WS → simd_json EventParser → GenerationalRingBuffer (/dev/shm)
 //!
-//! Fark: kendi ring buffer'ını kullanır (/demir_yumruk_pricefeed) ve ayrıca
+//! Fark: kendi ring buffer'ını kullanır (/cycle_finance_pricefeed) ve ayrıca
 //! HTTP API + JSON dosya ile son fiyatları diğer katmanlara sunar.
 //!
 //! Abonelikler (fstream.binance.com):
@@ -23495,7 +23495,7 @@ use tokio_tungstenite::connect_async;
 
 const WS_URL: &str = "wss://fstream.binance.com/stream";
 const DEFAULT_PORT: u16 = 3004;
-const RING_NAME: &str = "/demir_yumruk_pricefeed";
+const RING_NAME: &str = "/cycle_finance_pricefeed";
 const RING_CAPACITY: usize = 20_000;
 const OUT_FILE: &str = "/tmp/price_feed.json";
 
@@ -24083,7 +24083,7 @@ fn main() {
 //! LISTENER — DATA MERKEZİ mikro-yapı metrikleri + korelasyon tabloları (Rust).
 //!
 //! Veri kaynakları:
-//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/demir_yumruk_ring`): trade/depth + hacim
+//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/cycle_finance_ring`): trade/depth + hacim
 //!   - PRICE-FEED (:3004): lastprice (fiyat korelasyonu için)
 //!
 //! Ekran:
@@ -24153,7 +24153,7 @@ fn now_ms() -> u64 {
 fn main() {
     println!("{}", "═".repeat(96));
     println!("  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON");
-    println!("  Kaynak: DATA (/dev/shm/demir_yumruk_ring) + PRICE-FEED (:3004)");
+    println!("  Kaynak: DATA (/dev/shm/cycle_finance_ring) + PRICE-FEED (:3004)");
     println!("{}", "═".repeat(96));
 
     let ring = Arc::new(GenerationalRingBuffer::new(160_000));
@@ -24504,7 +24504,7 @@ pub mod metrics;
 //!
 //! Akış:
 //! ```text
-//! price-feed ring (/demir_yumruk_pricefeed)
+//! price-feed ring (/cycle_finance_pricefeed)
 //!   → ring okuyucu std thread (fiyat event'leri)
 //!   → mpsc UnboundedChannel → [actor döngüsü]
 //!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
@@ -24715,7 +24715,7 @@ fn current_wait_sec(default: u64) -> u64 {
 fn spawn_price_reader(symbol: &str, tx: mpsc::UnboundedSender<f64>) {
     let symbol = symbol.to_ascii_uppercase();
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/demir_yumruk_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
         let mut cursor = gen_ring.get_head();
         let mut symbol_buf = [0u8; 16];
         let bytes = symbol.as_bytes();
@@ -24968,7 +24968,7 @@ mod tests {
 ```rust
 //! Microstructure Metrics — kurumsal tick-by-tick metrik çekirdeği.
 //!
-//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/demir_yumruk_ring`). price-feed KULLANILMAZ.
+//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/cycle_finance_ring`). price-feed KULLANILMAZ.
 //!
 //! Aşamalar:
 //!   0. Lee-Ready Signing (trade yönü)
@@ -25709,7 +25709,7 @@ impl OrderbookFluxAnalyzer {
 ├── scout-service/src/bin/probe.rs
 
 ```rust
-//! Scout ring buffer tüketici örneği (`/dev/shm/demir_yumruk_scout`).
+//! Scout ring buffer tüketici örneği (`/dev/shm/cycle_finance_scout`).
 //!
 //! Fırsat (Opportunity) ve sembol metriklerini (SymbolMetrics) okur, yazdırır.
 //! Kullanım:
@@ -25721,7 +25721,7 @@ use contracts::events::EventType;
 use contracts::wire::decode;
 use std::time::Duration;
 
-const RING_NAME: &str = "/demir_yumruk_scout";
+const RING_NAME: &str = "/cycle_finance_scout";
 const RING_CAPACITY: usize = 20_000;
 
 fn symbol_str(symbol: &[u8; 16]) -> &str {
@@ -26355,7 +26355,7 @@ pub const WS_BACKOFF_CAP_SECS: f64 = 10.0;
 pub const BINANCE_REST: &str = "https://fapi.binance.com";
 pub const BINANCE_WS: &str = "wss://fstream.binance.com/stream";
 
-pub const RING_NAME: &str = "/demir_yumruk_scout";
+pub const RING_NAME: &str = "/cycle_finance_scout";
 pub const RING_CAPACITY: usize = 20_000;
 
 pub fn now_ts() -> f64 {
@@ -26864,7 +26864,7 @@ data-start() {
   _start_guard
   if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
-  rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+  rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
   _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/core" Enter
   echo "✅ DATA başlatıldı (sekme 1 — 📡 DATA)"
 }
@@ -27615,7 +27615,7 @@ echo -e "${_D}[cycle_env] Yüklendi — ROOT: $CYCLE_ROOT | API: $CYCLE_API${_N}
 #  Pencere 6 — HEIUSDT (Kırılım stratejisi)
 #  Pencere 7 — WYCKOFF (:3005)
 #  Pencere 8 — TURBULANS/DETECT-TRB (:3006)
-#  Pencere 9 — SCOUT (Binance USDT tarayıcı → /dev/shm/demir_yumruk_scout)
+#  Pencere 9 — SCOUT (Binance USDT tarayıcı → /dev/shm/cycle_finance_scout)
 # ============================================================
 set -euo pipefail
 
@@ -27648,7 +27648,7 @@ full_cleanup() {
       echo "  ✔ $proc durduruldu"
     fi
   done
-  for f in /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders; do
+  for f in /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders; do
     [ -f "$f" ] && rm -f "$f" && echo "  ✔ $f silindi" || true
   done
   echo "✅ Temizlik tamamlandı."
@@ -27706,7 +27706,7 @@ for proc in core paper-service alert-service; do
     echo "  ✔ $proc durduruldu"
   fi
 done
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders /dev/shm/demir_yumruk_scout
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders /dev/shm/cycle_finance_scout
 echo "  ✔ Ring buffer'lar temizlendi"
 sleep 1
 
@@ -27858,7 +27858,7 @@ tmux send-keys -t "$SESSION:9" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🔭  SCOUT  (Binance USDT tarayıcı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo 'Fırsat + sembol metrikleri → /dev/shm/demir_yumruk_scout'
+echo 'Fırsat + sembol metrikleri → /dev/shm/cycle_finance_scout'
 echo 'Tüketici: ./target/debug/probe --once'
 sleep 2
 cd $ROOT && $BIN/scout-service
@@ -27918,7 +27918,7 @@ tmux attach-session -t "$SESSION"
 ```bash
 #!/bin/bash
 
-# GDPR/KVKK Right to Erasure Simulation Script for Demir Yumruk 2.0
+# GDPR/KVKK Right to Erasure Simulation Script for Cycle Finance 2.0
 # Simulates physically wiping a user's data from ClickHouse.
 
 set -e
@@ -28189,7 +28189,7 @@ while true; do
     # ── Ring buffer bilgisi ───────────────────────────────────
     echo ""
     echo -e "  ${DIM}Ring Buffer Durumu:${N}"
-    for ring in demir_yumruk_ring demir_yumruk_orders; do
+    for ring in cycle_finance_ring cycle_finance_orders; do
         if [ -f "/dev/shm/$ring" ]; then
             ring_size=$(du -sh "/dev/shm/$ring" 2>/dev/null | cut -f1)
             printf "    ${G}✔${N} /dev/shm/%-28s %s\n" "$ring" "$ring_size"
@@ -28236,7 +28236,7 @@ pkill -x paper_cli 2>/dev/null || true
 sleep 1
 
 # Tick ring'i temizle (farklı kapasiteyle başlatılırsa)
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 
 echo "=== DATA terminali başlatılıyor (Binance Futures WS) ==="
 setsid env RUN_MODE=DATA "$BIN/core" > /tmp/data_terminal.log 2>&1 < /dev/null &
@@ -28288,7 +28288,7 @@ pkill -x paper-service 2>/dev/null && echo "  paper-service durduruldu" || echo 
 pkill -x core 2>/dev/null && echo "  DATA terminal durduruldu" || echo "  DATA terminal zaten kapalı"
 
 # Paylaşımlı hafıza temizliği
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 
 echo "Done."
 ```
@@ -28300,14 +28300,14 @@ echo "Done."
 apiVersion: chaos-mesh.org/v1alpha1
 kind: DNSChaos
 metadata:
-  name: demir-yumruk-dns-failure
+  name: cycle-finance-dns-failure
   namespace: default
 spec:
   action: error
   mode: all
   selector:
     labelSelectors:
-      app: demir-yumruk
+      app: cycle-finance
   patterns:
     - api.binance.com
     - stream.binance.com
@@ -28323,14 +28323,14 @@ spec:
 apiVersion: chaos-mesh.org/v1alpha1
 kind: NetworkChaos
 metadata:
-  name: demir-yumruk-network-partition
+  name: cycle-finance-network-partition
   namespace: default
 spec:
   action: partition
   mode: all
   selector:
     labelSelectors:
-      app: demir-yumruk
+      app: cycle-finance
   direction: both
   target:
     selector:
@@ -28349,13 +28349,13 @@ spec:
 apiVersion: chaos-mesh.org/v1alpha1
 kind: TimeChaos
 metadata:
-  name: demir-yumruk-ntp-drift
+  name: cycle-finance-ntp-drift
   namespace: default
 spec:
   mode: all
   selector:
     labelSelectors:
-      app: demir-yumruk
+      app: cycle-finance
   timeOffset: '10s' # Simulate NTP drift of 10 seconds ahead
   duration: '5m'
   scheduler:
@@ -28369,25 +28369,25 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demir-yumruk-core
+  name: cycle-finance-core
   labels:
-    app: demir-yumruk
+    app: cycle-finance
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demir-yumruk
+      app: cycle-finance
   template:
     metadata:
       labels:
-        app: demir-yumruk
+        app: cycle-finance
       annotations:
         # Require cgroups v2 resource management
         kubernetes.io/cgroup-version: "v2"
     spec:
       containers:
       - name: core
-        image: demir-yumruk/core:latest
+        image: cycle-finance/core:latest
         resources:
           limits:
             cpu: "4"
@@ -28405,7 +28405,7 @@ spec:
 ```
 
 
-├── formal_verification/DemirYumruk.cfg
+├── formal_verification/CycleFinance.cfg
 
 ```ini
 SPECIFICATION Spec
@@ -28414,14 +28414,14 @@ PROPERTY Liveness
 ```
 
 
-├── formal_verification/DemirYumruk.tla
+├── formal_verification/CycleFinance.tla
 
 ```tla
---------------------------- MODULE DemirYumruk ---------------------------
+--------------------------- MODULE CycleFinance ---------------------------
 EXTENDS Naturals, Sequences, TLC
 
 (* 
-  TLA+ Model for Demir Yumruk 2.0 Lock-Free Tick Processing.
+  TLA+ Model for Cycle Finance 2.0 Lock-Free Tick Processing.
   Proves that ticks produced by the network adapter are eventually consumed
   by the core without deadlocks (Liveness) and without dropping (Safety).
 *)
@@ -28469,7 +28469,7 @@ Spec == Init /\ [][Next]_vars /\ WF_vars(Consume)
 ├── .github/workflows/test-suite.yml
 
 ```yaml
-name: Demir Yumruk 2.0 Sertifika Testleri
+name: Cycle Finance 2.0 Sertifika Testleri
 
 on:
   pull_request:
@@ -28542,8 +28542,8 @@ flowchart TB
     subgraph K1["Katman 1 — transport (IPC)"]
         RING["GenerationalRingBuffer<br/>/dev/shm · 160k slot<br/>torn-read korumalı"]
         ORING["OrderRingBuffer<br/>/dev/shm (STRATEGY→EXECUTION)"]
-        PRING["PriceFeed ring<br/>/dev/shm/demir_yumruk_pricefeed"]
-        SCRING["Scout ring<br/>/dev/shm/demir_yumruk_scout"]
+        PRING["PriceFeed ring<br/>/dev/shm/cycle_finance_pricefeed"]
+        SCRING["Scout ring<br/>/dev/shm/cycle_finance_scout"]
     end
 
     subgraph K2["Katman 2 — core motor"]
@@ -29042,7 +29042,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph VERI_GRS["Veri Kaynakları"]
-        R1["ring /demir_yumruk_ring (160k)"]
+        R1["ring /cycle_finance_ring (160k)"]
         R2["pricefeed ring (20k)"]
         BIN["doğrudan Binance WS (köprüsüz)"]
         PFAPI["price-feed REST :3004"]
@@ -29114,10 +29114,10 @@ flowchart LR
     end
 
     subgraph FORMAL["Formal Verification (TLA+)"]
-        TLA["DemirYumruk.tla<br/>queue = tracked dispatch <br/>Produce/Consume"]
+        TLA["CycleFinance.tla<br/>queue = tracked dispatch <br/>Produce/Consume"]
         SAFE["Safety: ticks_out ≤ ticks_in"]
         LIVE["Liveness: ticks_in = n → ticks_out = n<br/>WF_vars(Consume)"]
-        CFG["DemirYumruk.cfg<br/>SPEC + INVARIANT + PROPERTY"]
+        CFG["CycleFinance.cfg<br/>SPEC + INVARIANT + PROPERTY"]
     end
 
     J1 --> J2 --> J3 --> J4

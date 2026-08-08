@@ -15,10 +15,10 @@ flowchart LR
     end
 
     subgraph FORMAL["Formal Verification (TLA+)"]
-        TLA["DemirYumruk.tla<br/>queue = tracked dispatch <br/>Produce/Consume"]
+        TLA["CycleFinance.tla<br/>queue = tracked dispatch <br/>Produce/Consume"]
         SAFE["Safety: ticks_out ≤ ticks_in"]
         LIVE["Liveness: ticks_in = n → ticks_out = n<br/>WF_vars(Consume)"]
-        CFG["DemirYumruk.cfg<br/>SPEC + INVARIANT + PROPERTY"]
+        CFG["CycleFinance.cfg<br/>SPEC + INVARIANT + PROPERTY"]
     end
 
     J1 --> J2 --> J3 --> J4

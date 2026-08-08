@@ -1,7 +1,7 @@
 //! LISTENER — DATA MERKEZİ mikro-yapı metrikleri + korelasyon tabloları (Rust).
 //!
 //! Veri kaynakları:
-//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/demir_yumruk_ring`): trade/depth + hacim
+//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/cycle_finance_ring`): trade/depth + hacim
 //!   - PRICE-FEED (:3004): lastprice (fiyat korelasyonu için)
 //!
 //! Ekran:
@@ -71,7 +71,7 @@ fn now_ms() -> u64 {
 fn main() {
     println!("{}", "═".repeat(96));
     println!("  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON");
-    println!("  Kaynak: DATA (/dev/shm/demir_yumruk_ring) + PRICE-FEED (:3004)");
+    println!("  Kaynak: DATA (/dev/shm/cycle_finance_ring) + PRICE-FEED (:3004)");
     println!("{}", "═".repeat(96));
 
     let ring = Arc::new(GenerationalRingBuffer::new(160_000));

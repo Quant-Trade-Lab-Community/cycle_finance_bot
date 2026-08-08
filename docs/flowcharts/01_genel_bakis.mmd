@@ -13,8 +13,8 @@ flowchart TB
     subgraph K1["Katman 1 — transport (IPC)"]
         RING["GenerationalRingBuffer<br/>/dev/shm · 160k slot<br/>torn-read korumalı"]
         ORING["OrderRingBuffer<br/>/dev/shm (STRATEGY→EXECUTION)"]
-        PRING["PriceFeed ring<br/>/dev/shm/demir_yumruk_pricefeed"]
-        SCRING["Scout ring<br/>/dev/shm/demir_yumruk_scout"]
+        PRING["PriceFeed ring<br/>/dev/shm/cycle_finance_pricefeed"]
+        SCRING["Scout ring<br/>/dev/shm/cycle_finance_scout"]
     end
 
     subgraph K2["Katman 2 — core motor"]

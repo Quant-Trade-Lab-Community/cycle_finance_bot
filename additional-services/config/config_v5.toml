@@ -1,4 +1,4 @@
-# API v5 Configuration for Demir Yumruk 2.0
+# API v5 Configuration for Cycle Finance 2.0
 [api]
 version = "v5"
 endpoint = "wss://stream.binance.com:9443/ws"

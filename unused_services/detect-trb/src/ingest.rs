@@ -3,7 +3,7 @@
 // ============================================================================
 // İki kaynak:
 //   1. SQLite (market_data.db) → tarihsel tick'ler → OHLCV gruplandırma
-//   2. GenerationalRingBuffer (/dev/shm/demir_yumruk_ring) → canlı tick'ler
+//   2. GenerationalRingBuffer (/dev/shm/cycle_finance_ring) → canlı tick'ler
 //
 // Her iki kaynaktan elde edilen InflowData dizisi NSSolver'a beslenir.
 // ============================================================================
@@ -225,7 +225,7 @@ fn aggregate_to_inflows(
 /// Ring buffer'ın son `max_ticks` tick'ini okur ve
 /// sembol filtresiyle InflowData üretir.
 ///
-/// Ring buffer /dev/shm/demir_yumruk_ring üzerinde yazar.
+/// Ring buffer /dev/shm/cycle_finance_ring üzerinde yazar.
 /// Bu fonksiyon core ring buffer'ı salt okunur şekilde tüketir.
 pub fn drain_ring_buffer(symbol: &str, max_ticks: usize) -> Vec<InflowData> {
     // Ring buffer'ı aç (varsa — core çalışmıyorsa graceful döner)

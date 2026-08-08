@@ -1,6 +1,6 @@
 //! Detektör → strateji köprüsü.
 //!
-//! "Scout" ring buffer'i (`/demir_yumruk_scout`) detektörler (mikroyapı analizi,
+//! "Scout" ring buffer'i (`/cycle_finance_scout`) detektörler (mikroyapı analizi,
 //! misalignment, candle-classifier) tarafından doldurulur; bu köprü ring'deki
 //! `EventType::Opportunity` frame'lerini okur ve bunları yüksek-performanslı
 //! **tek tüketici** olarak strateji/execution katmanına iletir.
@@ -18,7 +18,7 @@ use transport::ring_buffer::{GenerationalRingBuffer, MarketDataSlot};
 use std::time::Duration;
 
 /// Scout ring'in POSIX shm adı (detektör DATA modunda buraya yazar).
-pub const SCOUT_RING_NAME: &str = "/demir_yumruk_scout";
+pub const SCOUT_RING_NAME: &str = "/cycle_finance_scout";
 /// Scout ring kapasitesi (detektör ile aynı değer).
 pub const SCOUT_RING_CAPACITY: usize = 20_000;
 

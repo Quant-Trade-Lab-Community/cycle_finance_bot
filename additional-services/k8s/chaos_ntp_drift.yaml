@@ -1,13 +1,13 @@
 apiVersion: chaos-mesh.org/v1alpha1
 kind: TimeChaos
 metadata:
-  name: demir-yumruk-ntp-drift
+  name: cycle-finance-ntp-drift
   namespace: default
 spec:
   mode: all
   selector:
     labelSelectors:
-      app: demir-yumruk
+      app: cycle-finance
   timeOffset: '10s' # Simulate NTP drift of 10 seconds ahead
   duration: '5m'
   scheduler:

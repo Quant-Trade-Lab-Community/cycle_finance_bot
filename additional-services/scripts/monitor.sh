@@ -230,7 +230,7 @@ while true; do
     # ── Ring buffer bilgisi ───────────────────────────────────
     echo ""
     echo -e "  ${DIM}Ring Buffer Durumu:${N}"
-    for ring in demir_yumruk_ring demir_yumruk_orders; do
+    for ring in cycle_finance_ring cycle_finance_orders; do
         if [ -f "/dev/shm/$ring" ]; then
             ring_size=$(du -sh "/dev/shm/$ring" 2>/dev/null | cut -f1)
             printf "    ${G}✔${N} /dev/shm/%-28s %s\n" "$ring" "$ring_size"

@@ -28,7 +28,7 @@ pkill -x paper_cli 2>/dev/null || true
 sleep 1
 
 # Tick ring'i temizle (farklı kapasiteyle başlatılırsa)
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 
 echo "=== DATA terminali başlatılıyor (Binance Futures WS) ==="
 setsid env RUN_MODE=DATA "$BIN/core" > /tmp/data_terminal.log 2>&1 < /dev/null &

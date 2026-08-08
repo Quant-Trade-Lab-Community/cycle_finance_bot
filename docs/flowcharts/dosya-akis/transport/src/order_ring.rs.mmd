@@ -1,7 +1,7 @@
 graph TD
-    A([Başlangıç]) --> B[new: CString /demir_yumruk_orders + capacity al]
+    A([Başlangıç]) --> B[new: CString /cycle_finance_orders + capacity al]
     B --> C[header_aligned + cap * slot_size = total_size]
-    C --> D[shm_open: /demir_yumruk_orders aç veya oluştur]
+    C --> D[shm_open: /cycle_finance_orders aç veya oluştur]
     D --> E{fd < 0?}
     E -- Evet --> F[panic: orders shm açılamadı]
     E -- Hayır --> G[metadata ile existing boyutu oku]

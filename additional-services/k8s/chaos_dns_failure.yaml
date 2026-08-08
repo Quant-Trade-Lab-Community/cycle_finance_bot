@@ -1,14 +1,14 @@
 apiVersion: chaos-mesh.org/v1alpha1
 kind: DNSChaos
 metadata:
-  name: demir-yumruk-dns-failure
+  name: cycle-finance-dns-failure
   namespace: default
 spec:
   action: error
   mode: all
   selector:
     labelSelectors:
-      app: demir-yumruk
+      app: cycle-finance
   patterns:
     - api.binance.com
     - stream.binance.com

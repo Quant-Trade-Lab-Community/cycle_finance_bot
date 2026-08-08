@@ -10,7 +10,7 @@
 //!
 //! Akış:
 //! ```text
-//! price-feed ring (/demir_yumruk_pricefeed)
+//! price-feed ring (/cycle_finance_pricefeed)
 //!   → ring okuyucu std thread (fiyat event'leri)
 //!   → mpsc UnboundedChannel → [actor döngüsü]
 //!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
@@ -166,7 +166,7 @@ fn current_wait_sec(default: u64) -> u64 {
 fn spawn_price_reader(symbol: &str, tx: mpsc::UnboundedSender<f64>) {
     let symbol = symbol.to_ascii_uppercase();
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/demir_yumruk_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
         let mut cursor = gen_ring.get_head();
         let mut symbol_buf = [0u8; 16];
         let bytes = symbol.as_bytes();

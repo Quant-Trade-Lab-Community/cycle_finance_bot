@@ -7,6 +7,6 @@ pkill -x paper-service 2>/dev/null && echo "  paper-service durduruldu" || echo 
 pkill -x core 2>/dev/null && echo "  DATA terminal durduruldu" || echo "  DATA terminal zaten kapalı"
 
 # Paylaşımlı hafıza temizliği
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 
 echo "Done."

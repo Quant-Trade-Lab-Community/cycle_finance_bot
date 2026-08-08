@@ -1,4 +1,4 @@
-//! Scout ring buffer tüketici örneği (`/dev/shm/demir_yumruk_scout`).
+//! Scout ring buffer tüketici örneği (`/dev/shm/cycle_finance_scout`).
 //!
 //! Fırsat (Opportunity) ve sembol metriklerini (SymbolMetrics) okur, yazdırır.
 //! Kullanım:
@@ -10,7 +10,7 @@ use contracts::events::EventType;
 use contracts::wire::decode;
 use std::time::Duration;
 
-const RING_NAME: &str = "/demir_yumruk_scout";
+const RING_NAME: &str = "/cycle_finance_scout";
 const RING_CAPACITY: usize = 20_000;
 
 fn symbol_str(symbol: &[u8; 16]) -> &str {

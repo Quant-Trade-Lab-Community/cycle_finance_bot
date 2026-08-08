@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demir-yumruk-core
+  name: cycle-finance-core
   labels:
-    app: demir-yumruk
+    app: cycle-finance
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demir-yumruk
+      app: cycle-finance
   template:
     metadata:
       labels:
-        app: demir-yumruk
+        app: cycle-finance
       annotations:
         # Require cgroups v2 resource management
         kubernetes.io/cgroup-version: "v2"
     spec:
       containers:
       - name: core
-        image: demir-yumruk/core:latest
+        image: cycle-finance/core:latest
         resources:
           limits:
             cpu: "4"

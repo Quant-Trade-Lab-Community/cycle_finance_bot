@@ -103,10 +103,10 @@ PROJE/
 ```
 Binance WS (adapter) → flume queue → EventParser (simdjson)
   → DataValidator (stale ≤ 200ms, crossed book, circuit breaker)
-  → wire::encode → GenerationalRingBuffer (/dev/shm/demir_yumruk_ring)
+  → wire::encode → GenerationalRingBuffer (/dev/shm/cycle_finance_ring)
   → SQLite batch writer (data-engine/data/market_data.db)
 
-price-feed (:3004) → /dev/shm/demir_yumruk_pricefeed → breakout-strategy
+price-feed (:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
 detect-ms (:3002)  ← BinanceClient (ohlcv-engine)
 breakout-strategy  → SINYAL (sembol + yön)
 ```
@@ -164,7 +164,7 @@ detect-ms raporundan:
 
 ### Fiyat kaynağı (öncelik sırası)
 
-1. `price-feed` ring'i (`/dev/shm/demir_yumruk_pricefeed`) — event-by-event
+1. `price-feed` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
 2. `price-feed` REST `:3004`
 3. `detect-ms` `current_price`
 

@@ -39,7 +39,7 @@ graph TD
     Z -- Hayır --> X
     AC --> X
 
-    AD([spawn_pricefeed_ring_source]) --> AE[with_name /demir_yumruk_pricefeed aç]
+    AD([spawn_pricefeed_ring_source]) --> AE[with_name /cycle_finance_pricefeed aç]
     AE --> AF[cursor = get_head()]
     AF --> AG{sonsuz döngü}
     AG --> AH[read_slot(cursor)]

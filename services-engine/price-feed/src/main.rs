@@ -3,7 +3,7 @@
 //! Mimari, DATA terminaliyle birebir aynıdır:
 //!   Binance WS → simd_json EventParser → GenerationalRingBuffer (/dev/shm)
 //!
-//! Fark: kendi ring buffer'ını kullanır (/demir_yumruk_pricefeed) ve ayrıca
+//! Fark: kendi ring buffer'ını kullanır (/cycle_finance_pricefeed) ve ayrıca
 //! HTTP API + JSON dosya ile son fiyatları diğer katmanlara sunar.
 //!
 //! Abonelikler (fstream.binance.com):
@@ -35,7 +35,7 @@ use tokio_tungstenite::connect_async;
 
 const WS_URL: &str = "wss://fstream.binance.com/stream";
 const DEFAULT_PORT: u16 = 3004;
-const RING_NAME: &str = "/demir_yumruk_pricefeed";
+const RING_NAME: &str = "/cycle_finance_pricefeed";
 const RING_CAPACITY: usize = 20_000;
 const OUT_FILE: &str = "/tmp/price_feed.json";
 
