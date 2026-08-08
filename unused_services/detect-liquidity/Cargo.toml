@@ -1,11 +1,11 @@
 [package]
-name = "detect-trend"
+name = "detect-liquidity"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 axum = { workspace = true }
-ohlcv-engine = { version = "0.1.0", path = "../ohlcv-engine" }
+ohlcv-engine = { version = "0.1.0", path = "../services-engine/ohlcv-engine" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

@@ -11,6 +11,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
 rand = { workspace = true }
-contracts = { path = "../../cycle-engine/contracts" }
-transport = { path = "../../cycle-engine/transport" }
+contracts = { path = "../cycle-engine/contracts" }
+transport = { path = "../cycle-engine/transport" }
 rust_decimal = { workspace = true }

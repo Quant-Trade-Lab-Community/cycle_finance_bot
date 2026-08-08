@@ -14,7 +14,7 @@
 //!
 //! Çıktılar: konsol + /tmp/listener_metrics.json
 
-use heiusdt::metrics::{normalized_corr, CorrSeries, DepthLevel, SymbolMetrics};
+use breakout_strategy::metrics::{normalized_corr, CorrSeries, DepthLevel, SymbolMetrics};
 use rust_decimal::prelude::ToPrimitive;
 
 use transport::ring_buffer::GenerationalRingBuffer;

@@ -1,13 +1,13 @@
-//! STRATEGY terminali — HEIUSDT kırılım stratejisini çalıştırır.
+//! STRATEGY terminali — BREAKOUT kırılım stratejisini çalıştırır.
 //!
-//! Strateji Rust'ta (`heiusdt` crate) çalışır: detect-ms'ten seviye/yapı
+//! Strateji Rust'ta (`breakout-strategy` crate) çalışır: detect-ms'ten seviye/yapı
 //! analizi alır, kırılım koşullarını kontrol eder, paper-service'e emir açar.
 
 use std::process::{Child, Command};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-const HEIUSDT_BIN: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/debug/heiusdt");
+const BREAKOUT_BIN: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../target/debug/breakout-strategy");
 
 struct StrategyChild {
     child: Child,
@@ -15,18 +15,18 @@ struct StrategyChild {
 
 pub fn start_strategy_cli() {
     println!("========================================");
-    println!("🎯 STRATEGY ENGINE — HEIUSDT KIRILIM");
-    println!("  Binary: {}", HEIUSDT_BIN);
+    println!("🎯 STRATEGY ENGINE — BREAKOUT KIRILIM");
+    println!("  Binary: {}", BREAKOUT_BIN);
     println!("  detect-ms :3002 + paper-service :8080");
     println!("========================================");
 
     let running = Arc::new(AtomicBool::new(false));
     let mut child: Option<StrategyChild> = spawn_strategy();
     if child.is_none() {
-        println!("❌ HEIUSDT stratejisi başlatılamadı.");
+        println!("❌ BREAKOUT stratejisi başlatılamadı.");
     } else {
         running.store(true, Ordering::SeqCst);
-        println!("✅ HEIUSDT stratejisi çalışıyor.");
+        println!("✅ BREAKOUT stratejisi çalışıyor.");
     }
 
     let mut rl = rustyline::DefaultEditor::new().unwrap();
@@ -43,14 +43,14 @@ pub fn start_strategy_cli() {
                     "help" => {
                         println!("Commands:");
                         println!("  status      - Show strategy status");
-                        println!("  restart     - Restart HEIUSDT strategy");
+                        println!("  restart     - Restart BREAKOUT strategy");
                         println!("  exit        - Quit the terminal");
                     }
                     "status" => {
                         if running.load(Ordering::SeqCst) {
-                            println!("  🎯 HEIUSDT Kırılım — RUNNING");
+                            println!("  🎯 BREAKOUT Kırılım — RUNNING");
                         } else {
-                            println!("  🎯 HEIUSDT Kırılım — DURDU");
+                            println!("  🎯 BREAKOUT Kırılım — DURDU");
                         }
                     }
                     "restart" => {
@@ -61,7 +61,7 @@ pub fn start_strategy_cli() {
                         child = spawn_strategy();
                         if child.is_some() {
                             running.store(true, Ordering::SeqCst);
-                            println!("✅ HEIUSDT stratejisi yeniden başlatıldı.");
+                            println!("✅ BREAKOUT stratejisi yeniden başlatıldı.");
                         } else {
                             running.store(false, Ordering::SeqCst);
                             println!("❌ Yeniden başlatılamadı.");
@@ -84,7 +84,7 @@ pub fn start_strategy_cli() {
 }
 
 fn spawn_strategy() -> Option<StrategyChild> {
-    match Command::new(HEIUSDT_BIN)
+    match Command::new(BREAKOUT_BIN)
         .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
         .spawn()
     {

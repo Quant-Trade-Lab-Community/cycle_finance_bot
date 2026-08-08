@@ -1,9 +1,12 @@
-//! HEIUSDT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
+//! BREAKOUT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
 //!
 //! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
 //! bir REST polling ile uyanıyordu; bu sürüm fiyatı price-feed ring'inden
 //! **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
-//! (varsayılan 20 dakika, `/tmp/heiusdt_wait_sec.txt` ile dinamik).
+//! (varsayılan 20 dakika, `/tmp/breakout_wait_sec.txt` ile dinamik).
+//!
+//! **Sinyal üretici mod**: Emir AÇMAZ. Sadece kırılım algılandığında
+//! sembol + yön (BUY/SELL) bilgisini üretir.
 //!
 //! Akış:
 //! ```text
@@ -12,7 +15,7 @@
 //!   → mpsc UnboundedChannel → [actor döngüsü]
 //!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
 //!                                └─ bekleme aralığı dolmuşsa değerlendirme:
-//!                                   detect-ms (:3002) → kırılım → paper (:8080)
+//!                                   detect-ms (:3002) → kırılım → sinyal (sembol+yön)
 //! ```
 
 use contracts::events::{EventType, OwnedEvent};
@@ -26,8 +29,7 @@ use transport::ring_buffer::GenerationalRingBuffer;
 
 const DETECT_MS_URL: &str = "http://127.0.0.1:3002";
 const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
-const PAPER_API: &str = "http://127.0.0.1:8080";
-const WAIT_FILE: &str = "/tmp/heiusdt_wait_sec.txt";
+const WAIT_FILE: &str = "/tmp/breakout_wait_sec.txt";
 /// Ring'de yeni event yoksa uyanma sınırı — döngü asla tamamen uykuda kalmaz.
 const WAKE_INTERVAL: Duration = Duration::from_millis(500);
 
@@ -35,11 +37,7 @@ struct Config {
     symbol: String,
     interval: String,
     limit: usize,
-    qty: String,
     wait_sec: u64,
-    paper_user: String,
-    paper_pass: String,
-    dry_run: bool,
     once: bool,
 }
 
@@ -48,76 +46,26 @@ fn env_or(key: &str, default: &str) -> String {
 }
 
 fn load_config() -> Config {
-    let check_every: usize = env_or("HEIUSDT_CHECK_EVERY", "20").parse().unwrap_or(20);
-    let wait_sec: u64 = env_or("HEIUSDT_WAIT_SEC", &(check_every * 60).to_string())
+    let check_every: usize = env_or("BREAKOUT_CHECK_EVERY", "20").parse().unwrap_or(20);
+    let wait_sec: u64 = env_or("BREAKOUT_WAIT_SEC", &(check_every * 60).to_string())
         .parse()
         .unwrap_or((check_every * 60) as u64);
     let args: Vec<String> = env::args().collect();
     Config {
-        symbol: env_or("HEIUSDT_SYMBOL", "HEIUSDT"),
-        interval: env_or("HEIUSDT_INTERVAL", "1m"),
-        limit: env_or("HEIUSDT_LIMIT", "100").parse().unwrap_or(100),
-        qty: env_or("HEIUSDT_QTY", "1000"),
+        symbol: env_or("BREAKOUT_SYMBOL", "HEIUSDT"),
+        interval: env_or("BREAKOUT_INTERVAL", "1m"),
+        limit: env_or("BREAKOUT_LIMIT", "100").parse().unwrap_or(100),
         wait_sec,
-        paper_user: env_or("PAPER_ADMIN_USER", "admin"),
-        paper_pass: env_or("PAPER_ADMIN_PASS", "changeme123"),
-        dry_run: args.iter().any(|a| a == "--dry-run"),
         once: args.iter().any(|a| a == "--once"),
     }
 }
 
 // ── HTTP yardımcıları ────────────────────────────────────────
-async fn http_get(client: &reqwest::Client, url: &str, token: Option<&str>) -> Value {
-    let mut req = client.get(url);
-    if let Some(t) = token {
-        req = req.header("Authorization", format!("Bearer {t}"));
-    }
-    match req.send().await {
+async fn http_get(client: &reqwest::Client, url: &str) -> Value {
+    match client.get(url).send().await {
         Ok(r) => r.json::<Value>().await.unwrap_or(Value::Null),
         Err(e) => serde_json::json!({"error": e.to_string()}),
     }
-}
-
-async fn http_post_json(client: &reqwest::Client, url: &str, token: Option<&str>, body: &Value) -> Value {
-    let mut req = client.post(url).json(body);
-    if let Some(t) = token {
-        req = req.header("Authorization", format!("Bearer {t}"));
-    }
-    match req.send().await {
-        Ok(r) => r.json::<Value>().await.unwrap_or(Value::Null),
-        Err(e) => serde_json::json!({"error": e.to_string()}),
-    }
-}
-
-async fn login(client: &reqwest::Client, cfg: &Config) -> Option<String> {
-    let body = serde_json::json!({
-        "username": cfg.paper_user,
-        "password": cfg.paper_pass,
-    });
-    let v = http_post_json(client, &format!("{PAPER_API}/api/v1/auth/login"), None, &body).await;
-    v.get("access_token").and_then(|t| t.as_str()).map(|s| s.to_string())
-}
-
-async fn get_positions(client: &reqwest::Client, token: &str) -> Value {
-    http_get(client, &format!("{PAPER_API}/api/v1/account/positions"), Some(token)).await
-}
-
-async fn place_order(client: &reqwest::Client, cfg: &Config, token: &str, side: &str) -> Value {
-    let oid = format!(
-        "heiusdt-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis()
-    );
-    let body = serde_json::json!({
-        "client_order_id": oid,
-        "symbol": cfg.symbol,
-        "side": side,
-        "order_type": "MARKET",
-        "quantity": cfg.qty,
-    });
-    http_post_json(client, &format!("{PAPER_API}/api/v1/order"), Some(token), &body).await
 }
 
 async fn fetch_analysis(client: &reqwest::Client, cfg: &Config) -> Value {
@@ -125,12 +73,12 @@ async fn fetch_analysis(client: &reqwest::Client, cfg: &Config) -> Value {
         "{DETECT_MS_URL}/api/ms?symbol={}&interval={}&limit={}",
         cfg.symbol, cfg.interval, cfg.limit
     );
-    http_get(client, &url, None).await
+    http_get(client, &url).await
 }
 
 async fn fetch_price_feed(client: &reqwest::Client, cfg: &Config) -> (Option<f64>, Option<String>) {
     let url = format!("{PRICE_FEED_URL}/api/lastprice/{}", cfg.symbol);
-    let v = http_get(client, &url, None).await;
+    let v = http_get(client, &url).await;
     if v.get("error").is_some() {
         return (None, v.get("error").and_then(|e| e.as_str()).map(|s| s.to_string()));
     }
@@ -277,11 +225,6 @@ struct EvalOutcome {
 }
 
 async fn analyze_once(client: &reqwest::Client, cfg: &Config, price_override: Option<f64>) -> EvalOutcome {
-    let token = match login(client, cfg).await {
-        Some(t) => t,
-        None => return EvalOutcome { ok: false, msg: "❌ Paper giriş başarısız".into() },
-    };
-
     let data = fetch_analysis(client, cfg).await;
     if data.get("error").is_some() {
         let e = data.get("error").unwrap();
@@ -298,48 +241,24 @@ async fn analyze_once(client: &reqwest::Client, cfg: &Config, price_override: Op
     let (signal, msg) = evaluate(&data, price);
     let feed_tag = if price_override.is_some() { "ring" } else if pf_err.is_none() { "REST" } else { "detect-ms" };
 
-    if cfg.dry_run {
-        return EvalOutcome { ok: true, msg: format!("{msg}") };
-    }
-
     let Some(side) = signal else {
-        return EvalOutcome { ok: true, msg };
+        return EvalOutcome { ok: true, msg: format!("{msg}") };
     };
 
-    // Aynı sembolde açık pozisyon varsa emir açma
-    let pos = get_positions(client, &token).await;
-    if let Some(list) = pos.get("positions").and_then(|p| p.as_array()) {
-        for p in list {
-            if p.get("symbol").and_then(|s| s.as_str()) == Some(cfg.symbol.as_str())
-                && p.get("quantity").and_then(|q| q.as_f64()).unwrap_or(0.0) != 0.0
-            {
-                return EvalOutcome {
-                    ok: true,
-                    msg: format!("⏭️ {} pozisyonu zaten var. Yeni emir açılmadı. (fiyat: {feed_tag})", cfg.symbol),
-                };
-            }
-        }
+    EvalOutcome {
+        ok: true,
+        msg: format!("📡 SİNYAL → Sembol: {} | Yön: {} (fiyat: {feed_tag}) | {msg}", cfg.symbol, side),
     }
-
-    let resp = place_order(client, cfg, &token, &side).await;
-    let msg = if let Some(oid) = resp.get("order_id").and_then(|o| o.as_str()) {
-        format!("✅ {side} emri açıldı → id={oid} avg={} (fiyat: {feed_tag})", resp.get("avg_price").unwrap())
-    } else {
-        format!("❌ Emir reddedildi: {resp}")
-    };
-    EvalOutcome { ok: true, msg }
 }
 
 #[tokio::main]
 async fn main() {
     let cfg = load_config();
     println!("══════════════════════════════════════════════════");
-    println!("  🎯 HEIUSDT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
+    println!("  🎯 BREAKOUT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
     println!("  Pencere: {} | Bekleme: {} sn | Kaynak: price-feed ring", cfg.limit, cfg.wait_sec);
-    println!("  Paper: {PAPER_API} | detect-ms: {DETECT_MS_URL}");
-    if cfg.dry_run {
-        println!("  🧪 MOD: DRY-RUN (emir gönderilmez)");
-    }
+    println!("  detect-ms: {DETECT_MS_URL}");
+    println!("  📡 MOD: Sinyal üretici (sembol + yön, emir AÇILMAZ)");
     println!("══════════════════════════════════════════════════");
 
     let client = reqwest::Client::builder()
@@ -379,7 +298,7 @@ async fn main() {
                 tokio::time::sleep(Duration::from_secs(10)).await;
                 continue;
             }
-            println!("  😴 {sec} sn ({:.1} dk) bekleniyor... (heiusdt-wait ile değişir)\n", sec as f64 / 60.0);
+            println!("  😴 {sec} sn ({:.1} dk) bekleniyor... (breakout-wait ile değişir)\n", sec as f64 / 60.0);
         }
     }
 }

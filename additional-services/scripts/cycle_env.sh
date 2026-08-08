@@ -39,8 +39,7 @@ help-cycle() {
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
-  echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
-  echo -e "  ${_G}scout-start${_N} / ${_R}scout-stop${_N}        Scout (fırsat tarayıcı — ayrı sekme)"
+  echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
@@ -102,28 +101,14 @@ help-cycle() {
   echo -e "  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu"
   echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
 
-  echo -e "\n${_Y}━━━  🏛️  DETECT-WYCKOFF  (Wyckoff Faz Motoru :3005)  ━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}detect-wyckoff-start${_N}  Servisi başlat (port 3005)"
-  echo -e "  ${_C}detect-wyckoff-stop${_N}   Servisi durdur"
-  echo -e "  ${_C}detect-wyckoff-status${_N} Çalışıyor mu? CPU/RAM göster"
-  echo -e "  ${_C}detect-wyckoff-query${_N}  BTCUSDT 1h analiz (JSON çıktı)"
-  echo -e "  ${_C}detect-wyckoff-query${_N}  HEIUSDT 15m 500${_N}   Özel sorgu"
-
-  echo -e "\n${_Y}━━━  🌊 DETECT-TRB  (Navier-Stokes Çözücü :3006)  ━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}detect-trb-start${_N}      Servisi başlat (port 3006)"
-  echo -e "  ${_C}detect-trb-stop${_N}       Servisi durdur"
-  echo -e "  ${_C}detect-trb-status${_N}     Çalışıyor mu? CPU/RAM göster"
-  echo -e "  ${_C}detect-trb-query${_N}      Son raporu göster (JSON çıktı)"
-  echo -e "  ${_C}detect-trb-start --symbol ETHUSDT --port 3007${_N}   Özel parametreler"
-
   echo -e "\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}heiusdt-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
-  echo -e "  ${_C}heiusdt-stop${_N}         Stratejiyi durdur"
-  echo -e "  ${_C}heiusdt-status${_N}       Çalışıyor mu? CPU/RAM göster"
-  echo -e "  ${_C}heiusdt-query${_N}        Tek seferlik analiz (emir açmaz)"
-  echo -e "  ${_C}heiusdt-query --dry-run${_N}  Analiz + kırılım simülasyonu"
-  echo -e "  ${_C}heiusdt-wait 600${_N}     Bekleme süresini ayarla (saniye)"
-  echo -e "  ${_C}heiusdt-log${_N}          Canlı strateji logu izle"
+  echo -e "  ${_C}breakout-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
+  echo -e "  ${_C}breakout-stop${_N}         Stratejiyi durdur"
+  echo -e "  ${_C}breakout-status${_N}       Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}breakout-query${_N}        Tek seferlik analiz (emir açmaz)"
+  echo -e "  ${_C}breakout-query --dry-run${_N}  Analiz + kırılım simülasyonu"
+  echo -e "  ${_C}breakout-wait 600${_N}     Bekleme süresini ayarla (saniye)"
+  echo -e "  ${_C}breakout-log${_N}          Canlı strateji logu izle"
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 4)"
@@ -143,7 +128,6 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi"
   echo -e "  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi"
   echo -e "  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi"
-  echo -e "  ${_B}Ctrl+B → 7${_N}           WYCKOFF sekmesi"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -175,7 +159,7 @@ cycle-status() {
   "$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh" status
 }
 cycle-build() {
-  cd "$CYCLE_ROOT" && cargo build -p core -p paper-service -p alert-service -p heiusdt
+  cd "$CYCLE_ROOT" && cargo build -p core -p paper-service -p alert-service -p breakout-strategy
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
@@ -376,43 +360,7 @@ risk-status() {
 risk-query() {
   _start_guard
   cd "$CYCLE_ROOT" && ./target/release/risk_analysis
-}
-
-# ── Scout (fırsat tarayıcı) — ayrı sekme ─────────────────────
-scout-start() {
-  _start_guard
-  if pgrep -x scout-service &>/dev/null; then
-    echo "⚠️  SCOUT zaten çalışıyor (pid: $(pgrep -x scout-service | head -1))"
-    return 1
-  fi
-  _tmux_pane "🔭SCOUT" "cd $CYCLE_ROOT && ./target/release/scout-service" Enter
-  sleep 2
-  if pgrep -x scout-service &>/dev/null; then
-    echo "✅ SCOUT başlatıldı (ayrı sekme)"
-  else
-    echo "❌ SCOUT başlatılamadı"
-  fi
-}
-scout-stop() {
-  _start_guard
-  local p; p=$(pgrep -x scout-service 2>/dev/null | head -1 || true)
-  if [ -n "$p" ]; then
-    pkill -TERM -x scout-service 2>/dev/null; sleep 1
-    pkill -KILL -x scout-service 2>/dev/null || true
-    echo "✅ SCOUT durduruldu [pid:$p]"
-  else
-    echo "ℹ️  SCOUT çalışmıyor"
-  fi
-}
-scout-status() {
-  _start_guard
-  local p; p=$(pgrep -x scout-service 2>/dev/null | head -1 || true)
-  if [ -n "$p" ]; then
-    echo "✅ SCOUT ÇALIŞIYOR [pid:$p]"
-  else
-    echo "✘  SCOUT durdurulmuş"
-  fi
-}
+ }
 
 # ── Listener metrik parametreleri (shell'den ayarlanabilir) ──
 # Config dosyası: /tmp/listener_metrics.conf (çalışan listener 5 sn'de bir yeniden okur)
@@ -787,172 +735,49 @@ detect-ms-log() {
 }
 
 # ============================================================
-#  DETECT-WYCKOFF  —  Wyckoff Faz Analiz Motoru
-#  REST API: http://127.0.0.1:3005/api/wyckoff?symbol=BTCUSDT&interval=1h
-# ============================================================
-DETECT_WYCKOFF_ADDR="${DETECT_WYCKOFF_ADDR:-127.0.0.1:3005}"
-
-detect-wyckoff-start() {
-  _start_guard
-  if pgrep -x "detect-wyckoff" &>/dev/null; then
-    echo "⚠️  detect-wyckoff zaten çalışıyor (pid: $(pgrep -x detect-wyckoff))"
-    echo "   → detect-wyckoff-stop ile önce durdur"
-    return 1
-  fi
-
-  # Derle (yoksa)
-  if [ ! -f "$CYCLE_ROOT/target/debug/detect-wyckoff" ]; then
-    echo "🔨 detect-wyckoff derleniyor..."
-    cd "$CYCLE_ROOT" && cargo build -p detect-wyckoff 2>&1 | tail -5
-  fi
-
-  echo "🚀 detect-wyckoff başlatılıyor → http://$DETECT_WYCKOFF_ADDR"
-  _tmux_pane "🏛️WYCKOFF" "cd $CYCLE_ROOT && ./target/debug/detect-wyckoff" Enter
-  sleep 1
-  if pgrep -x detect-wyckoff &>/dev/null; then
-    echo "✅ detect-wyckoff başladı [pid: $(pgrep -x detect-wyckoff)]"
-    echo "   API: http://$DETECT_WYCKOFF_ADDR/api/wyckoff?symbol=BTCUSDT&interval=1h"
-  else
-    echo "❌ detect-wyckoff başlatılamadı."
-  fi
-}
-
-detect-wyckoff-stop() {
-  _start_guard
-  if pgrep -x "detect-wyckoff" &>/dev/null; then
-    pkill -TERM -x "detect-wyckoff" && echo "✅ detect-wyckoff durduruldu"
-  else
-    echo "⚠️  detect-wyckoff zaten çalışmıyor"
-  fi
-}
-
-detect-wyckoff-status() {
-  local pid
-  pid=$(pgrep -x "detect-wyckoff" 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    local cpu mem
-    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
-    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ detect-wyckoff ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
-    echo "   API: http://$DETECT_WYCKOFF_ADDR/api/wyckoff?symbol=BTCUSDT&interval=1h"
-  else
-    echo "✘  detect-wyckoff durdurulmuş"
-  fi
-}
-
-# Sorgu kısayolu — Kullanım: detect-wyckoff-query [SYMBOL] [INTERVAL] [LIMIT]
-detect-wyckoff-query() {
-  local sym="${1:-BTCUSDT}" itv="${2:-1h}" lim="${3:-300}"
-  echo "🏛️  Sorgu: $sym $itv (limit: $lim) → http://$DETECT_WYCKOFF_ADDR"
-  curl -s "http://$DETECT_WYCKOFF_ADDR/api/wyckoff?symbol=${sym}&interval=${itv}&limit=${lim}" \
-    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. detect-wyckoff-start ile başlat."
-}
-
-# ============================================================
-#  DETECT-TRB  —  Navier-Stokes Çözücü / Kavitasyon Motoru
-#  REST API: http://127.0.0.1:3006/api/trb  (+ /api/trb/status)
-# ============================================================
-DETECT_TRB_ADDR="${DETECT_TRB_ADDR:-127.0.0.1:3006}"
-
-detect-trb-start() {
-  _start_guard
-  if pgrep -x "detect-trb" &>/dev/null; then
-    echo "⚠️  detect-trb zaten çalışıyor (pid: $(pgrep -x detect-trb))"
-    echo "   → detect-trb-stop ile önce durdur"
-    return 1
-  fi
-
-  # Derle (yoksa)
-  if [ ! -f "$CYCLE_ROOT/target/release/detect-trb" ]; then
-    echo "🔨 detect-trb derleniyor..."
-    cd "$CYCLE_ROOT" && cargo build --release -p detect-trb 2>&1 | tail -5
-  fi
-
-  echo "🚀 detect-trb başlatılıyor → http://$DETECT_TRB_ADDR"
-  # Ek parametreler (ör. --symbol, --port) start'a geçirilebilir
-  _tmux_pane "🌊TRB" "cd $CYCLE_ROOT && ./target/release/detect-trb $*" Enter
-  sleep 1
-  if pgrep -x detect-trb &>/dev/null; then
-    echo "✅ detect-trb başladı [pid: $(pgrep -x detect-trb)]"
-    echo "   API: http://$DETECT_TRB_ADDR/api/trb/status"
-  else
-    echo "❌ detect-trb başlatılamadı."
-  fi
-}
-
-detect-trb-stop() {
-  _start_guard
-  if pgrep -x "detect-trb" &>/dev/null; then
-    pkill -TERM -x "detect-trb" && echo "✅ detect-trb durduruldu"
-  else
-    echo "⚠️  detect-trb zaten çalışmıyor"
-  fi
-}
-
-detect-trb-status() {
-  local pid
-  pid=$(pgrep -x "detect-trb" 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    local cpu mem
-    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
-    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ detect-trb ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
-    echo "   API: http://$DETECT_TRB_ADDR/api/trb/status"
-  else
-    echo "✘  detect-trb durdurulmuş"
-  fi
-}
-
-# Son raporu göster — Kullanım: detect-trb-query
-detect-trb-query() {
-  curl -s "http://$DETECT_TRB_ADDR/api/trb" \
-    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. detect-trb-start ile başlat."
-}
-
-# ============================================================
-#  HEIUSDT KIRILIM STRATEJİSİ  (strategies/heiusdt_breakout.py)
+#  BREAKOUT STRATEJİSİ  (breakout-strategy)
 #  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
 #  her 20 pencerede bir analiz.
 # ============================================================
-heiusdt-start() {
+breakout-start() {
   _start_guard
-  if pgrep -x heiusdt &>/dev/null; then
-    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1))"
+  if pgrep -x breakout-strategy &>/dev/null; then
+    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -x breakout-strategy | head -1))"
     return 1
   fi
   # Bağımlılık kontrolü
   if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
-    echo "⚠️  detect-ms yanıt vermiyor → heiusdt-start ile başlatın"
+    echo "⚠️  detect-ms yanıt vermiyor → breakout-start ile başlatın"
     return 1
   fi
   echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
-  _tmux_pane "🎯HEIUSDT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/heiusdt" Enter
+  _tmux_pane "🎯BREAKOUT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/breakout-strategy" Enter
   sleep 2
-  if pgrep -x heiusdt &>/dev/null; then
-    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1)]"
-    echo "   Pencere: cycle → 🎯HEIUSDT"
+  if pgrep -x breakout-strategy &>/dev/null; then
+    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -x breakout-strategy | head -1)]"
+    echo "   Pencere: cycle → 🎯BREAKOUT"
   else
     echo "❌ HEIUSDT stratejisi başlatılamadı."
   fi
 }
 
-heiusdt-stop() {
+breakout-stop() {
   _start_guard
   local pid
-  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x breakout-strategy 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
-    pkill -TERM -f "[h]eiusdt_breakout.py" 2>/dev/null
+    pkill -TERM -x breakout-strategy 2>/dev/null
     sleep 1
-    pkill -KILL -f "[h]eiusdt_breakout.py" 2>/dev/null || true
+    pkill -KILL -x breakout-strategy 2>/dev/null || true
     echo "✅ HEIUSDT stratejisi durduruldu [pid:$pid]"
   else
     echo "⚠️  HEIUSDT stratejisi zaten çalışmıyor"
   fi
 }
 
-heiusdt-status() {
+breakout-status() {
   local pid
-  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x breakout-strategy 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
     local cpu mem
     cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
@@ -963,39 +788,39 @@ heiusdt-status() {
   fi
 }
 
-heiusdt-log() {
-  tail -f /tmp/heiusdt.log
+breakout-log() {
+  tail -f /tmp/breakout.log
 }
 
 # Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
-# Kullanım: heiusdt-wait 600   (10 dakika)  |  heiusdt-wait 1200  (20 dakika)
-heiusdt-wait() {
+# Kullanım: breakout-wait 600   (10 dakika)  |  breakout-wait 1200  (20 dakika)
+breakout-wait() {
   _start_guard
   local sec="${1:-}"
   if [ -z "$sec" ]; then
-    local cur; cur=$(cat /tmp/heiusdt_wait_sec.txt 2>/dev/null || echo "1200")
+    local cur; cur=$(cat /tmp/breakout_wait_sec.txt 2>/dev/null || echo "1200")
     echo "ℹ️  Mevcut bekleme: $cur sn"
-    echo "Kullanım: heiusdt-wait <saniye>   (örn. heiusdt-wait 600 → 10dk)"
+    echo "Kullanım: breakout-wait <saniye>   (örn. breakout-wait 600 → 10dk)"
     return 0
   fi
   if ! echo "$sec" | grep -qE '^[0-9]+$' || [ "$sec" -lt 10 ]; then
     echo "❌ Saniye değeri geçerli değil (min 10): $sec"
     return 1
   fi
-  echo "$sec" > /tmp/heiusdt_wait_sec.txt
+  echo "$sec" > /tmp/breakout_wait_sec.txt
   echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
   echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
-  if pgrep -x heiusdt >/dev/null 2>&1; then
+  if pgrep -x breakout-strategy >/dev/null 2>&1; then
     echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
   fi
 }
 
-heiusdt-query() {
-  # Kullanım: heiusdt-query [--dry-run]
+breakout-query() {
+  # Kullanım: breakout-query [--dry-run]
   if [ "${1:-}" = "--dry-run" ]; then
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once --dry-run
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/breakout-strategy --once --dry-run
   else
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/breakout-strategy --once
   fi
 }
 

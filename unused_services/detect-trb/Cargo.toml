@@ -17,9 +17,9 @@ wide    = { workspace = true }
 
 # Core data merkezi erişimi
 # proje_core: ring buffer + wire codec
-core = { path = "../../cycle-engine/core" }
-contracts = { path = "../../cycle-engine/contracts" }
-transport = { path = "../../cycle-engine/transport" }
+core = { path = "../cycle-engine/core" }
+contracts = { path = "../cycle-engine/contracts" }
+transport = { path = "../cycle-engine/transport" }
 # SQLite (bundled — derleme bağımlılığı yok)
 rusqlite = { workspace = true }
 

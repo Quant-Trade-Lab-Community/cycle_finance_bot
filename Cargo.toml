@@ -10,21 +10,14 @@ members = [
     "execution-engine",
     "risk-engine",
     "strategies-engine",
-    "strategies-engine/heiusdt",
+    "strategies-engine/breakout-strategy",
     "services-engine/ohlcv-engine",
-    "services-engine/detect-sr",
-    "services-engine/detect-trend",
     "services-engine/detect-ms",
-    "services-engine/detect-liquidity",
-    "services-engine/detect-pattern",
-    "services-engine/detect-wyckoff",
-    "services-engine/detect-trb",
     "services-engine/paper-service",
     "services-engine/alert-service",
     "services-engine/price-feed",
-    "services-engine/scout-service",
 ]
-exclude = ["tests"]
+exclude = ["tests", "unused_services"]
 resolver = "2"
 
 # ── Tek kaynak: tüm üyeler buradaki sürümleri kullanır (sürüm kayması yok) ──

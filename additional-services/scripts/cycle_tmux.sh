@@ -14,10 +14,7 @@
 #  Pencere 3 — 🛡️ PAPER (sekme terminal)
 #  Pencere 4 — Monitor  (CPU/RAM/GPU izleme)
 #  Pencere 5 — DETECT-MS (MSMP :3002)
-#  Pencere 6 — HEIUSDT (Kırılım stratejisi)
-#  Pencere 7 — WYCKOFF (:3005)
-#  Pencere 8 — TURBULANS/DETECT-TRB (:3006)
-#  Pencere 9 — SCOUT (Binance USDT tarayıcı → /dev/shm/demir_yumruk_scout)
+#  Pencere 6 — BREAKOUT (Kırılım stratejisi)
 # ============================================================
 set -euo pipefail
 
@@ -68,7 +65,7 @@ case "${1:-}" in
       || echo "  ⚠️  '$SESSION' session'ı çalışmıyor."
     echo ""
     echo "=== Çalışan Servisler ==="
-for proc in core paper-service alert-service scout-service; do
+for proc in core paper-service alert-service; do
       pid=$(pgrep -x "$proc" 2>/dev/null | head -1 || true)
       if [ -n "$pid" ]; then
         mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
@@ -96,7 +93,7 @@ fi
 # ── Derleme ──────────────────────────────────────────────────
 echo "🔨 Derleniyor..."
 cd "$ROOT"
-cargo build $BUILD_ARGS -p core -p paper-service -p alert-service -p scout-service -p heiusdt 2>&1 | tail -5
+cargo build $BUILD_ARGS -p core -p paper-service -p alert-service -p breakout-strategy 2>&1 | tail -5
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
@@ -108,7 +105,7 @@ for proc in core paper-service alert-service; do
     echo "  ✔ $proc durduruldu"
   fi
 done
-rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders /dev/shm/demir_yumruk_scout
+rm -f /dev/shm/demir_yumruk_ring /dev/shm/demir_yumruk_orders
 echo "  ✔ Ring buffer'lar temizlendi"
 sleep 1
 
@@ -224,46 +221,14 @@ sleep 2
 cd $ROOT && $BIN/detect-ms
 " Enter
 
-# ── Pencere 6: HEIUSDT STRATEJİ ─────────────────────────────
-tmux new-window -t "$SESSION:6" -n "HEIUSDT"
+# ── Pencere 6: BREAKOUT STRATEJİ ─────────────────────────────
+tmux new-window -t "$SESSION:6" -n "BREAKOUT"
 tmux send-keys -t "$SESSION:6" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🎯  HEIUSDT  (Kırılım Stratejisi)'
+echo '🎯  BREAKOUT  (Kırılım Stratejisi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
-cd $ROOT && $BIN/heiusdt
-" Enter
-
-# ── Pencere 7: WYCKOFF ANALİZ ───────────────────────────────
-tmux new-window -t "$SESSION:7" -n "WYCKOFF"
-tmux send-keys -t "$SESSION:7" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🏛️  DETECT-WYCKOFF  (Wyckoff :3005)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 2
-cd $ROOT && $BIN/detect-wyckoff
-" Enter
-
-# ── Pencere 8: DETECT-TRB (Navier-Stokes) ────────────────────
-tmux new-window -t "$SESSION:8" -n "TURBULANS"
-tmux send-keys -t "$SESSION:8" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🌊  DETECT-TRB  (Navier-Stokes :3006)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 2
-cd $ROOT && $BIN/detect-trb
-" Enter
-
-# ── Pencere 9: SCOUT (Binance USDT tarayıcı) ────────────────
-tmux new-window -t "$SESSION:9" -n "SCOUT"
-tmux send-keys -t "$SESSION:9" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🔭  SCOUT  (Binance USDT tarayıcı)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo 'Fırsat + sembol metrikleri → /dev/shm/demir_yumruk_scout'
-echo 'Tüketici: ./target/debug/probe --once'
-sleep 2
-cd $ROOT && $BIN/scout-service
+cd $ROOT && $BIN/breakout-strategy
 " Enter
 
 # ── Görsel ayarlar (global) ──────────────────────────────────
@@ -276,7 +241,7 @@ tmux set-option -t "$SESSION" status-interval 1
 tmux set-option -t "$SESSION" status-style          "bg=colour232,fg=colour245"
 tmux set-option -t "$SESSION" status-left           "#[bg=colour25,fg=colour255,bold]  🏛️  Cycle Finance  #[bg=colour232,fg=colour245] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=colour39]0#[fg=colour244]:Trading #[fg=colour45]1#[fg=colour244]:DATA #[fg=colour214]2#[fg=colour244]:ALERT #[fg=colour82]3#[fg=colour244]:PAPER #[fg=colour196]4#[fg=colour244]:Mon #[fg=colour171]7#[fg=colour244]:WYCKOFF #[fg=colour51]8#[fg=colour244]:TRB #[fg=colour250]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=colour39]0#[fg=colour244]:Trading #[fg=colour45]1#[fg=colour244]:DATA #[fg=colour214]2#[fg=colour244]:ALERT #[fg=colour82]3#[fg=colour244]:PAPER #[fg=colour196]4#[fg=colour244]:Mon #[fg=colour250]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
 # Window sekme renkleri
