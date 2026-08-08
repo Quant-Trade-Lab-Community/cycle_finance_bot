@@ -434,18 +434,34 @@ async fn modify_order_route(State(state): State<Arc<AppState>>, Path(cid): Path<
 // ── Hesap / pozisyon (snapshot) ─────────────────────────────────
 
 async fn get_account(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    // Canlı borsa verisi (uPnL güncel); snapshot yalnızca geri dönüş olarak.
+    if let Some(client) = &state.client
+        && let Ok(acc) = client.account_info().await
+    {
+        return (StatusCode::OK, Json(serde_json::json!({ "account": acc }))).into_response();
+    }
     let snap = state.engine.snapshot();
     (StatusCode::OK, Json(snap)).into_response()
 }
 
 async fn get_positions(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    if let Some(client) = &state.client
+        && let Ok(p) = client.position_risk(None).await
+    {
+        return (StatusCode::OK, Json(p)).into_response();
+    }
     let snap = state.engine.snapshot();
     (StatusCode::OK, Json(snap.positions)).into_response()
 }
 
 async fn get_position_symbol(State(state): State<Arc<AppState>>, Path(symbol): Path<String>) -> impl IntoResponse {
-    let snap = state.engine.snapshot();
     let sym = symbol.to_uppercase();
+    if let Some(client) = &state.client
+        && let Ok(p) = client.position_risk(Some(&sym)).await
+    {
+        return (StatusCode::OK, Json(p)).into_response();
+    }
+    let snap = state.engine.snapshot();
     let pos: Vec<_> = snap
         .positions
         .iter()
@@ -456,6 +472,11 @@ async fn get_position_symbol(State(state): State<Arc<AppState>>, Path(symbol): P
 }
 
 async fn get_balances(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    if let Some(client) = &state.client
+        && let Ok(b) = client.balance().await
+    {
+        return (StatusCode::OK, Json(b)).into_response();
+    }
     let snap = state.engine.snapshot();
     (StatusCode::OK, Json(snap.account.assets)).into_response()
 }
@@ -473,24 +494,55 @@ pub struct ClosePositionsRequest {
 }
 
 async fn close_positions(State(state): State<Arc<AppState>>, Json(req): Json<ClosePositionsRequest>) -> impl IntoResponse {
-    let res = match req.symbol.as_deref() {
-        Some(sym) => {
-            state.engine.close_symbol(sym, req.position_side.as_deref()).await
-        }
-        None => {
-            if req.position_side.is_some() {
-                return api_err(
-                    StatusCode::BAD_REQUEST,
-                    "position_side yalnızca symbol ile birlikte kullanılır",
-                );
-            }
-            state.engine.close_all().await
-        }
+    let Some(client) = &state.client else {
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda pozisyon kapatma kapalı");
     };
-    match res {
-        Ok(closed) => (StatusCode::OK, Json(serde_json::json!({ "closed": closed }))).into_response(),
-        Err(e) => api_err(StatusCode::BAD_REQUEST, e),
+    let symbol = req.symbol.as_deref().map(|s| s.to_uppercase());
+    let positions = match client.position_risk(symbol.as_deref()).await {
+        Ok(p) => p,
+        Err(e) => return api_err(to_err(&e), e.to_string()),
+    };
+
+    let mut closed = 0usize;
+    let mut errors: Vec<String> = Vec::new();
+    for p in positions {
+        if p.position_amt.is_zero() {
+            continue;
+        }
+        if let Some(s) = req.position_side.as_deref() {
+            if !p.position_side.eq_ignore_ascii_case(s) {
+                continue;
+            }
+        }
+        // Pozitif amt = LONG → SELL; negatif = SHORT → BUY.
+        let side = if p.position_amt.is_sign_positive() {
+            OrderSide::Sell
+        } else {
+            OrderSide::Buy
+        };
+        let order = OrderRequest {
+            symbol: p.symbol.clone(),
+            side,
+            order_type: OrderType::Market,
+            quantity: p.position_amt.abs(),
+            position_side: match p.position_side.as_str() {
+                "LONG" => OrderPositionSide::Long,
+                "SHORT" => OrderPositionSide::Short,
+                _ => OrderPositionSide::Both,
+            },
+            client_order_id: Some(format!("close_{}_{}", p.symbol, now_epoch())),
+            ..Default::default()
+        };
+        match state.engine.submit_order(order).await {
+            Ok(_) => closed += 1,
+            Err(e) => errors.push(format!("{}: {e}", p.symbol)),
+        }
     }
+    let mut body = serde_json::json!({ "closed": closed });
+    if !errors.is_empty() {
+        body["errors"] = serde_json::json!(errors);
+    }
+    (StatusCode::OK, Json(body)).into_response()
 }
 
 // ── Borsa salt-okunur sorgular ──────────────────────────────────

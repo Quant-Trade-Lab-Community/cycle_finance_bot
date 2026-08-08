@@ -35,19 +35,20 @@ impl RiskEngine {
 
     /// Belirtilen politikayla kurar.
     pub fn with_policy(initial_balance: Decimal, policy: RiskPolicy) -> Self {
-        Self::with_parts(initial_balance, policy, RiskCache::new(), KillSwitch::new("/tmp/exec_kill_switch".into()), AuditLog::disabled())
+        Self::with_parts(initial_balance, policy, RiskCache::new(), Arc::new(KillSwitch::new("/tmp/exec_kill_switch".into())), AuditLog::disabled())
     }
 
     /// Tam kurucu (test / embed için).
+    /// `kill_switch` paylaşımlı (Arc) olmalıdır: actor ile RiskEngine aynı
+    /// kill switch'i kullansın — aksi halde ayrı bayraklar birbirini sıfırlamaz.
     #[allow(clippy::too_many_arguments)]
     pub fn with_parts(
         initial_balance: Decimal,
         policy: RiskPolicy,
         cache: RiskCache,
-        kill_switch: KillSwitch,
+        kill_switch: Arc<KillSwitch>,
         audit: AuditLog,
     ) -> Self {
-        let kill_switch = Arc::new(kill_switch);
         let state = crate::state::RiskState::with_parts(
             crate::accounting::Portfolio::new_with_margin(
                 initial_balance,

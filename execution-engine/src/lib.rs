@@ -76,7 +76,7 @@ impl ExecutionEngine {
         let kill_switch = Arc::new(KillSwitch::new(config.kill_switch_path.clone()));
         let snapshot = Arc::new(RwLock::new(AccountSnapshot::default()));
         let exchange = ExchangeCache::new(300);
-        let risk = RiskChecks::new(&config);
+        let risk = RiskChecks::with_kill_switch(&config, kill_switch.clone());
 
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<execution::actor::Command>();
         let (user_tx, user_rx) = mpsc::unbounded_channel::<execution::actor::UserEvent>();

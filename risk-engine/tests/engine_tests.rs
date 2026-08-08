@@ -36,7 +36,7 @@ fn engine_with(policy: RiskPolicy) -> RiskEngine {
         d("10000"),
         policy,
         RiskCache::new(),
-        KillSwitch::new(unique_ks_path()),
+        std::sync::Arc::new(KillSwitch::new(unique_ks_path())),
         AuditLog::disabled(),
     )
 }

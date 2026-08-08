@@ -24,8 +24,18 @@ pub struct RiskChecks {
 }
 
 impl RiskChecks {
-    /// Yapılandırmadan ortak risk çekirdeğini kurar.
+    /// Yapılandırmadan ortak risk çekirdeğini kurar (kendi kill switch'ini üretir).
     pub fn new(config: &ExecConfig) -> Self {
+        Self::with_kill_switch(
+            config,
+            Arc::new(KillSwitch::new(config.kill_switch_path.clone())),
+        )
+    }
+
+    /// Actor ile AYNI kill switch'i paylaşır — aksi halde actor'den yapılan
+    /// release, RiskEngine'in ayrı bayrağını sıfırlamaz ve kill switch açık
+    /// kalmaya devam ederdi (her emir reddedilip switch yeniden arm edilirdi).
+    pub fn with_kill_switch(config: &ExecConfig, kill_switch: Arc<KillSwitch>) -> Self {
         // Geriye dönük davranış: max_notional aynı zamanda sembol pozisyon tavanıdır.
         let policy = RiskPolicy {
             max_notional_per_order: config.max_notional_usdt,
@@ -39,7 +49,7 @@ impl RiskChecks {
             Decimal::ZERO,
             policy,
             RiskCache::new(),
-            KillSwitch::new(config.kill_switch_path.clone()),
+            kill_switch,
             AuditLog::disabled(),
         );
         Self {
