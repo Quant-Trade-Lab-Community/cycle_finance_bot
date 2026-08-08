@@ -1,21 +1,25 @@
-//! Cycle Finance açılış ekranı — FIGlet ASCII sanatı (harf harf animasyon).
+//! Cycle Finance açılış ekranı — FIGlet ASCII sanatı + yükleme çubuğu.
 //!
-//! Terminal boyutunu algılar, "CYCLE FINANCE" metnini standart FIGlet fontuyla
-//! tam ortalanmış şekilde çizer ve her döngüde bir harf ekleyerek animasyon
-//! üretir.
+//! "CYCLE FINANCE" yazısı matrix yeşili ile harf harf çizilir; altında bir
+//! yükleme çubuğu tam 3 saniyede dolar. Yazı ve çubuk senkron ilerler:
+//! çubuk %100 olduğunda yazı da tam haline ulaşır. Çubuk bitince kullanıcı
+//! Enter'a basar ve sistem açılır (binary çıkar).
 
 use figlet_rs::FIGfont;
-use std::io::{stdout, Write};
+use std::io::{stdin, stdout, Write};
 use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 use terminal_size::{terminal_size, Height, Width};
 
-/// Varsayılan animasyon hızı (ms)
-const ANIM_SPEED_MS: u64 = 180;
+/// Toplam yükleme süresi (ms)
+const LOAD_MS: u64 = 3000;
 
 /// Varsayılan metin
 const SPLASH_TEXT: &str = "CYCLE FINANCE";
+
+/// Yükleme çubuğu genişliği (karakter)
+const BAR_WIDTH: usize = 40;
 
 /// Matrix yeşili (true color): #00FF41
 const MATRIX_GREEN: &str = "\x1B[38;2;0;255;65m";
@@ -26,78 +30,91 @@ const RESET: &str = "\x1B[0m";
 /// Terminali tamamen temizle + imleci başa al + imleci gizle
 const CLEAR: &str = "\x1B[2J\x1B[1;1H\x1B[?25l";
 
-/// Açılış ekranını gösterir. `speed_ms` 0 verilirse varsayılan (180ms) kullanılır.
+/// Açılış ekranını gösterir; Enter'a basılınca döner.
 pub fn show_splash() {
-    show_splash_with(SPLASH_TEXT, ANIM_SPEED_MS);
+    show_splash_with(SPLASH_TEXT, LOAD_MS);
 }
 
-/// Özel metin ve hız ile açılış ekranı gösterir.
-pub fn show_splash_with(metin: &str, speed_ms: u64) {
-    let speed = if speed_ms == 0 { ANIM_SPEED_MS } else { speed_ms };
+/// Özel metin ve toplam yükleme süresi (ms) ile açılış ekranı gösterir.
+/// Animasyon ve yükleme çubuğu senkron: süre bitince yazı tam halde olur.
+pub fn show_splash_with(metin: &str, total_ms: u64) {
+    let total = if total_ms == 0 { LOAD_MS } else { total_ms };
     let chars: Vec<char> = metin.chars().collect();
     let toplam_harf = chars.len();
+    let step_ms = (total / toplam_harf as u64).max(1);
 
-    // FIGlet standart fontunu yükle
     let font = FIGfont::standard().expect("FIGlet standart font yüklenemedi!");
 
-    // Terminal boyutlarını al
     let (term_width, term_height) = if let Some((Width(w), Height(h))) = terminal_size() {
         (w as usize, h as usize)
     } else {
-        (80, 24) // Varsayılan boyut
+        (80, 24)
     };
 
     // Tam figure'ın yüksekliği (dikey ortalama için)
     let tam_figure = font.convert(metin).expect("FIGlet dönüşüm başarısız!");
-    let tam_cikti = tam_figure.to_string();
-    let fig_yukseklik = tam_cikti.lines().count();
-
-    let dikey_bosluk = if term_height > fig_yukseklik {
-        (term_height - fig_yukseklik) / 2
+    let fig_yukseklik = tam_figure.to_string().lines().count();
+    let dikey_bosluk = if term_height > fig_yukseklik + 3 {
+        (term_height - fig_yukseklik - 3) / 2
     } else {
         0
     };
 
-    // Animasyon: her seferinde 1 harf ekle
     let mut out = stdout();
     for i in 1..=toplam_harf {
-        // Terminali temizle (siyah arkaplan), imleci başa al
         if write!(out, "{CLEAR}{BG_BLACK}").is_err() || out.flush().is_err() {
-            return; // pipe kapandı (ör. head), sessizce çık
+            return;
         }
 
+        // Şu ana kadar biriken harfler
         let kismi_metin: String = chars[0..i].iter().collect();
         let figure = font.convert(&kismi_metin).expect("FIGlet dönüşüm başarısız!");
         let cikti = figure.to_string();
 
-        // Dikey ortalama
         for _ in 0..dikey_bosluk {
             if writeln!(out).is_err() {
                 return;
             }
         }
 
-        // Yatay ortalama + matrix yeşili ile yazdır
+        // Yazı (matrix yeşili, yatay ortalı)
         for satir in cikti.lines() {
-            let satir_uzunluk = satir.len();
-            let yatay_bosluk = if term_width > satir_uzunluk {
-                (term_width - satir_uzunluk) / 2
-            } else {
-                0
-            };
+            let yatay_bosluk = term_width.saturating_sub(satir.len()) / 2;
             if writeln!(out, "{}{MATRIX_GREEN}{}{RESET}", " ".repeat(yatay_bosluk), satir).is_err() {
                 return;
             }
         }
 
+        // Yükleme çubuğu (tam metnin ilerlemesiyle senkron)
+        writeln!(out).ok();
+        let percent = i * 100 / toplam_harf;
+        let filled = percent * BAR_WIDTH / 100;
+        let bar: String = format!("{}{} {}", "█".repeat(filled), "░".repeat(BAR_WIDTH - filled), percent);
+        let bar_yatay = term_width.saturating_sub(bar.len() + 2) / 2;
+        if writeln!(out, "{}{MATRIX_GREEN}[{}]%{RESET}", " ".repeat(bar_yatay), bar).is_err() {
+            return;
+        }
+
         if out.flush().is_err() {
             return;
         }
-        sleep(Duration::from_millis(speed));
+        sleep(Duration::from_millis(step_ms));
     }
 
-    // İmleci tekrar göster
-    let _ = write!(out, "\x1B[?25h{RESET}\n");
+    // Çubuk tamamlandı — Enter bekle
+    writeln!(out).ok();
+    let msg = "▶ SİSTEMİ BAŞLATMAK İÇİN ENTER TUŞUNA BASINIZ";
+    let msg_x = term_width.saturating_sub(msg.len()) / 2;
+    let _ = writeln!(out, "{}{MATRIX_GREEN}{}{RESET}", " ".repeat(msg_x), msg);
+
+    let _ = write!(out, "\x1B[?25h{RESET}");
+    let _ = out.flush();
+
+    // Enter bekle
+    let mut buf = String::new();
+    let _ = stdin().read_line(&mut buf);
+
+    let _ = write!(out, "{CLEAR}{RESET}");
     let _ = out.flush();
     exit(0);
 }
