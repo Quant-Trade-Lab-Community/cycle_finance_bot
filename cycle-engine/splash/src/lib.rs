@@ -51,14 +51,12 @@ pub fn show_splash_with(metin: &str, total_ms: u64) {
         (80, 24)
     };
 
-    // Tam figure'ın yüksekliği (dikey ortalama için)
+    // Çubuğun satırı ekranın TAM dikey ortasında olsun.
+    // Çubuk satırı = dikey_bosluk + fig_yukseklik + 1 (boş satır) → term_height / 2
     let tam_figure = font.convert(metin).expect("FIGlet dönüşüm başarısız!");
     let fig_yukseklik = tam_figure.to_string().lines().count();
-    let dikey_bosluk = if term_height > fig_yukseklik + 3 {
-        (term_height - fig_yukseklik - 3) / 2
-    } else {
-        0
-    };
+    let orta = term_height / 2;
+    let dikey_bosluk = orta.saturating_sub(fig_yukseklik + 1);
 
     let mut out = stdout();
     for i in 1..=toplam_harf {
