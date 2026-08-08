@@ -6,6 +6,7 @@
 
 use figlet_rs::FIGfont;
 use std::io::{stdout, Write};
+use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 use terminal_size::{terminal_size, Height, Width};
@@ -15,6 +16,15 @@ const ANIM_SPEED_MS: u64 = 180;
 
 /// Varsayılan metin
 const SPLASH_TEXT: &str = "CYCLE FINANCE";
+
+/// Matrix yeşili (true color): #00FF41
+const MATRIX_GREEN: &str = "\x1B[38;2;0;255;65m";
+/// Siyah arkaplan
+const BG_BLACK: &str = "\x1B[48;2;0;0;0m";
+/// Renk sıfırla
+const RESET: &str = "\x1B[0m";
+/// Terminali tamamen temizle + imleci başa al + imleci gizle
+const CLEAR: &str = "\x1B[2J\x1B[1;1H\x1B[?25l";
 
 /// Açılış ekranını gösterir. `speed_ms` 0 verilirse varsayılan (180ms) kullanılır.
 pub fn show_splash() {
@@ -49,10 +59,12 @@ pub fn show_splash_with(metin: &str, speed_ms: u64) {
     };
 
     // Animasyon: her seferinde 1 harf ekle
+    let mut out = stdout();
     for i in 1..=toplam_harf {
-        // Terminali temizle, imleci başa al
-        print!("\x1B[2J\x1B[1;1H");
-        stdout().flush().unwrap();
+        // Terminali temizle (siyah arkaplan), imleci başa al
+        if write!(out, "{CLEAR}{BG_BLACK}").is_err() || out.flush().is_err() {
+            return; // pipe kapandı (ör. head), sessizce çık
+        }
 
         let kismi_metin: String = chars[0..i].iter().collect();
         let figure = font.convert(&kismi_metin).expect("FIGlet dönüşüm başarısız!");
@@ -60,10 +72,12 @@ pub fn show_splash_with(metin: &str, speed_ms: u64) {
 
         // Dikey ortalama
         for _ in 0..dikey_bosluk {
-            println!();
+            if writeln!(out).is_err() {
+                return;
+            }
         }
 
-        // Yatay ortalama + yazdır
+        // Yatay ortalama + matrix yeşili ile yazdır
         for satir in cikti.lines() {
             let satir_uzunluk = satir.len();
             let yatay_bosluk = if term_width > satir_uzunluk {
@@ -71,12 +85,19 @@ pub fn show_splash_with(metin: &str, speed_ms: u64) {
             } else {
                 0
             };
-            println!("{}{}", " ".repeat(yatay_bosluk), satir);
+            if writeln!(out, "{}{MATRIX_GREEN}{}{RESET}", " ".repeat(yatay_bosluk), satir).is_err() {
+                return;
+            }
         }
 
-        stdout().flush().unwrap();
+        if out.flush().is_err() {
+            return;
+        }
         sleep(Duration::from_millis(speed));
     }
 
-    println!();
+    // İmleci tekrar göster
+    let _ = write!(out, "\x1B[?25h{RESET}\n");
+    let _ = out.flush();
+    exit(0);
 }

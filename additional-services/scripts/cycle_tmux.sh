@@ -242,41 +242,41 @@ tmux set-option -t "$SESSION" pane-border-status top
 tmux set-option -t "$SESSION" pane-border-format " #{pane_title} "
 tmux set-option -t "$SESSION" status-interval 1
 
-# Status bar — koyu tema
-tmux set-option -t "$SESSION" status-style          "bg=colour232,fg=colour245"
-tmux set-option -t "$SESSION" status-left           "#[bg=colour25,fg=colour255,bold]  🏛️  Cycle Finance  #[bg=colour232,fg=colour245] "
+# Status bar — Matrix yeşili / siyah
+tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
+tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=colour39]0#[fg=colour244]:Trading #[fg=colour45]1#[fg=colour244]:DATA #[fg=colour214]2#[fg=colour244]:ALERT #[fg=colour82]3#[fg=colour244]:PAPER #[fg=colour196]4#[fg=colour244]:Mon #[fg=colour250]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:Trading #[fg=#00ff41]1#[fg=#00cc33]:DATA #[fg=#00ff41]2#[fg=#00cc33]:ALERT #[fg=#00ff41]3#[fg=#00cc33]:PAPER #[fg=#00ff41]4#[fg=#00cc33]:Mon #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
-# Window sekme renkleri
-tmux set-option -t "$SESSION" window-status-format          "#[fg=colour240] #{window_index}:#{window_name} "
-tmux set-option -t "$SESSION" window-status-current-format  "#[bg=colour25,fg=colour255,bold] #{window_index}:#{window_name} "
+# Window sekme renkleri — matrix
+tmux set-option -t "$SESSION" window-status-format          "#[fg=#008a2e] #{window_index}:#{window_name} "
+tmux set-option -t "$SESSION" window-status-current-format  "#[bg=#003300,fg=#00ff41,bold] #{window_index}:#{window_name} "
 
-# ── Per-pane renk temaları ───────────────────────────────────
-# 🧠 STRATEGY  → Mor tema     (bg: koyu mor   | kenarlık: parlak magenta)
-tmux select-pane -t "$SESSION:0.0" -P "bg=colour53,fg=colour255"
-tmux set-option -t "$SESSION:0.0" -p pane-active-border-style "fg=colour171,bold"
-tmux set-option -t "$SESSION:0.0" -p pane-border-style        "fg=colour55"
+# ── Per-pane renk temaları (Matrix) ──────────────────────────
+# 🧠 STRATEGY  → Matrix yeşili (siyah arkaplan, yeşil metin, parlak yeşil kenarlık)
+tmux select-pane -t "$SESSION:0.0" -P "bg=#000000,fg=#00ff41"
+tmux set-option -t "$SESSION:0.0" -p pane-active-border-style "fg=#00ff41,bold"
+tmux set-option -t "$SESSION:0.0" -p pane-border-style        "fg=#00cc33"
 
-# 🛰️  LISTENER   → Camgöbeği tema (bg: koyu turkuaz | kenarlık: cyan)
-tmux select-pane -t "$SESSION:0.2" -P "bg=colour23,fg=colour255"
-tmux set-option -t "$SESSION:0.2" -p pane-active-border-style "fg=colour45,bold"
-tmux set-option -t "$SESSION:0.2" -p pane-border-style        "fg=colour36"
+# 🛰️  LISTENER   → Matrix yeşili (daha açık ton kenarlık)
+tmux select-pane -t "$SESSION:0.2" -P "bg=#000000,fg=#00ff41"
+tmux set-option -t "$SESSION:0.2" -p pane-active-border-style "fg=#00ff41,bold"
+tmux set-option -t "$SESSION:0.2" -p pane-border-style        "fg=#33ff66"
 
-# ⚠️  RISK       → Kırmızı tema  (bg: koyu bordo | kenarlık: kırmızı)
-tmux select-pane -t "$SESSION:0.1" -P "bg=colour52,fg=colour255"
-tmux set-option -t "$SESSION:0.1" -p pane-active-border-style "fg=colour196,bold"
-tmux set-option -t "$SESSION:0.1" -p pane-border-style        "fg=colour124"
+# ⚠️  RISK       → Matrix yeşili (turuncu-yeşil vurgu kenarlık)
+tmux select-pane -t "$SESSION:0.1" -P "bg=#000000,fg=#00ff41"
+tmux set-option -t "$SESSION:0.1" -p pane-active-border-style "fg=#00ff41,bold"
+tmux set-option -t "$SESSION:0.1" -p pane-border-style        "fg=#66ff00"
 
-# 💻 SHELL     → Antrasit tema (bg: çok koyu  | kenarlık: açık gri)
-tmux select-pane -t "$SESSION:0.3" -P "bg=colour233,fg=colour252"
-tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=colour244,bold"
-tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=colour238"
+# 💻 SHELL     → Matrix yeşili (koyu yeşil kenarlık)
+tmux select-pane -t "$SESSION:0.3" -P "bg=#000000,fg=#00ff41"
+tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=#00ff41,bold"
+tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=#008a2e"
 
-# Pane başlık formatı — renk kodlu
+# Pane başlık formatı — matrix yeşili tonları
 tmux set-option -t "$SESSION:0" pane-border-format \
-  "#{?#{==:#{pane_index},0},#[fg=colour171 bold],#{?#{==:#{pane_index},1},#[fg=colour196 bold],#{?#{==:#{pane_index},2},#[fg=colour45 bold],#{?#{==:#{pane_index},3},#[fg=colour244 bold],#[fg=colour244 bold]}}}}} #{pane_title} #[default]"
+  "#{?#{==:#{pane_index},0},#[fg=#00ff41 bold],#{?#{==:#{pane_index},1},#[fg=#66ff00 bold],#{?#{==:#{pane_index},2},#[fg=#33ff66 bold],#{?#{==:#{pane_index},3},#[fg=#00cc33 bold],#[fg=#00cc33 bold]}}}}} #{pane_title} #[default]"
 
 # ── Terminal penceresine dön ve bağlan ───────────────────────
 tmux select-window -t "$SESSION:0"
