@@ -245,6 +245,7 @@ async fn place_order(State(state): State<Arc<AppState>>, headers: HeaderMap, Jso
         price: req.price,
         time_in_force: None,
         position_side,
+        ..Default::default()
     };
 
     match state.engine.submit_order(order).await {

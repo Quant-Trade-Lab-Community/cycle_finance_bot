@@ -1,126 +1,162 @@
+//! Execution Engine — Binance USDT-M Futures kurumsal emir yürütme katmanı.
+//!
+//! # Akış
+//! ```text
+//! strateji / REST API
+//!      │ Command (mpsc, tek-yazıcı)
+//!      ▼
+//! ExecutionActor ──► BinanceClient (REST: emir/iptal/kontrol)
+//!      │ ▲
+//!      │ │ UserDataEvent (gzip WS)               periyodik uzlaştırma
+//!      ▼ └── UserDataStream ── listenKey ──────── Binance user-data WS
+//! AccountSnapshot (Arc<RwLock>) ◄── projector
+//!      │
+//!      ▼
+//! REST API (axum) / stratejiler (okuma)
+//! ```
+//!
+//! Güvenlik varsayılanları: `EXEC_DRY_RUN=true` (emir borsaya gitmez),
+//! kill switch, max notional, sembol blocklist, idempotency (`newClientOrderId`),
+//! ilk eşitleme tamamlanmadan emir kabul edilmez.
+
+pub mod client;
+pub mod config;
+pub mod error;
+pub mod execution;
+pub mod gateway;
+pub mod metrics;
 pub mod order;
-pub mod signer;
 pub mod paper;
+pub mod risk;
+pub mod service;
+pub mod signer;
+pub mod state;
+pub mod types;
+pub mod user_data;
 
-use flume::Receiver;
-use order::OrderRequest;
-use signer::BinanceSigner;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use futures_util::SinkExt;
-use serde_json::json;
+pub use config::{ExecConfig, TradingMode};
+pub use error::{ExecError, Result};
+pub use gateway::{EngineHandle, Gateway, LiveGateway, PaperGateway};
+
+use crate::client::BinanceClient;
+use crate::execution::actor::ExecutionActor;
+use crate::metrics::Metrics;
+use crate::order::OrderRequest;
+use crate::risk::checks::RiskChecks;
+use crate::risk::kill_switch::KillSwitch;
+use crate::state::exchange_cache::ExchangeCache;
+use crate::state::snapshot::AccountSnapshot;
+use crate::user_data::stream::UserDataStream;
+use parking_lot::RwLock;
 use std::sync::Arc;
-use tokio::sync::{mpsc, oneshot};
-use paper::config::PaperConfig;
-use paper::actor::{PaperEngineActor, ActorCommand};
+use tokio::sync::mpsc;
+use tracing::info;
 
-pub async fn start_execution_engine(rx: Receiver<OrderRequest>, api_key: String, secret_key: String) {
-    let trading_mode = std::env::var("TRADING_MODE").unwrap_or_else(|_| "LIVE".to_string());
-    
-    if trading_mode == "PAPER" {
-        println!("ExecutionEngine: Starting in PAPER TRADING mode.");
-        let config = PaperConfig::load_from_env();
-        let actor = PaperEngineActor::new(config);
-        
-        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
-        
-        tokio::spawn(async move {
-            actor.run(cmd_rx).await;
-        });
+/// Canlı Binance Futures execution motoru.
+pub struct ExecutionEngine {
+    pub handle: EngineHandle,
+    pub client: Arc<BinanceClient>,
+    tasks: Vec<tokio::task::JoinHandle<()>>,
+}
 
-        // Translate flume (Strategy) -> mpsc (Actor)
-        while let Ok(order_req) = rx.recv_async().await {
-            let (resp_tx, resp_rx) = oneshot::channel();
-            let _ = cmd_tx.send(ActorCommand::SubmitOrder {
-                order: order_req,
-                response_tx: resp_tx,
-            });
-            
-            // Opsiyonel: Sonucu bekle ve logla
-            if let Ok(res) = resp_rx.await {
-                println!("Paper Order Response: {:?}", res);
-            }
+impl ExecutionEngine {
+    /// Motoru başlat: ilk saat senkronu, actor, user-data stream.
+    pub async fn start(config: ExecConfig) -> Result<Arc<Self>> {
+        if config.mode == TradingMode::Paper {
+            return Err(ExecError::Config(
+                "EXEC_MODE=PAPER desteklenmez — paper-service kullanın (EXEC_MODE=LIVE)".into(),
+            ));
         }
-        return;
+
+        let client = BinanceClient::new(&config)?;
+        client.http.sync_server_time().await?;
+        info!("Sunucu saati senkronize edildi");
+
+        let metrics = Metrics::new();
+        let kill_switch = Arc::new(KillSwitch::new(config.kill_switch_path.clone()));
+        let snapshot = Arc::new(RwLock::new(AccountSnapshot::default()));
+        let exchange = ExchangeCache::new(300);
+        let risk = RiskChecks::new(&config);
+
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<execution::actor::Command>();
+        let (user_tx, user_rx) = mpsc::unbounded_channel::<execution::actor::UserEvent>();
+
+        let actor = ExecutionActor::new(
+            client.clone(),
+            exchange,
+            risk,
+            kill_switch.clone(),
+            snapshot.clone(),
+            metrics.clone(),
+            config.clone(),
+            cmd_rx,
+            user_rx,
+        );
+        let actor_task = tokio::spawn(actor.run());
+
+        let stream = UserDataStream::new(client.clone(), config.clone(), user_tx);
+        let stream_task = tokio::spawn(stream.run());
+
+        let handle = EngineHandle {
+            cmd_tx,
+            snapshot,
+            metrics: metrics.clone(),
+            kill_switch,
+            config: Arc::new(config.clone()),
+        };
+
+        Ok(Arc::new(Self {
+            handle,
+            client,
+            tasks: vec![actor_task, stream_task],
+        }))
     }
 
-    let ws_url = "wss://ws-api.binance.com:443/ws-api/v3";
-    let signer = Arc::new(BinanceSigner::new(api_key, secret_key));
+    /// REST API servisini ayrı görevde başlat.
+    pub fn spawn_rest(self: &Arc<Self>, addr: &str) {
+        let handle = self.handle.clone();
+        let metrics = self.handle.metrics.clone();
+        let client = Some(self.client.clone());
+        let addr = addr.to_string();
+        tokio::spawn(async move {
+            service::serve(&addr, handle, metrics, client).await;
+        });
+    }
 
-    loop {
-        println!("ExecutionEngine: Connecting to Binance WS Order API...");
-        match connect_async(ws_url).await {
-            Ok((mut ws_stream, _)) => {
-                println!("ExecutionEngine: Successfully connected to Order API.");
+    pub async fn shutdown(&self) {
+        for t in &self.tasks {
+            t.abort();
+        }
+    }
+}
 
-                while let Ok(order_req) = rx.recv_async().await {
-                    let timestamp = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_millis();
+/// Eski API uyumu: flume emir akışını EngineHandle'a köprüler.
+pub async fn start_execution_engine(
+    rx: flume::Receiver<OrderRequest>,
+    api_key: String,
+    secret_key: String,
+) {
+    use std::sync::OnceLock;
+    static CONFIG: OnceLock<ExecConfig> = OnceLock::new();
+    let _ = CONFIG.set({
+        let mut c = ExecConfig::load_from_env();
+        c.api_key = api_key;
+        c.secret_key = secret_key;
+        c
+    });
 
-                    // Parametreleri Query String formatında hazırla (İmza için zorunlu)
-                    let mut query_params = format!(
-                        "apiKey={}&quantity={}&side={:?}&symbol={}&timestamp={}&type={:?}",
-                        signer.api_key(),
-                        order_req.quantity,
-                        order_req.side,
-                        order_req.symbol,
-                        timestamp,
-                        order_req.order_type
-                    );
+    let engine = match ExecutionEngine::start(CONFIG.get().expect("config").clone()).await {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("ExecutionEngine başlatılamadı: {e}");
+            return;
+        }
+    };
 
-                    if let Some(price) = order_req.price {
-                        query_params.push_str(&format!("&price={}", price));
-                    }
-                    if let Some(tif) = &order_req.time_in_force {
-                        query_params.push_str(&format!("&timeInForce={:?}", tif));
-                    }
-
-                    // HMAC-SHA256 ile imzala
-                    let signature = signer.sign(&query_params);
-
-                    // WebSoket JSON Payload'ını hazırla
-                    let mut params_json = json!({
-                        "apiKey": signer.api_key(),
-                        "symbol": order_req.symbol,
-                        "side": order_req.side,
-                        "type": order_req.order_type,
-                        "quantity": order_req.quantity,
-                        "timestamp": timestamp,
-                        "signature": signature
-                    });
-
-                    if let Some(price) = order_req.price {
-                        params_json["price"] = json!(price);
-                    }
-                    if let Some(tif) = &order_req.time_in_force {
-                        params_json["timeInForce"] = json!(tif);
-                    }
-
-                    let ws_payload = json!({
-                        "id": timestamp,
-                        "method": "order.place",
-                        "params": params_json
-                    });
-
-                    // Borsaya fırlat
-                    let payload_str = ws_payload.to_string();
-                    if let Err(e) = ws_stream.send(Message::Text(payload_str)).await {
-                        println!("ExecutionEngine Error: Failed to send order: {}", e);
-                        break; // Reconnect
-                    }
-
-                    // (Opsiyonel) Cevabı bekle
-                    // if let Some(Ok(response)) = ws_stream.next().await {
-                    //     println!("Order Response: {:?}", response);
-                    // }
-                }
-            }
-            Err(e) => {
-                println!("ExecutionEngine Error: Connection failed: {}. Retrying in 3s...", e);
-                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-            }
+    while let Ok(order) = rx.recv_async().await {
+        match engine.handle.submit_order(order).await {
+            Ok(ack) => println!("ExecutionEngine: emir kabul → {:?}", ack.status),
+            Err(e) => println!("ExecutionEngine: emir reddedildi → {e}"),
         }
     }
 }

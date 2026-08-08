@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph Strateji["Strateji Katmanı"]
+        SIG[breakout-strategy / detect-ms] -->|flume / dev/shm OrderRing| GW
+        HTTP["REST API (axum :3010)"] --> GW
+    end
+
+    GW[Gateway trait<br/>LiveGateway / PaperGateway] -->|EngineHandle::submit_order| ACT
+
+    subgraph Execution["Execution Engine"]
+        ACT["ExecutionActor<br/>(tek-yazıcı komut döngüsü)"] -->|imzalı REST| C[BinanceClient]
+        ACT --> PF["Preflight<br/>filtre/precizyon/notional/mod"]
+        ACT --> RK["RiskChecks<br/>blocklist / max-notional / rate-limit"]
+        ACT --> KS["KillSwitch"]
+        ACT --> IN["InFlightRegistry + IdempotencyCache"]
+        ACT --> SNAP[("AccountSnapshot<br/>Arc<RwLock>")]
+        ACT -->|"UserDataEvent"| PROJ[Projector]
+        PROJ --> SNAP
+        ACT -->|periyodik uzlaştırma| C
+    end
+
+    C -->|"GET/POST fapi"| BIN["Binance USDT-M Futures REST"]
+    US[UserDataStream] -->|"listenKey + gzip WS"| WB["Binance user-data WS"]
+    WB -->|"ACCOUNT_UPDATE / ORDER_TRADE_UPDATE"| US
+    US -->|"UserEvent::Data"| ACT
+    US -->|"UserEvent::StreamConnected (resync)"| ACT
+
+    C -->|"/fapi/v1/exchangeInfo"| EC[ExchangeCache]
+    EC --> PF
+
+    SNAP -->|okuma| API2["axum handler'ları"]
+    API2 --> HTTP

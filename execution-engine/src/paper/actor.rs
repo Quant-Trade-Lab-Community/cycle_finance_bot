@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments, clippy::type_complexity, clippy::should_implement_trait)]
+
 use crate::order::{OrderPositionSide, OrderRequest, OrderSide, OrderType};
 use crate::paper::account::AccountState;
 use crate::paper::domain_event::DomainEvent;

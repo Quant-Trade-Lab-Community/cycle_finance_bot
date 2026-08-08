@@ -13,6 +13,7 @@
 - [Aktif Servisler](#-aktif-servisler)
 - [Deaktive Edilmiş Servisler](#-deaktive-edilmiş-servisler)
 - [Kırılım Stratejisi (Breakout)](#-kırılım-stratejisi-breakout)
+- [Execution Engine (Canlı)](#-execution-engine-canlı)
 - [Veri Kaydı](#-veri-kaydı)
 - [Kurulum](#-kurulum)
 - [Çalıştırma](#-çalıştırma)
@@ -38,7 +39,9 @@ Binance Futures WS
    → breakout-strategy (kırılım sinyali: sembol + yön)
 ```
 
-**Not:** Bu sistem şu an **paper-trading** modundadır. `breakout-strategy` yalnızca **sembol + yön** sinyali üretir, emir açmaz. `paper-service` sanal emir yürütme sağlar. `execution-engine` canlı (LIVE) emir altyapısı için hazırlanmıştır ancak aktif değildir.
+**Not:** Bu sistem şu an **paper-trading** modundadır. `breakout-strategy` yalnızca **sembol + yön** sinyali üretir, emir açmaz. `paper-service` sanal emir yürütme sağlar.
+
+> 🛡️ **`execution-engine` artık canlı (LIVE) Binance Futures emir altyapısına sahiptir** (REST + user-data WS, idempotency, preflight, kill switch). Varsayılan `EXEC_DRY_RUN=true`'dır — gerçek emir için **bilinçli onay** gerekir. Detaylar: [Execution Engine (Canlı)](#-execution-engine-canlı).
 
 ---
 
@@ -126,6 +129,8 @@ breakout-strategy  → SINYAL (sembol + yön)
 | **breakout-strategy** | — | Kırılım sinyali üretici (emir açmaz) |
 | **ohlcv-engine** | `:3000` | Klines istemcisi (kütüphane + `cli`/`server` bin) |
 | **calc-ind** | `:3007` | İndikatör hesaplama motoru (ferro_ta_core) + `/dev/shm` ring yayını |
+| **executiond** | `:3010` | Canlı Binance Futures emir daemon'u (DRY_RUN varsayılan) |
+| **exec-cli** | — | Execution yönetim CLI (emir/kaldıraç/margin/hedge) |
 
 ### Aktif Workspace Üyeleri (18)
 
@@ -187,6 +192,133 @@ detect-ms raporundan:
 | `BREAKOUT_CHECK_EVERY` | `20` | Bekleme = pencere×60 sn |
 
 Dinamik bekleme: `/tmp/breakout_wait_sec.txt` dosyasına saniye yazarak çalışan stratejinin beklemesini değiştirebilirsiniz.
+
+---
+
+## 🛡️ Execution Engine (Canlı)
+
+Kurumsal Binance USDT-M Futures emir yürütme katmanı (`execution-engine` + `executiond` daemon + `exec-cli`).
+
+### Mimari Özeti
+
+```
+strateji / REST API ──► ExecutionActor (tek-yazıcı) ──► BinanceClient (REST, imzalı)
+      ▲                          │                              ▲
+      │                          │ UserDataEvent (gzip WS)      │ periyodik uzlaştırma
+UserDataStream ◄── listenKey ────┴───────────────────────────────┘
+      │
+      ▼
+AccountSnapshot (Arc<RwLock>) ──► REST API (:3010) / stratejiler (okuma)
+```
+
+- **REST + WS hibrit**: emir/kontrol REST, anlık hesap/pozisyon/emir güncellemeleri user-data stream.
+- **Tek-yazıcı**: tüm yazma işlemleri `ExecutionActor` task'ından geçer.
+- **Borsa doğrudur**: state, user-data deltalarının snapshot'a işlenmesidir; periyodik uzlaştırma sapmayı yakalar.
+- **Idempotency**: her emir benzersiz `newClientOrderId` taşır; tekrar istek aynı yanıtı döner.
+- **Pre-trade doğrulama**: sembol filtreleri (PRICE_FILTER, LOT_SIZE, MIN_NOTIONAL, MAX_POSITION), precizyon, pozisyon modu tutarlılığı, notional limit.
+- **8 emir tipi**: `LIMIT, MARKET, STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET, TRAILING_STOP_MARKET, LIMIT_MAKER` + batch (≤5) + modify (PUT /fapi/v1/order).
+
+### Kontrol Edilen Hesap Özellikleri
+
+| Alan | Endpoint / İşlem |
+|---|---|
+| Emir | place, batchOrders, query, cancel, cancelAll, modify, workingType (MARK/CONTRACT), priceProtect, reduceOnly, closePosition |
+| Pozisyon | positionRisk, positionMargin (+history), ADL quantile, forceOrders, leverageBracket |
+| Hesap | /fapi/v3/account, balance, income (FUNDING_FEE dahil), commissionRate, apiTradingStatus |
+| Yapılandırma | leverage set, marginType (ISOLATED/CROSSED), positionSide/dual (hedge modu), multiAssetsMargin, listenKey |
+| Anlık | User Data Stream: ACCOUNT_UPDATE, ORDER_TRADE_UPDATE, ACCOUNT_CONFIG_UPDATE, MARGIN_CALL, listenKeyExpired |
+
+### Güvenlik (Canlı Mod)
+
+| Önlem | Davranış |
+|---|---|
+| `EXEC_DRY_RUN=true` (varsayılan) | Emir doğrulanır, imzalanır, loglanır ama **gönderilmez** |
+| Kill switch | `/tmp/exec_kill_switch` dosyası + `PUT /api/v1/risk/kill-switch`; açıkken tüm yazma reddedilir |
+| İlk eşitleme | Borsa ile eşitlenmeden **hiçbir emir kabul edilmez** |
+| `EXEC_MAX_NOTIONAL` | Tek emir USDT üst sınırı (varsayılan 1000 USDT) |
+| `EXEC_MAX_ORDERS_PER_MIN` | Kayan pencere emir limiti |
+| `EXEC_SYMBOL_BLOCKLIST` | Sembol bazlı engelleme |
+| Cevap okunmadan emir | Asla "başarılı" sayılmaz; ACK beklenir, zaman aşımında sorgu ile uzlaştırılır |
+
+### Çalıştırma
+
+```bash
+# DRY_RUN ile güvenli başlangıç
+EXEC_MODE=LIVE EXEC_DRY_RUN=true ./target/debug/executiond
+
+# Gerçek emir gönderimi (AÇIK ONAY — dikkat!)
+EXEC_DRY_RUN=false ./target/debug/executiond --host 127.0.0.1 --port 3010
+```
+
+### REST API (:3010, JWT)
+
+```
+POST   /api/v1/auth/login · /api/v1/auth/refresh
+POST   /api/v1/orders          → emir gönder (idempotent)
+POST   /api/v1/orders/batch    → toplu emir (≤5)
+GET    /api/v1/orders?symbol=  → açık emirler (snapshot)
+GET    /api/v1/orders/query    → REST sorgu (orderId / clientOrderId)
+POST   /api/v1/orders/cancel   → iptal
+DELETE /api/v1/orders/{cid}    → clientOrderId ile iptal
+DELETE /api/v1/orders/open?symbol= → sembolün tümünü iptal
+PUT    /api/v1/orders/{cid}    → modify (fiyat/miktar/stop)
+GET    /api/v1/account | /positions | /balances | /income | /funding
+GET    /api/v1/force-orders | /commission-rate/{s} | /adl/{s} | /trading-status
+GET    /api/v1/exchange-info/{s}
+PUT    /api/v1/symbols/{s}/leverage · /margin-type · POST /symbols/{s}/margin
+PUT    /api/v1/position-mode · /api/v1/multi-assets
+GET    /api/v1/risk · PUT /api/v1/risk/kill-switch · GET /api/v1/mode · /healthz
+GET    /metrics            → Prometheus metrikleri
+```
+
+Örnek emir:
+
+```bash
+TOKEN=$(curl -s -X POST http://127.0.0.1:3010/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"changeme123"}' | jq -r .access_token)
+
+curl -s -X POST http://127.0.0.1:3010/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"client_order_id":"strat-1","symbol":"BTCUSDT","side":"BUY","type":"MARKET",
+       "quantity":"0.001","position_side":"BOTH"}'
+```
+
+### CLI (`exec-cli`)
+
+```bash
+./target/debug/exec-cli account                    # bakiye + pozisyon + açık emir
+./target/debug/exec-cli order BTCUSDT BUY MARKET 0.001 --reduce-only
+./target/debug/exec-cli orders BTCUSDT
+./target/debug/exec-cli leverage BTCUSDT 10
+./target/debug/exec-cli margin-type BTCUSDT ISOLATED
+./target/debug/exec-cli hedge true
+./target/debug/exec-cli funding BTCUSDT
+./target/debug/exec-cli exchange-info BTCUSDT
+```
+
+### Ortam Değişkenleri (`EXEC_`)
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `EXEC_MODE` | `LIVE` | `PAPER` ise `paper-service` kullanılır |
+| `EXEC_DRY_RUN` | `true` | `false` = gerçek emir (açık onay) |
+| `EXEC_BASE_URL` | `https://fapi.binance.com` | Testnet: `https://testnet.binancefuture.com` |
+| `EXEC_WS_URL` | `wss://fstream.binance.com` | Testnet: `wss://stream.binancefuture.com` |
+| `EXEC_MAX_NOTIONAL` | `1000` | Tek emir USDT üst sınırı (0 = sınırsız) |
+| `EXEC_MAX_ORDERS_PER_MIN` | `60` | Dakikada emir limiti (0 = sınırsız) |
+| `EXEC_SYMBOL_BLOCKLIST` | — | Virgülle ayrılmış semboller |
+| `EXEC_KILL_SWITCH_PATH` | `/tmp/exec_kill_switch` | Kill switch dosyası |
+| `EXEC_API_ADDR` | `127.0.0.1:3010` | REST bind adresi |
+| `EXEC_JWT_SECRET` | dev değeri | JWT secret (üretimde değiştirin) |
+| `EXEC_ADMIN_USER` / `EXEC_ADMIN_PASS` | `admin` / `changeme123` | REST giriş |
+
+### Testler
+
+```bash
+cargo test -p execution-engine            # birim + sahte-Binance entegrasyon
+cargo test -p execution-engine --test mock_binance
+```
 
 ---
 

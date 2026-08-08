@@ -1,0 +1,292 @@
+//! Gateway yüzeyi: stratejiler PAPER/LIVE farkını bilmeden emir verir.
+//!
+//! `LiveGateway` (canlı binance) ve `PaperGateway` (mevcut paper actor) aynı
+//! trait'i uygular; `EngineHandle` tüm yazma/okuma işlemleri için tek kol.
+
+use crate::config::TradingMode;
+use crate::metrics::Metrics;
+use crate::order::{BinanceOrderResponse, OrderAck, OrderRequest};
+use crate::risk::kill_switch::KillSwitch;
+use crate::state::snapshot::AccountSnapshot;
+use crate::types::account::MarginType;
+use async_trait::async_trait;
+use parking_lot::RwLock;
+use rust_decimal::Decimal;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{mpsc, oneshot};
+
+use crate::execution::actor::Command;
+
+/// Actor'a erişim koludur (REST servisi ve stratejiler tarafından kullanılır).
+#[derive(Clone)]
+pub struct EngineHandle {
+    pub cmd_tx: mpsc::UnboundedSender<Command>,
+    pub snapshot: Arc<RwLock<AccountSnapshot>>,
+    pub metrics: Arc<Metrics>,
+    pub kill_switch: Arc<KillSwitch>,
+    pub config: Arc<crate::config::ExecConfig>,
+}
+
+const CMD_TIMEOUT: Duration = Duration::from_secs(10);
+
+impl EngineHandle {
+    pub async fn submit_order(&self, order: OrderRequest) -> Result<OrderAck, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SubmitOrder { order, tx })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "emir yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn submit_batch(&self, orders: Vec<OrderRequest>) -> Result<Vec<OrderAck>, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::BatchOrders { orders, tx })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "batch yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn cancel_order(
+        &self,
+        symbol: &str,
+        order_id: Option<i64>,
+        client_order_id: Option<&str>,
+    ) -> Result<BinanceOrderResponse, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::CancelOrder {
+                symbol: symbol.to_string(),
+                order_id,
+                client_order_id: client_order_id.map(|s| s.to_string()),
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "iptal yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn cancel_all(&self, symbol: &str) -> Result<usize, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::CancelAll {
+                symbol: symbol.to_string(),
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "iptal yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn query_order(
+        &self,
+        symbol: &str,
+        order_id: Option<i64>,
+        client_order_id: Option<&str>,
+    ) -> Result<BinanceOrderResponse, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::QueryOrder {
+                symbol: symbol.to_string(),
+                order_id,
+                client_order_id: client_order_id.map(|s| s.to_string()),
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "sorgu yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn modify_order(
+        &self,
+        symbol: &str,
+        order_id: Option<i64>,
+        client_order_id: Option<&str>,
+        quantity: Option<Decimal>,
+        price: Option<Decimal>,
+        stop_price: Option<Decimal>,
+    ) -> Result<BinanceOrderResponse, String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::ModifyOrder {
+                symbol: symbol.to_string(),
+                order_id,
+                client_order_id: client_order_id.map(|s| s.to_string()),
+                quantity,
+                price,
+                stop_price,
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        tokio::time::timeout(CMD_TIMEOUT, rx)
+            .await
+            .map_err(|_| "modify yanıtı zaman aşımı".to_string())?
+            .map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn set_leverage(&self, symbol: &str, leverage: u32) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SetLeverage {
+                symbol: symbol.to_string(),
+                leverage,
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn set_margin_type(&self, symbol: &str, margin_type: MarginType) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SetMarginType {
+                symbol: symbol.to_string(),
+                margin_type,
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn adjust_margin(&self, symbol: &str, amount: Decimal, direction: u8) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::AdjustMargin {
+                symbol: symbol.to_string(),
+                amount,
+                direction,
+                tx,
+            })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn set_position_mode(&self, dual: bool) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SetPositionMode { dual, tx })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub async fn set_multi_assets(&self, enabled: bool) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(Command::SetMultiAssets { enabled, tx })
+            .map_err(|_| "actor kanalı kapalı".to_string())?;
+        rx.await.map_err(|_| "yanıt kanalı kapandı".to_string())?
+    }
+
+    pub fn snapshot(&self) -> AccountSnapshot {
+        self.snapshot.read().clone()
+    }
+
+    pub fn mode(&self) -> TradingMode {
+        self.config.mode
+    }
+
+    pub fn dry_run(&self) -> bool {
+        self.config.dry_run
+    }
+}
+
+/// Strateji katmanının gördüğü soyut emir yüzeyi.
+#[async_trait]
+pub trait Gateway: Send + Sync {
+    async fn submit_order(&self, order: OrderRequest) -> Result<OrderAck, String>;
+    fn snapshot(&self) -> AccountSnapshot;
+    fn mode(&self) -> TradingMode;
+}
+
+/// Canlı Binance Futures gateway'i.
+pub struct LiveGateway {
+    handle: EngineHandle,
+}
+
+impl LiveGateway {
+    pub fn new(handle: EngineHandle) -> Self {
+        Self { handle }
+    }
+
+    pub fn handle(&self) -> &EngineHandle {
+        &self.handle
+    }
+}
+
+#[async_trait]
+impl Gateway for LiveGateway {
+    async fn submit_order(&self, order: OrderRequest) -> Result<OrderAck, String> {
+        self.handle.submit_order(order).await
+    }
+
+    fn snapshot(&self) -> AccountSnapshot {
+        self.handle.snapshot()
+    }
+
+    fn mode(&self) -> TradingMode {
+        self.handle.mode()
+    }
+}
+
+/// Paper gateway — mevcut event-sourcing actor'ünü sarar.
+pub struct PaperGateway {
+    cmd_tx: mpsc::UnboundedSender<crate::paper::actor::ActorCommand>,
+}
+
+impl PaperGateway {
+    pub fn new(cmd_tx: mpsc::UnboundedSender<crate::paper::actor::ActorCommand>) -> Self {
+        Self { cmd_tx }
+    }
+}
+
+#[async_trait]
+impl Gateway for PaperGateway {
+    async fn submit_order(&self, order: OrderRequest) -> Result<OrderAck, String> {
+        use crate::paper::actor::{ActorCommand, OrderRejectReason};
+        let (tx, rx) = oneshot::channel();
+        self.cmd_tx
+            .send(ActorCommand::SubmitOrder { order, response_tx: tx })
+            .map_err(|_| "paper actor kanalı kapalı".to_string())?;
+        match rx.await.map_err(|_| "paper yanıt kanalı kapandı".to_string())? {
+            Ok(ack) => Ok(OrderAck {
+                order_id: ack.order_id,
+                client_order_id: String::new(),
+                symbol: String::new(),
+                status: if ack.executed_qty > Decimal::ZERO { "FILLED".into() } else { "NEW".into() },
+                avg_price: ack.avg_price,
+                executed_qty: ack.executed_qty,
+                cum_quote: Decimal::ZERO,
+                reduce_only: false,
+            }),
+            Err(reason) => Err(match reason {
+                OrderRejectReason::InsufficientFunds => "insufficient funds".into(),
+                OrderRejectReason::MarketUnavailable => "market unavailable".into(),
+                OrderRejectReason::InsufficientDepth => "insufficient depth".into(),
+                OrderRejectReason::RiskRejected(m) => m,
+            }),
+        }
+    }
+
+    fn snapshot(&self) -> AccountSnapshot {
+        AccountSnapshot {
+            ready: true,
+            ..Default::default()
+        }
+    }
+
+    fn mode(&self) -> TradingMode {
+        TradingMode::Paper
+    }
+}

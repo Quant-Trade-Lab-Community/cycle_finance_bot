@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 //! API/CLI okumaları için paylaşılan durum snapshot'ı.
 //!
 //! Yazma işlemleri actor task'ında sıralıdır; okuma istekleri bu snapshot'ı okur.

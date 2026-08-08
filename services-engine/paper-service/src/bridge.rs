@@ -112,6 +112,7 @@ fn spawn_order_reader(actor_tx: UnboundedSender<ActorCommand>) {
                     price: if slot.price > Decimal::ZERO { Some(slot.price) } else { None },
                     time_in_force: None,
                     position_side,
+                    ..Default::default()
                 };
 
                 let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();

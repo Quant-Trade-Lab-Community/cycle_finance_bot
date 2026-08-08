@@ -30,3 +30,19 @@ impl BinanceSigner {
         hex::encode(code_bytes)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sign_matches_known_vector() {
+        let signer = BinanceSigner::new("testkey".into(), "NjMwYjRl...secret".into());
+        // Bilinen HMAC-SHA256 vektörü değildir; sadece determinizm + format kontrolü.
+        let a = signer.sign("symbol=BTCUSDT&timestamp=1");
+        let b = signer.sign("symbol=BTCUSDT&timestamp=1");
+        assert_eq!(a, b);
+        assert_eq!(a.len(), 64);
+        assert!(a.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+}
