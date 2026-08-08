@@ -241,7 +241,17 @@ impl ExecutionActor {
         if self.kill_switch.is_open() {
             return Err(ExecError::Risk("kill switch açık — emir reddedildi".into()));
         }
-        self.risk.check(&order)?;
+        // Market emri için snapshot'ta bilinen mark fiyatını risk kapısına besle.
+        if order.price.is_none()
+            && let Some(p) = self
+                .snapshot
+                .read()
+                .positions
+                .iter()
+                .find(|p| p.symbol.eq_ignore_ascii_case(&order.symbol))
+        {
+            self.risk.push_mark(&p.symbol, p.mark_price);
+        }        self.risk.check(&order)?;
 
         // Idempotency: aynı client_order_id tekrar gönderilmez.
         let cid = order
@@ -488,6 +498,14 @@ impl ExecutionActor {
                         .unwrap_or(false);
                     if order.execution_type == "TRADE" && order.last_filled_qty != Decimal::ZERO {
                         self.metrics.record_fill();
+                        // Fill'i ortak risk muhasebesine işle (pozisyon/PnL/daily loss).
+                        let side = if order.side.eq_ignore_ascii_case("BUY") {
+                            crate::order::OrderSide::Buy
+                        } else {
+                            crate::order::OrderSide::Sell
+                        };
+                        self.risk.on_fill(&order.symbol, side, order.last_filled_qty, order.last_filled_price);
+                        self.risk.push_mark(&order.symbol, order.last_filled_price);
                     }
                     if terminal {
                         if !order.client_order_id.is_empty() {
@@ -529,6 +547,10 @@ impl ExecutionActor {
         snap.sequence += 1;
         drop(snap);
 
+        // Borsa gerçeğini ortak risk state'ine yansıt.
+        let snap = self.snapshot.read();
+        self.risk.sync_from_snapshot(&snap);
+
         self.metrics.record_resync();
         info!(
             "Resync tamamlandı | pozisyon: {} | açık emir: {} | bakiye: {} USDT",
@@ -552,6 +574,9 @@ impl ExecutionActor {
                 snap.open_orders = open_orders;
                 snap.sequence += 1;
                 drop(snap);
+                // Uzlaştırma sonrası pozisyon gerçeğini risk state'ine yansıt.
+                let snap = self.snapshot.read();
+                self.risk.sync_from_snapshot(&snap);
                 if mismatch {
                     warn!("Uzlaştırma fark buldu — pozisyon/açık emir sayısı değişti (tam resync tetikleniyor)");
                     // Actor döngü dışında resync çağırmak için komut yolu yok;

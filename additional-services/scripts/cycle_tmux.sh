@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 # ============================================================
-#  Cycle Finance — tmux çok-terminal başlatıcı
+#  Cycle Finance — tmux tek-sekme başlatıcı
 #  Kullanım: ./scripts/cycle_tmux.sh [attach|kill|status]
 #
-#  Pencere 0 — Trading (4 panel):
-#    ┌──────────────────────┬──────────────────────┐
-#    │  🧠 STRATEGY          │  🛰️  LISTENER        │
-#    ├──────────────────────┼──────────────────────┤
-#    │  ⚠️  RISK             │  💻 SHELL            │
-#    └──────────────────────┴──────────────────────┘
-#  Pencere 1 — 📡 DATA   (sekme terminal)
-#  Pencere 2 — 🔔 ALERT  (sekme terminal)
-#  Pencere 3 — 🛡️ PAPER (sekme terminal)
-#  Pencere 4 — Monitor  (CPU/RAM/GPU izleme)
-#  Pencere 5 — DETECT-MS (MSMP :3002)
-#  Pencere 6 — BREAKOUT (Kırılım stratejisi)
-#  Pencere 7 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
-#  Pencere 8 — CALC-IND (indikatör hesaplama motoru :3007)
+#  Her servis tek sekmede (window) çalışır:
+#  Pencere 0 — 🧠 STRATEGY
+#  Pencere 1 — 🛰️  LISTENER
+#  Pencere 2 — ⚠️  RISK
+#  Pencere 3 — 💻 SHELL
+#  Pencere 4 — 📡 DATA
+#  Pencere 5 — 🔔 ALERT
+#  Pencere 6 — 🛡️ PAPER
+#  Pencere 7 — Monitor  (CPU/RAM/GPU izleme)
+#  Pencere 8 — DETECT-MS (MSMP :3002)
+#  Pencere 9 — BREAKOUT (Kırılım stratejisi)
+#  Pencere 10 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
+#  Pencere 11 — CALC-IND (indikatör hesaplama motoru :3007)
 # ============================================================
 set -euo pipefail
 
@@ -62,8 +61,8 @@ case "${1:-}" in
     exit 0
     ;;
   status)
-    echo "=== tmux Panelleri ==="
-    tmux list-panes -t "$SESSION" -F "  #{pane_index}: #{pane_title} [pid:#{pane_pid}] #{pane_current_command}" 2>/dev/null \
+    echo "=== tmux Pencereleri ==="
+    tmux list-windows -t "$SESSION" -F "  #{window_index}: #{window_name}" 2>/dev/null \
       || echo "  ⚠️  '$SESSION' session'ı çalışmıyor."
     echo ""
     echo "=== Çalışan Servisler ==="
@@ -111,30 +110,29 @@ rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 echo "  ✔ Ring buffer'lar temizlendi"
 sleep 1
 
-# ── Açılış ekranı (tek terminal, 4'lü ekran öncesi) ──────────
+# ── Açılış ekranı (tek terminal) ─────────────────────────────
 echo "🎬 Açılış ekranı..."
 cd "$ROOT"
 "$BIN/cycle-splash" 2>/dev/null || "$ROOT/target/debug/cycle-splash" 2>/dev/null || echo "  (cycle-splash bulunamadı)"
 
+# ── Shell init dosyasını oluştur ────────────────────────────
+cat > /tmp/cycle_init.sh << INITEOF
+#!/usr/bin/env bash
+export CYCLE_ROOT='$ROOT'
+export CYCLE_API='http://$PAPER_API_ADDR'
+export CYCLE_USER='$PAPER_ADMIN_USER'
+export CYCLE_PASS='$PAPER_ADMIN_PASS'
+source '$ROOT/additional-services/scripts/cycle_env.sh'
+help-cycle
+INITEOF
+chmod +x /tmp/cycle_init.sh
+
 # ── Session oluştur ──────────────────────────────────────────
 tmux new-session -d -s "$SESSION" -x 220 -y 50
-tmux rename-window -t "$SESSION:0" "Trading"
+tmux rename-window -t "$SESSION:0" "🧠 STRATEGY"
 
-# ── Panel düzeni ─────────────────────────────────────────────
-# 0=sol-üst(STRATEGY)  2=sağ-üst(LISTENER)
-# 1=sol-alt(RISK)      3=sağ-alt(SHELL)
-tmux split-window -t "$SESSION:0"    -h
-tmux split-window -t "$SESSION:0.0"  -v
-tmux split-window -t "$SESSION:0.2"  -v
-
-# ── Panel başlıkları ─────────────────────────────────────────
-tmux select-pane -t "$SESSION:0.0" -T "🧠 STRATEGY"
-tmux select-pane -t "$SESSION:0.2" -T "🛰️  LISTENER"
-tmux select-pane -t "$SESSION:0.1" -T "⚠️  RISK"
-tmux select-pane -t "$SESSION:0.3" -T "💻 SHELL"
-
-# ── Panel 0: STRATEGY ────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.0" "
+# ── Pencere 0: STRATEGY ─────────────────────────────────────
+tmux send-keys -t "$SESSION:0" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🧠  STRATEGY TERMİNALİ  (PyO3)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -142,8 +140,9 @@ sleep 3
 cd $ROOT && RUN_MODE=STRATEGY $BIN/core
 " Enter
 
-# ── Panel 2: LISTENER ─────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.2" "
+# ── Pencere 1: LISTENER ─────────────────────────────────────
+tmux new-window -t "$SESSION:1" -n "🛰️  LISTENER"
+tmux send-keys -t "$SESSION:1" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -151,8 +150,9 @@ sleep 4
 cd $ROOT && $BIN/listener
 " Enter
 
-# ── Panel 1: RISK ─────────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.1" "
+# ── Pencere 2: RISK ─────────────────────────────────────────
+tmux new-window -t "$SESSION:2" -n "⚠️  RISK"
+tmux send-keys -t "$SESSION:2" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '⚠️   RİSK ANALİZİ  (market_data.db)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -160,21 +160,22 @@ sleep 4
 cd $ROOT && $BIN/risk_analysis --watch
 " Enter
 
-# ── Panel 3: SHELL ───────────────────────────────────────────
-tmux send-keys -t "$SESSION:0.3" "source /tmp/cycle_init.sh" Enter
+# ── Pencere 3: SHELL ────────────────────────────────────────
+tmux new-window -t "$SESSION:3" -n "💻 SHELL"
+tmux send-keys -t "$SESSION:3" "source /tmp/cycle_init.sh" Enter
 
-# ── Pencere 1: DATA (sekme terminal) ─────────────────────────
-tmux new-window -t "$SESSION:1" -n "📡 DATA"
-tmux send-keys -t "$SESSION:1" "
+# ── Pencere 4: DATA ─────────────────────────────────────────
+tmux new-window -t "$SESSION:4" -n "📡 DATA"
+tmux send-keys -t "$SESSION:4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📡  DATA TERMİNALİ  (Binance WS)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 cd $ROOT && RUN_MODE=DATA $BIN/core
 " Enter
 
-# ── Pencere 2: ALERT (sekme terminal) ────────────────────────
-tmux new-window -t "$SESSION:2" -n "🔔 ALERT"
-tmux send-keys -t "$SESSION:2" "
+# ── Pencere 5: ALERT ────────────────────────────────────────
+tmux new-window -t "$SESSION:5" -n "🔔 ALERT"
+tmux send-keys -t "$SESSION:5" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -182,9 +183,9 @@ sleep 2
 cd $ROOT && $BIN/alert-service --config $ALERT_CONFIG
 " Enter
 
-# ── Pencere 3: PAPER (sekme terminal) ────────────────────────
-tmux new-window -t "$SESSION:3" -n "🛡️ PAPER"
-tmux send-keys -t "$SESSION:3" "
+# ── Pencere 6: PAPER ────────────────────────────────────────
+tmux new-window -t "$SESSION:6" -n "🛡️ PAPER"
+tmux send-keys -t "$SESSION:6" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🛡️   PAPER SERVICE  (REST API :8080)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -199,28 +200,13 @@ cd $ROOT && \
   $BIN/paper-service
 " Enter
 
-# ── Shell init dosyasını oluştur ────────────────────────────
-# (tmux send-keys ile çok satırlı komut göndermek güvensiz;
-#  bunun yerine önce dosyaya yaz, shell paneli source eder)
-cat > /tmp/cycle_init.sh << INITEOF
-#!/usr/bin/env bash
-export CYCLE_ROOT='$ROOT'
-export CYCLE_API='http://$PAPER_API_ADDR'
-export CYCLE_USER='$PAPER_ADMIN_USER'
-export CYCLE_PASS='$PAPER_ADMIN_PASS'
-source '$ROOT/additional-services/scripts/cycle_env.sh'
-help-cycle
-INITEOF
-chmod +x /tmp/cycle_init.sh
+# ── Pencere 7: MONITOR ──────────────────────────────────────
+tmux new-window -t "$SESSION:7" -n "Monitor"
+tmux send-keys -t "$SESSION:7" "bash '$ROOT/additional-services/scripts/monitor.sh'" Enter
 
-# ── Pencere 4: MONITOR ───────────────────────────────────────
-tmux new-window -t "$SESSION:4" -n "Monitor"
-tmux send-keys -t "$SESSION:4" "bash '$ROOT/additional-services/scripts/monitor.sh'" Enter
-tmux select-pane -t "$SESSION:4" -T "Monitor"
-
-# ── Pencere 5: DETECT-MS ─────────────────────────────────────
-tmux new-window -t "$SESSION:5" -n "DETECT-MS"
-tmux send-keys -t "$SESSION:5" "
+# ── Pencere 8: DETECT-MS ────────────────────────────────────
+tmux new-window -t "$SESSION:8" -n "DETECT-MS"
+tmux send-keys -t "$SESSION:8" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -228,9 +214,9 @@ sleep 2
 cd $ROOT && $BIN/detect-ms
 " Enter
 
-# ── Pencere 6: BREAKOUT STRATEJİ ─────────────────────────────
-tmux new-window -t "$SESSION:6" -n "BREAKOUT"
-tmux send-keys -t "$SESSION:6" "
+# ── Pencere 9: BREAKOUT STRATEJİ ────────────────────────────
+tmux new-window -t "$SESSION:9" -n "BREAKOUT"
+tmux send-keys -t "$SESSION:9" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🎯  BREAKOUT  (Kırılım Stratejisi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -238,9 +224,9 @@ sleep 4
 cd $ROOT && $BIN/breakout-strategy
 " Enter
 
-# ── Pencere 7: STREAM-OHLCV ──────────────────────────────────
-tmux new-window -t "$SESSION:7" -n "STREAM-OHLCV"
-tmux send-keys -t "$SESSION:7" "
+# ── Pencere 10: STREAM-OHLCV ────────────────────────────────
+tmux new-window -t "$SESSION:10" -n "STREAM-OHLCV"
+tmux send-keys -t "$SESSION:10" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📡  STREAM-OHLCV  (Canlı OHLCV :3008)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -248,9 +234,9 @@ sleep 4
 cd $ROOT && $BIN/stream-ohlcv
 " Enter
 
-# ── Pencere 8: CALC-IND ──────────────────────────────────────
-tmux new-window -t "$SESSION:8" -n "CALC-IND"
-tmux send-keys -t "$SESSION:8" "
+# ── Pencere 11: CALC-IND ────────────────────────────────────
+tmux new-window -t "$SESSION:11" -n "CALC-IND"
+tmux send-keys -t "$SESSION:11" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -260,47 +246,19 @@ cd $ROOT && $BIN/calc-ind
 
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
-tmux set-option -t "$SESSION" pane-border-status top
-tmux set-option -t "$SESSION" pane-border-format " #{pane_title} "
 tmux set-option -t "$SESSION" status-interval 1
 
 # Status bar — Matrix yeşili / siyah
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:Trading #[fg=#00ff41]1#[fg=#00cc33]:DATA #[fg=#00ff41]2#[fg=#00cc33]:ALERT #[fg=#00ff41]3#[fg=#00cc33]:PAPER #[fg=#00ff41]4#[fg=#00cc33]:Mon #[fg=#00ff41]7#[fg=#00cc33]:STREAM #[fg=#00ff41]8#[fg=#00cc33]:CALC #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:STRAT #[fg=#00ff41]1#[fg=#00cc33]:LISTEN #[fg=#00ff41]2#[fg=#00cc33]:RISK #[fg=#00ff41]4#[fg=#00cc33]:DATA #[fg=#00ff41]5#[fg=#00cc33]:ALERT #[fg=#00ff41]6#[fg=#00cc33]:PAPER #[fg=#00ff41]7#[fg=#00cc33]:Mon #[fg=#00ff41]10#[fg=#00cc33]:STREAM #[fg=#00ff41]11#[fg=#00cc33]:CALC #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
 # Window sekme renkleri — matrix
 tmux set-option -t "$SESSION" window-status-format          "#[fg=#008a2e] #{window_index}:#{window_name} "
 tmux set-option -t "$SESSION" window-status-current-format  "#[bg=#003300,fg=#00ff41,bold] #{window_index}:#{window_name} "
 
-# ── Per-pane renk temaları (Matrix) ──────────────────────────
-# 🧠 STRATEGY  → Matrix yeşili (siyah arkaplan, yeşil metin, parlak yeşil kenarlık)
-tmux select-pane -t "$SESSION:0.0" -P "bg=#000000,fg=#00ff41"
-tmux set-option -t "$SESSION:0.0" -p pane-active-border-style "fg=#00ff41,bold"
-tmux set-option -t "$SESSION:0.0" -p pane-border-style        "fg=#00cc33"
-
-# 🛰️  LISTENER   → Matrix yeşili (daha açık ton kenarlık)
-tmux select-pane -t "$SESSION:0.2" -P "bg=#000000,fg=#00ff41"
-tmux set-option -t "$SESSION:0.2" -p pane-active-border-style "fg=#00ff41,bold"
-tmux set-option -t "$SESSION:0.2" -p pane-border-style        "fg=#33ff66"
-
-# ⚠️  RISK       → Matrix yeşili (turuncu-yeşil vurgu kenarlık)
-tmux select-pane -t "$SESSION:0.1" -P "bg=#000000,fg=#00ff41"
-tmux set-option -t "$SESSION:0.1" -p pane-active-border-style "fg=#00ff41,bold"
-tmux set-option -t "$SESSION:0.1" -p pane-border-style        "fg=#66ff00"
-
-# 💻 SHELL     → Matrix yeşili (koyu yeşil kenarlık)
-tmux select-pane -t "$SESSION:0.3" -P "bg=#000000,fg=#00ff41"
-tmux set-option -t "$SESSION:0.3" -p pane-active-border-style "fg=#00ff41,bold"
-tmux set-option -t "$SESSION:0.3" -p pane-border-style        "fg=#008a2e"
-
-# Pane başlık formatı — matrix yeşili tonları
-tmux set-option -t "$SESSION:0" pane-border-format \
-  "#{?#{==:#{pane_index},0},#[fg=#00ff41 bold],#{?#{==:#{pane_index},1},#[fg=#66ff00 bold],#{?#{==:#{pane_index},2},#[fg=#33ff66 bold],#{?#{==:#{pane_index},3},#[fg=#00cc33 bold],#[fg=#00cc33 bold]}}}}} #{pane_title} #[default]"
-
 # ── Terminal penceresine dön ve bağlan ───────────────────────
 tmux select-window -t "$SESSION:0"
-tmux select-pane  -t "$SESSION:0.3"
 tmux attach-session -t "$SESSION"

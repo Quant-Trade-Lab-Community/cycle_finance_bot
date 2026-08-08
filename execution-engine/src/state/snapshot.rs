@@ -29,6 +29,28 @@ impl AccountSnapshot {
         self.positions.iter().map(|p| p.notional.abs()).sum()
     }
 
+    /// Açık emirlerin rezerve ettiği yaklaşık notional (fiyat × miktar).
+    pub fn open_orders_notional(&self) -> Decimal {
+        use crate::order::OrderStatus;
+        self.open_orders
+            .iter()
+            .filter(|o| OrderStatus::from_binance(&o.status).map(|s| s.is_open()).unwrap_or(false))
+            .map(|o| {
+                let price = o
+                    .price
+                    .as_deref()
+                    .and_then(|p| p.parse::<Decimal>().ok())
+                    .unwrap_or(Decimal::ZERO);
+                let qty = o
+                    .orig_qty
+                    .as_deref()
+                    .and_then(|q| q.parse::<Decimal>().ok())
+                    .unwrap_or(Decimal::ZERO);
+                price * qty
+            })
+            .sum()
+    }
+
     pub fn open_position_count(&self) -> usize {
         self.positions.iter().filter(|p| p.is_open()).count()
     }

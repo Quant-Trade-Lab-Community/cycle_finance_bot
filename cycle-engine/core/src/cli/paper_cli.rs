@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
-use risk_engine::portfolio::Portfolio;
+use risk_engine::accounting::Portfolio;
 
 pub struct PaperState {
     pub portfolio: Portfolio,

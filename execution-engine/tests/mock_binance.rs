@@ -283,8 +283,10 @@ async fn engine_actor_submits_order_with_mock() {
             order: OrderRequest {
                 symbol: "BTCUSDT".into(),
                 side: OrderSide::Buy,
-                order_type: OrderType::Market,
+                order_type: OrderType::Limit,
                 quantity: Decimal::from_str("0.01").unwrap(),
+                price: Some(Decimal::from_str("50000").unwrap()),
+                time_in_force: Some(execution_engine::order::TimeInForce::Gtc),
                 position_side: OrderPositionSide::Both,
                 client_order_id: Some("it-actor-1".into()),
                 ..Default::default()
@@ -316,8 +318,10 @@ async fn idempotency_blocks_duplicate_client_order_id() {
                 order: OrderRequest {
                     symbol: "BTCUSDT".into(),
                     side: OrderSide::Buy,
-                    order_type: OrderType::Market,
+                    order_type: OrderType::Limit,
                     quantity: Decimal::from_str("0.01").unwrap(),
+                    price: Some(Decimal::from_str("50000").unwrap()),
+                    time_in_force: Some(execution_engine::order::TimeInForce::Gtc),
                     position_side: OrderPositionSide::Both,
                     client_order_id: Some(cid.to_string()),
                     ..Default::default()

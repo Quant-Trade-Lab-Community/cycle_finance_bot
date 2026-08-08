@@ -1,0 +1,38 @@
+# ── Risk-Engine Yapılandırması ──────────────────────────────────────────
+# Hot path (execution-engine) ve cold path (risk-worker) aynı dosyayı okur.
+# Hot-reload: risk-worker bir sonraki çevrimde mtime değişikliğini yakalar.
+# Varsayılan konum: ./risk.toml (RISK_CONFIG env ile değiştirilebilir).
+
+# ── Genel pozisyon / exposure limitleri ──
+max_position_usdt = 1000            # Tek sembol üst net pozisyon (USDT). 0 = sınırsız
+max_notional_per_order = 500        # Tek emir üst notional (USDT). 0 = sınırsız
+max_gross_exposure_usdt = 3000      # Portföy toplam brüt exposure (USDT). 0 = sınırsız
+max_hhi = 0.5                       # Konsantrasyon üst sınırı (0 = kapalı)
+max_leverage = 3                    # Maksimum kaldıraç (x)
+
+# ── Kayıp limitleri ──
+max_daily_loss_usdt = 50            # Günlük maksimum kayıp (gerçekleşen + gerçekleşmemiş)
+max_drawdown_pct = 0.20             # Maksimum drawdown (0.20 = %20)
+maintenance_margin_rate = 0.005     # Likidasyon fiyatı hesabı için bakım marjı (%0.5)
+
+# ── Emir akışı ──
+max_orders_per_min = 10             # Dakikada maksimum emir (0 = sınırsız)
+stale_mark_ms = 200                 # Mark bayatlık eşiği — aşılırsa fail-closed
+consecutive_rejection_auto_stop = 3 # Ardışık red eşiği → otomatik kill switch
+
+# ── Parametrik / likidite kapıları (worker çıktısına bağlı) ──
+gate_on_parametric_risk = false     # true → worker parametreleri yoksa emir reddedilir
+enable_liquidity_gate = false       # LOB slippage kapısı (depth20 verisi gerekir)
+max_slippage_bps = 50               # Maksimum kabul edilebilir slippage (baz puan)
+
+# Emir gönderimi tamamen engellenen semboller
+blocklist = ["TRXUSDT", "DOGEUSDT"]
+
+# ── Sembol bazlı override'lar (genel limitleri daraltır) ──
+[symbol.HEIUSDT]
+max_position_usdt = 500
+max_leverage = 5
+
+[symbol.ETHUSDT]
+max_position_usdt = 2000
+max_leverage = 5

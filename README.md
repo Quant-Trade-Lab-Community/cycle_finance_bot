@@ -79,7 +79,8 @@ PROJE/
 │   └── trait_def.rs       #   Strateji trait tanımları (Signal, FillReport)
 │
 ├── execution-engine/      # Emir yürütme (PAPER / LIVE) — kütüphane
-├── risk-engine/           # Risk motoru (matris, LOB sim, portfolio)
+├── risk-engine/           # Risk çekirdeği (pre-trade kapısı, muhasebe, VaR) + risk-worker daemon
+├── risk.toml              # Risk limitleri (hot-reload)
 ├── unused_services/       # Deaktive edilmiş servisler (arşiv)
 ├── tests/                 # Kök test klasörü (tüm testler burada yapılır)
 ├── docs/                  # Dokümantasyon + akış diyagramları
@@ -131,8 +132,9 @@ breakout-strategy  → SINYAL (sembol + yön)
 | **calc-ind** | `:3007` | İndikatör hesaplama motoru (ferro_ta_core) + `/dev/shm` ring yayını |
 | **executiond** | `:3010` | Canlı Binance Futures emir daemon'u (DRY_RUN varsayılan) |
 | **exec-cli** | — | Execution yönetim CLI (emir/kaldıraç/margin/hedge) |
+| **risk-worker** | `:3011` | Soğuk yol risk parametre üretici (korelasyon, VaR, konsantrasyon, 60s) |
 
-### Aktif Workspace Üyeleri (18)
+### Aktif Workspace Üyeleri (19)
 
 `contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service, price-feed, splash`
 
@@ -414,7 +416,7 @@ let res = client::read_result(id, 5, 200);               // ring'den oku (retry)
 ./additional-services/scripts/cycle_tmux.sh status   # durum
 ```
 
-> `cycle_tmux.sh` çalıştırıldığında önce **CYCLE FINANCE** FIGlet açılış ekranı tek terminalde (harf harf animasyon) gösterilir, ardından tmux session'ı ve 4'lü Trading ekranı açılır. Açılış ekranı `cycle-engine/splash` crate'i (`cycle-splash` binary) ile sağlanır; hız `show_splash_with(text, ms)` ile özelleştirilebilir.
+> `cycle_tmux.sh` çalıştırıldığında önce **CYCLE FINANCE** FIGlet açılış ekranı tek terminalde (harf harf animasyon) gösterilir, ardından her servis tek bir sekmede olacak şekilde tmux session'ı açılır. Açılış ekranı `cycle-engine/splash` crate'i (`cycle-splash` binary) ile sağlanır; hız `show_splash_with(text, ms)` ile özelleştirilebilir.
 
 ### 4. Ortam fonksiyonları
 
@@ -423,7 +425,7 @@ source additional-services/scripts/cycle_env.sh
 help-cycle   # komut listesi
 ```
 
-Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `monitor-start`.
+Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `risk-worker-start`, `monitor-start`.
 
 ---
 
@@ -431,15 +433,18 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-st
 
 | Pencere | İçerik |
 |---|---|
-| 0 — Trading | STRATEGY / LISTENER / RISK / SHELL (4 panel) |
-| 1 — DATA | Binance WS veri terminali |
-| 2 — ALERT | Sesli uyarı servisi |
-| 3 — PAPER | Paper REST API |
-| 4 — Monitor | CPU/RAM/GPU izleme |
-| 5 — DETECT-MS | Analiz motoru |
-| 6 — BREAKOUT | Kırılım stratejisi |
-| 7 — STREAM-OHLCV | Canlı OHLCV mum akışı |
-| 8 — CALC-IND | İndikatör hesaplama motoru |
+| 0 — STRATEGY | Strateji terminali (PyO3) |
+| 1 — LISTENER | Anlık metrik analizi |
+| 2 — RISK | Risk analizi (--watch) |
+| 3 — SHELL | Ortam fonksiyonları (help-cycle) |
+| 4 — DATA | Binance WS veri terminali |
+| 5 — ALERT | Sesli uyarı servisi |
+| 6 — PAPER | Paper REST API |
+| 7 — Monitor | CPU/RAM/GPU izleme |
+| 8 — DETECT-MS | Analiz motoru |
+| 9 — BREAKOUT | Kırılım stratejisi |
+| 10 — STREAM-OHLCV | Canlı OHLCV mum akışı |
+| 11 — CALC-IND | İndikatör hesaplama motoru |
 
 ---
 
@@ -477,9 +482,18 @@ cargo test --workspace
 
 ### Risk Yönetimi
 
-- `risk-engine` — RiskEngine (pozisyon limiti, günlük kayıp limiti), LOB simülasyonu, portfolio PnL/drawdown
-- `core/src/risk` — orkestratör içi sinyal risk filtresi (strateji → risk → gateway)
-- Circuit breaker: 100+ hatalı/sn → akışı durdur
+- `risk-engine` — ortak risk çekirdeği (tek doğruluk kaynağı):
+  - `RiskEngine::evaluate` — 13 adımlı pre-trade kural zinciri (kill switch,
+    circuit breaker, blocklist, rate-limit, notional, leverage, pozisyon,
+    exposure, HHI konsantrasyon, marj, günlük kayıp, drawdown, fail-closed mark)
+  - `Portfolio`/`Position` — coin-bazlı muhasebe, fill/PnL, likidasyon fiyatı
+  - `RiskWorker` daemon (`risk-worker`, :3011) — korelasyon → Tikhonov → EWMA vol
+    → parametrik VaR → önerilen limitler (60s)
+  - `Seqlock` `RiskCache`, JSONL `AuditLog`, `KillSwitch` (dosya + bayrak)
+- `risk.toml` — tüm limitler; hot-reload (mtime izleme)
+- Execution entegrasyonu: `RiskChecks` bağdaştırıcısı → `RiskEngine`, fill
+  geri beslemesi (`ORDER_TRADE_UPDATE` → `on_fill`), resync senkronizasyonu
+- Circuit breaker: 100+ hatalı/sn → akışı durdur; 3+ ardışık risk reddi → otomatik kill switch
 
 ### Güvenlik
 
@@ -496,4 +510,4 @@ Bu proje özel bir araştırma/geliştirme projesidir. Canlı para ile kullanım
 
 ---
 
-*Doküman oluşturma tarihi: 2026-08-08 · Ayrıntılı mimari doküman: `docs/PROJE_DOKUMANTASYONU.md` · Akış diyagramları: `docs/flowcharts/`*
+*Doküman oluşturma tarihi: 2026-08-08 · Ayrıntılı mimari doküman: `docs/PROJE_DOKUMANTASYONU.md` · Risk motoru mimarisi: `docs/RISK_ENGINE_MIMARISI.md` · Akış diyagramları: `docs/flowcharts/`*

@@ -1,9 +1,29 @@
 [package]
 name = "risk-engine"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+description = "Cycle Finance ortak risk çekirdeği: pre-trade kapısı, muhasebe, korelasyon/VaR, kill switch"
 
 [dependencies]
-parking_lot = { workspace = true }
 rust_decimal = { workspace = true }
-strategies-engine = { path = "../strategies-engine" }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+flume = { workspace = true }
+transport = { path = "../cycle-engine/transport" }
+tokio = { workspace = true }
+axum = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[lib]
+name = "risk_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "risk-worker"
+path = "src/bin/risk-worker.rs"

@@ -67,7 +67,7 @@ copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
     core paper-service paper-cli alert-service detect-ms
-    risk-engine cold-starter price-feed breakout-strategy listener alerts risk_analysis
+    risk-worker cold-starter price-feed breakout-strategy listener alerts risk_analysis
     calc-ind
   )
   local n=0
@@ -87,6 +87,7 @@ copy_bins() {
 copy_assets() {
   say "Yapılandırma ve script'ler kopyalanıyor..."
   cp "$ROOT/alerts.toml"          "$CONFIG_DIR/" 2>/dev/null || warn "alerts.toml yok"
+  cp "$ROOT/risk.toml"            "$CONFIG_DIR/" 2>/dev/null || warn "risk.toml yok"
   cp "$ROOT/additional-services/config/"config_*.toml  "$CONFIG_DIR/" 2>/dev/null || true
 
   for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh; do

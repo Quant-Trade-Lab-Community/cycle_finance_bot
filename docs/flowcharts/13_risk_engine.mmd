@@ -1,0 +1,36 @@
+flowchart TD
+    subgraph HOT["HOT PATH — execution-engine (in-process)"]
+        OR["OrderRequest"] --> AD["RiskChecks (bağdaştırıcı)<br/>OrderRequest→OrderIntent"]
+        AD --> EVAL["RiskEngine::evaluate<br/>13-adım kural zinciri"]
+        EVAL --> DEC{Onay?}
+        DEC -->|Ret| REJ["RejectReason + AuditLog<br/>ardışık red → kill switch"]
+        DEC -->|Onay| SEND["execution actor → borsa"]
+        FILL["ORDER_TRADE_UPDATE (TRADE)"] --> ONFILL["RiskEngine::on_fill<br/>Portfolio::apply_fill"]
+        SNAP["AccountSnapshot (resync/reconcile)"] --> SYNC["sync_from_snapshot<br/>mark + pozisyon + nakit"]
+        SYNC --> RSTATE["RiskState<br/>positions/mark/cash/peak"]
+        ONFILL --> RSTATE
+        RSTATE --> EVAL
+    end
+
+    subgraph COLD["COLD PATH — risk-worker daemon :3011 (60s)"]
+        PF["/tmp/price_feed.json"] --> HIST["PriceHistory<br/>(~120 örnek/sembol)"]
+        HIST --> RET2["log-getiri serileri"]
+        RET2 --> CORR["Pearson korelasyon"]
+        CORR --> TIK["shrink + Tikhonov<br/>(hedef koşul sayısı)"]
+        RET2 --> EWMA["EWMA vol (λ=0.94)"]
+        TIK --> VAR["parametrik VaR %99 (σp²=wᵀΣw)"]
+        VAR --> HHI["konsantrasyon HHI"]
+        VAR --> SUGG["önerilen max_position / leverage"]
+        SUGG --> CACHE["RiskParameters"]
+    end
+
+    CACHE -->|"/cycle_finance_risk_params ring + /tmp/risk_params.json"| RC["RiskCache (seqlock)"]
+    RC -.->|"opsiyonel parametrik kapı"| EVAL
+    KS["KillSwitch<br/>/tmp/exec_kill_switch + bayrak"] --> EVAL
+    CFG["risk.toml (hot-reload)"] --> EVAL
+    CFG --> COLD
+
+    style HOT fill:#1b2a41,stroke:#3b82f6
+    style COLD fill:#241b41,stroke:#8b5cf6
+    style EVAL fill:#3b82f6,color:#fff
+    style CACHE fill:#8b5cf6,color:#fff

@@ -31,6 +31,7 @@ hdrhistogram = { workspace = true }
 rand = { workspace = true }
 argon2 = { workspace = true }
 jsonwebtoken = { workspace = true }
+risk-engine = { path = "../risk-engine" }
 
 [lib]
 name = "execution_engine"
