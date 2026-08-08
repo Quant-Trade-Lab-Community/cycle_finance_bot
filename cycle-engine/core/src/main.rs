@@ -1,23 +1,10 @@
 use proje_core::tick::EventParser;
 use proje_core::queue::LockFreeDispatcher;
-use proje_core::bridge::{OpportunityHit, spawn_watcher};
 use std::thread;
 use std::time::Instant;
 use os_utils::set_rt_thread_priority;
 use adapter::binance::start_binance_ws_client;
 use transport::ring_buffer::GenerationalRingBuffer;
-
-fn spawn_detector_bridge_watcher() {
-    let handler = |hit: &OpportunityHit| {
-        if hit.is_actionable(1) {
-            println!(
-                "[BRIDGE] GUCLU firsat: {} score={} spread_bps={} verdict={}",
-                hit.symbol, hit.score, hit.spread_bps, hit.verdict
-            );
-        }
-    };
-    spawn_watcher(handler);
-}
 
 #[tokio::main]
 async fn main() {
@@ -94,8 +81,7 @@ async fn main() {
     }
 
     if run_mode == "STRATEGY" {
-        println!("🚀 Başlatılıyor: STRATEJI KONSOLU (+ scout detektor koprusu)");
-        spawn_detector_bridge_watcher();
+        println!("🚀 Başlatılıyor: STRATEJI KONSOLU");
         proje_core::cli::strategy_cli::start_strategy_cli();
         return;
     }

@@ -96,7 +96,7 @@ fi
 # ── Derleme ──────────────────────────────────────────────────
 echo "🔨 Derleniyor..."
 cd "$ROOT"
-cargo build $BUILD_ARGS -p core -p paper-service -p alert-service -p scout-service 2>&1 | tail -5
+cargo build $BUILD_ARGS -p core -p paper-service -p alert-service -p scout-service -p heiusdt 2>&1 | tail -5
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."

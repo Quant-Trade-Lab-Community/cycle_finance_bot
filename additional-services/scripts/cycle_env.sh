@@ -40,6 +40,7 @@ help-cycle() {
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
   echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
+  echo -e "  ${_G}scout-start${_N} / ${_R}scout-stop${_N}        Scout (fırsat tarayıcı — ayrı sekme)"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
@@ -174,7 +175,7 @@ cycle-status() {
   "$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh" status
 }
 cycle-build() {
-  cd "$CYCLE_ROOT" && cargo build -p core -p paper-service -p alert-service
+  cd "$CYCLE_ROOT" && cargo build -p core -p paper-service -p alert-service -p heiusdt
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
@@ -305,7 +306,7 @@ listener-start() {
     echo "⚠️  paper-service çalışmıyor — önce paper-start ile başlatın"
     return 1
   fi
-  _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/listener" Enter
+  _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/release/listener" Enter
   sleep 2
   if pgrep -x listener &>/dev/null; then
     echo "✅ LISTENER başlatıldı (pane 0.2)"
@@ -348,7 +349,7 @@ risk-start() {
     echo "⚠️  RISK zaten çalışıyor (pid: $(pgrep -x risk_analysis | head -1))"
     return 1
   fi
-  _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && ./target/debug/risk_analysis --watch" Enter
+  _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && ./target/release/risk_analysis --watch" Enter
   sleep 2
   echo "✅ RISK başlatıldı (pane 0.1)"
 }
@@ -374,7 +375,43 @@ risk-status() {
 }
 risk-query() {
   _start_guard
-  cd "$CYCLE_ROOT" && ./target/debug/risk_analysis
+  cd "$CYCLE_ROOT" && ./target/release/risk_analysis
+}
+
+# ── Scout (fırsat tarayıcı) — ayrı sekme ─────────────────────
+scout-start() {
+  _start_guard
+  if pgrep -x scout-service &>/dev/null; then
+    echo "⚠️  SCOUT zaten çalışıyor (pid: $(pgrep -x scout-service | head -1))"
+    return 1
+  fi
+  _tmux_pane "🔭SCOUT" "cd $CYCLE_ROOT && ./target/release/scout-service" Enter
+  sleep 2
+  if pgrep -x scout-service &>/dev/null; then
+    echo "✅ SCOUT başlatıldı (ayrı sekme)"
+  else
+    echo "❌ SCOUT başlatılamadı"
+  fi
+}
+scout-stop() {
+  _start_guard
+  local p; p=$(pgrep -x scout-service 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    pkill -TERM -x scout-service 2>/dev/null; sleep 1
+    pkill -KILL -x scout-service 2>/dev/null || true
+    echo "✅ SCOUT durduruldu [pid:$p]"
+  else
+    echo "ℹ️  SCOUT çalışmıyor"
+  fi
+}
+scout-status() {
+  _start_guard
+  local p; p=$(pgrep -x scout-service 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    echo "✅ SCOUT ÇALIŞIYOR [pid:$p]"
+  else
+    echo "✘  SCOUT durdurulmuş"
+  fi
 }
 
 # ── Listener metrik parametreleri (shell'den ayarlanabilir) ──
