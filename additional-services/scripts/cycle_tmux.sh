@@ -15,6 +15,8 @@
 #  Pencere 4 — Monitor  (CPU/RAM/GPU izleme)
 #  Pencere 5 — DETECT-MS (MSMP :3002)
 #  Pencere 6 — BREAKOUT (Kırılım stratejisi)
+#  Pencere 7 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
+#  Pencere 8 — CALC-IND (indikatör hesaplama motoru :3007)
 # ============================================================
 set -euo pipefail
 
@@ -93,7 +95,7 @@ fi
 # ── Derleme ──────────────────────────────────────────────────
 echo "🔨 Derleniyor..."
 cd "$ROOT"
-cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy 2>&1 | tail -5
+cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv 2>&1 | tail -5
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
@@ -236,6 +238,26 @@ sleep 4
 cd $ROOT && $BIN/breakout-strategy
 " Enter
 
+# ── Pencere 7: STREAM-OHLCV ──────────────────────────────────
+tmux new-window -t "$SESSION:7" -n "STREAM-OHLCV"
+tmux send-keys -t "$SESSION:7" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📡  STREAM-OHLCV  (Canlı OHLCV :3008)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && $BIN/stream-ohlcv
+" Enter
+
+# ── Pencere 8: CALC-IND ──────────────────────────────────────
+tmux new-window -t "$SESSION:8" -n "CALC-IND"
+tmux send-keys -t "$SESSION:8" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT && $BIN/calc-ind
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" pane-border-status top
@@ -246,7 +268,7 @@ tmux set-option -t "$SESSION" status-interval 1
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:Trading #[fg=#00ff41]1#[fg=#00cc33]:DATA #[fg=#00ff41]2#[fg=#00cc33]:ALERT #[fg=#00ff41]3#[fg=#00cc33]:PAPER #[fg=#00ff41]4#[fg=#00cc33]:Mon #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:Trading #[fg=#00ff41]1#[fg=#00cc33]:DATA #[fg=#00ff41]2#[fg=#00cc33]:ALERT #[fg=#00ff41]3#[fg=#00cc33]:PAPER #[fg=#00ff41]4#[fg=#00cc33]:Mon #[fg=#00ff41]7#[fg=#00cc33]:STREAM #[fg=#00ff41]8#[fg=#00cc33]:CALC #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
 # Window sekme renkleri — matrix

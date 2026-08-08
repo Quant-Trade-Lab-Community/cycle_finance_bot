@@ -1,0 +1,18 @@
+[package]
+name = "stream-ohlcv"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "stream_ohlcv"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }
+ohlcv-engine = { version = "0.1.0", path = "../ohlcv-engine" }
+transport = { path = "../../cycle-engine/transport" }

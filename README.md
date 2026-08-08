@@ -125,10 +125,11 @@ breakout-strategy  → SINYAL (sembol + yön)
 | **alert-service** | — | `alerts.toml` koşullarına göre sesli uyarı |
 | **breakout-strategy** | — | Kırılım sinyali üretici (emir açmaz) |
 | **ohlcv-engine** | `:3000` | Klines istemcisi (kütüphane + `cli`/`server` bin) |
+| **calc-ind** | `:3007` | İndikatör hesaplama motoru (ferro_ta_core) + `/dev/shm` ring yayını |
 
-### Aktif Workspace Üyeleri (16)
+### Aktif Workspace Üyeleri (18)
 
-`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, detect-ms, paper-service, alert-service, price-feed`
+`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service, price-feed, splash`
 
 ---
 
@@ -239,7 +240,39 @@ cd PROJE && RUN_MODE=DATA ./target/debug/core
 ./target/debug/paper-service     # :8080  paper API
 ./target/debug/alert-service     # sesli uyarı
 ./target/debug/breakout-strategy # kırılım sinyali
+./target/debug/calc-ind          # :3007  indikatör hesaplama motoru
 ```
+
+### 2b. calc-ind — indikatör hesaplama (ferro_ta_core)
+
+`calc-ind` servisi istek üzerine OHLCV'yi `ohlcv-engine`'den çeker, `ferro_ta_core` ile indikatör hesaplar ve sonucu **binary olarak** `/dev/shm/cycle_finance_calc` ring'ine yayınlar. İstek atan servis `calc_ind::client` ile sonucu ring'den okur.
+
+```bash
+# İstek (HTTP): symbol + interval + start/end + indikatör + parametreler
+curl -X POST http://127.0.0.1:3007/api/calc \
+  -H "Content-Type: application/json" \
+  -d '{"symbol":"BTCUSDT","interval":"1h","start_ms":null,"end_ms":null,
+       "indicator":"rsi","params":{"period":14}}'
+# → {"count":1000,"request_id":1,"series":["rsi"],"status":"success"}
+```
+
+**Rust tüketici API'si:**
+
+```rust
+use calc_ind::{IndRequest, client};
+use std::collections::HashMap;
+
+let mut params = HashMap::new();
+params.insert("period".to_string(), 14.0);
+let req = IndRequest::new("BTCUSDT", "1h", None, None, "rsi").with_params(params);
+let id = client::request_default(&req).await?;          // request_id
+let res = client::read_result(id, 5, 200);               // ring'den oku (retry)
+// res.series["rsi"] → Vec<Option<f64>> (None = warm-up NaN)
+```
+
+Örnek: `cargo run -p calc-ind --example read_ring`
+
+**Desteklenen indikatörler:** `sma, ema, wma, macd, bbands, rsi, stoch, momentum, roc, stddev, atr, vwap, volume` — parametreler istekte `params` haritasıyla verilir.
 
 ### 3. tmux ile tüm ortamı başlat (önerilen)
 
@@ -258,7 +291,7 @@ source additional-services/scripts/cycle_env.sh
 help-cycle   # komut listesi
 ```
 
-Yaygın komutlar: `data-live`, `detect-ms-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `monitor-start`.
+Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `monitor-start`.
 
 ---
 
@@ -273,6 +306,8 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `breakout-start`, `paper-start
 | 4 — Monitor | CPU/RAM/GPU izleme |
 | 5 — DETECT-MS | Analiz motoru |
 | 6 — BREAKOUT | Kırılım stratejisi |
+| 7 — STREAM-OHLCV | Canlı OHLCV mum akışı |
+| 8 — CALC-IND | İndikatör hesaplama motoru |
 
 ---
 

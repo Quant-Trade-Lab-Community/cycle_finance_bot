@@ -39,7 +39,9 @@ help-cycle() {
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
+  echo -e "  ${_G}calc-ind-start${_N} / ${_R}calc-ind-stop${_N}    İndikatör hesaplama motoru (:3007)"
   echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi"
+  echo -e "  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
@@ -110,6 +112,14 @@ help-cycle() {
   echo -e "  ${_C}breakout-wait 600${_N}     Bekleme süresini ayarla (saniye)"
   echo -e "  ${_C}breakout-log${_N}          Canlı strateji logu izle"
 
+  echo -e "\n${_Y}━━━  📡 STREAM-OHLCV  (Canlı OHLCV Mum Akışı :3008)  ━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}stream-ohlcv-start${_N}    Servisi başlat (ring: /dev/shm/cycle_finance_stream_ohlcv)"
+  echo -e "  ${_C}stream-ohlcv-stop${_N}     Servisi durdur"
+  echo -e "  ${_C}stream-ohlcv-status${_N}   Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}stream-ohlcv-start-stream SYM ITV START_MS${_N}   Stream aç (örn. BTCUSDT 60 0)"
+  echo -e "  ${_C}stream-ohlcv-streams${_N}  Aktif stream'leri listele"
+  echo -e "  ${_C}stream-ohlcv-query SYM ITV START_MS${_N}   Stream aç + durum göster"
+
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 4)"
 
@@ -128,6 +138,7 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi"
   echo -e "  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi"
   echo -e "  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 7${_N}           STREAM-OHLCV sekmesi"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -185,6 +196,7 @@ _tmux_pane() {
     "🛰️LISTENER") pane="0.2" ;;
     "⚠️RISK")  pane="0.1" ;;
     "💻SHELL")  pane="0.3" ;;
+    "📡STREAM-OHLCV") pane="7" ;;
     *)
       # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -721,6 +733,55 @@ detect-ms-status() {
   fi
 }
 
+# ── calc-ind (İndikatör Hesaplama Motoru :3007) ─────────────
+calc-ind-start() {
+  _start_guard
+  if pgrep -x "calc-ind" &>/dev/null; then
+    echo "⚠️  calc-ind zaten çalışıyor (pid: $(pgrep -x calc-ind))"
+    echo "   → calc-ind-stop ile önce durdur"
+    return 1
+  fi
+
+  # Derle (yoksa)
+  if [ ! -f "$CYCLE_ROOT/target/debug/calc-ind" ]; then
+    echo "🔨 calc-ind derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p calc-ind 2>&1 | tail -5
+  fi
+
+  echo "🚀 calc-ind başlatılıyor → http://127.0.0.1:3007"
+  _tmux_pane "🧮CALC-IND" "cd $CYCLE_ROOT && ./target/debug/calc-ind" Enter
+  sleep 1
+  if pgrep -x calc-ind &>/dev/null; then
+    echo "✅ calc-ind başladı [pid: $(pgrep -x calc-ind)]"
+    echo "   API: http://127.0.0.1:3007/api/calc"
+  else
+    echo "❌ calc-ind başlatılamadı."
+  fi
+}
+
+calc-ind-stop() {
+  _start_guard
+  if pgrep -x "calc-ind" &>/dev/null; then
+    pkill -TERM -x "calc-ind" && echo "✅ calc-ind durduruldu"
+  else
+    echo "⚠️  calc-ind zaten çalışmıyor"
+  fi
+}
+
+calc-ind-status() {
+  local pid
+  pid=$(pgrep -x "calc-ind" 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ calc-ind ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "   API: http://127.0.0.1:3007/api/calc"
+  else
+    echo "✘  calc-ind durdurulmuş"
+  fi
+}
+
 # Sorgu kısayolları
 detect-ms-query() {
   # Kullanım: detect-ms-query [SYMBOL] [INTERVAL] [LIMIT]
@@ -732,6 +793,84 @@ detect-ms-query() {
 
 detect-ms-log() {
   tail -f /tmp/detect_ms.log
+}
+
+# ============================================================
+#  STREAM-OHLCV  (stream-ohlcv — canlı OHLCV mum akışı :3008)
+#  istek: {symbol, start_ms, interval_secs} → POST /api/stream
+#  mumlar binary olarak /dev/shm/cycle_finance_stream_ohlcv ring'ine yazılır.
+# ============================================================
+STREAM_OHLCV_ADDR="${STREAM_OHLCV_ADDR:-127.0.0.1:3008}"
+
+stream-ohlcv-start() {
+  _start_guard
+  if pgrep -x stream-ohlcv &>/dev/null; then
+    echo "⚠️  stream-ohlcv zaten çalışıyor (pid: $(pgrep -x stream-ohlcv | head -1))"
+    return 1
+  fi
+  if [ ! -f "$CYCLE_ROOT/target/debug/stream-ohlcv" ]; then
+    echo "🔨 stream-ohlcv derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p stream-ohlcv 2>&1 | tail -5
+  fi
+  echo "🚀 stream-ohlcv başlatılıyor → http://$STREAM_OHLCV_ADDR"
+  _tmux_pane "📡STREAM-OHLCV" "cd $CYCLE_ROOT && ./target/debug/stream-ohlcv" Enter
+  sleep 1
+  if pgrep -x stream-ohlcv &>/dev/null; then
+    echo "✅ stream-ohlcv başladı [pid: $(pgrep -x stream-ohlcv | head -1)]"
+    echo "   POST http://$STREAM_OHLCV_ADDR/api/stream  {symbol, start_ms, interval_secs}"
+  else
+    echo "❌ stream-ohlcv başlatılamadı."
+  fi
+}
+
+stream-ohlcv-stop() {
+  _start_guard
+  if pgrep -x stream-ohlcv &>/dev/null; then
+    pkill -TERM -x stream-ohlcv && echo "✅ stream-ohlcv durduruldu"
+  else
+    echo "⚠️  stream-ohlcv zaten çalışmıyor"
+  fi
+}
+
+stream-ohlcv-status() {
+  local pid
+  pid=$(pgrep -x stream-ohlcv 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ stream-ohlcv ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "   API: http://$STREAM_OHLCV_ADDR/api/health"
+  else
+    echo "✘  stream-ohlcv durdurulmuş"
+  fi
+}
+
+# Kullanım: stream-ohlcv-start-stream [SYMBOL] [INTERVAL_SN] [START_MS]
+stream-ohlcv-start-stream() {
+  local sym="${1:-BTCUSDT}" itv="${2:-60}" start="${3:-0}"
+  echo "📡 Stream açılıyor: $sym interval=${itv}s start_ms=${start}"
+  curl -s -X POST "http://$STREAM_OHLCV_ADDR/api/stream" \
+    -H "Content-Type: application/json" \
+    -d "{\"symbol\":\"$sym\",\"start_ms\":$start,\"interval_secs\":$itv}" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. stream-ohlcv-start ile başlat."
+}
+
+# Kullanım: stream-ohlcv-query [SYMBOL] [INTERVAL_SN] [START_MS]
+stream-ohlcv-query() {
+  local sym="${1:-BTCUSDT}" itv="${2:-60}" start="${3:-0}"
+  echo "📡 Sorgu: $sym ${itv}s → http://$STREAM_OHLCV_ADDR"
+  curl -s -X POST "http://$STREAM_OHLCV_ADDR/api/stream" \
+    -H "Content-Type: application/json" \
+    -d "{\"symbol\":\"$sym\",\"start_ms\":$start,\"interval_secs\":$itv}" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor."
+}
+
+# Kullanım: stream-ohlcv-streams
+stream-ohlcv-streams() {
+  echo "📡 Aktif stream'ler: http://$STREAM_OHLCV_ADDR/api/streams"
+  curl -s "http://$STREAM_OHLCV_ADDR/api/streams" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor."
 }
 
 # ============================================================

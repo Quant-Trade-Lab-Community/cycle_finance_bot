@@ -68,6 +68,7 @@ copy_bins() {
   local bins=(
     core paper-service paper-cli alert-service detect-ms
     risk-engine cold-starter price-feed breakout-strategy listener alerts risk_analysis
+    calc-ind
   )
   local n=0
   for b in "${bins[@]}"; do

@@ -23,10 +23,29 @@ impl BinanceClient {
         interval: &str,
         limit: usize,
     ) -> Result<Vec<Kline>, Box<dyn std::error::Error>> {
-        let url = format!(
+        self.fetch_klines_range(symbol, interval, None, None, limit).await
+    }
+
+    /// Belirli bir zaman aralığında (start_ms..end_ms) Kline çeker.
+    /// `start_ms`/`end_ms` opsiyoneldir; ikisi de verilmezse `limit` kadar son kline döner.
+    pub async fn fetch_klines_range(
+        &self,
+        symbol: &str,
+        interval: &str,
+        start_ms: Option<u64>,
+        end_ms: Option<u64>,
+        limit: usize,
+    ) -> Result<Vec<Kline>, Box<dyn std::error::Error>> {
+        let mut url = format!(
             "https://fapi.binance.com/fapi/v1/klines?symbol={}&interval={}&limit={}",
             symbol, interval, limit
         );
+        if let Some(s) = start_ms {
+            url.push_str(&format!("&startTime={s}"));
+        }
+        if let Some(e) = end_ms {
+            url.push_str(&format!("&endTime={e}"));
+        }
 
         let response = self.http.get(&url).send().await?;
         let data: Vec<Value> = response.json().await?;
