@@ -229,7 +229,7 @@ cargo build --workspace
 cd PROJE && RUN_MODE=DATA ./target/debug/core
 ```
 
-> `core` başlatıldığında önce **CYCLE FINANCE** FIGlet açılış ekranı (harf harf animasyon) gösterilir. Açılış ekranı `cycle-engine/splash` crate'i ile sağlanır; hız `show_splash_with(text, ms)` ile özelleştirilebilir.
+> Açılış ekranı (`cycle-engine/splash`) `cycle_tmux.sh` başlatıcısında gösterilir; `core`'u doğrudan çalıştırırken splash oynamaz.
 
 ### 2. Servisleri ayrı ayrı başlat
 
@@ -248,6 +248,8 @@ cd PROJE && RUN_MODE=DATA ./target/debug/core
 ./additional-services/scripts/cycle_tmux.sh kill     # durdur
 ./additional-services/scripts/cycle_tmux.sh status   # durum
 ```
+
+> `cycle_tmux.sh` çalıştırıldığında önce **CYCLE FINANCE** FIGlet açılış ekranı tek terminalde (harf harf animasyon) gösterilir, ardından tmux session'ı ve 4'lü Trading ekranı açılır. Açılış ekranı `cycle-engine/splash` crate'i (`cycle-splash` binary) ile sağlanır; hız `show_splash_with(text, ms)` ile özelleştirilebilir.
 
 ### 4. Ortam fonksiyonları
 

@@ -8,8 +8,6 @@ use transport::ring_buffer::GenerationalRingBuffer;
 
 #[tokio::main]
 async fn main() {
-    cycle_splash::show_splash();
-
     let run_mode = std::env::var("RUN_MODE").unwrap_or_else(|_| "DATA".to_string());
     
     if run_mode == "DATA" {

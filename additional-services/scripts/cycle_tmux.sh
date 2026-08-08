@@ -93,7 +93,7 @@ fi
 # ── Derleme ──────────────────────────────────────────────────
 echo "🔨 Derleniyor..."
 cd "$ROOT"
-cargo build $BUILD_ARGS -p core -p paper-service -p alert-service -p breakout-strategy 2>&1 | tail -5
+cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy 2>&1 | tail -5
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
@@ -108,6 +108,11 @@ done
 rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 echo "  ✔ Ring buffer'lar temizlendi"
 sleep 1
+
+# ── Açılış ekranı (tek terminal, 4'lü ekran öncesi) ──────────
+echo "🎬 Açılış ekranı..."
+cd "$ROOT"
+"$BIN/cycle-splash" 2>/dev/null || "$ROOT/target/debug/cycle-splash" 2>/dev/null || echo "  (cycle-splash bulunamadı)"
 
 # ── Session oluştur ──────────────────────────────────────────
 tmux new-session -d -s "$SESSION" -x 220 -y 50
