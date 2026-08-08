@@ -1,0 +1,57 @@
+graph TD
+    A([Başlangıç]) --> B[atr_14: klines uzunluğunu kontrol et]
+
+    B --> C{len < 2?}
+    C -- Evet --> D[ATR = 0 döndür]
+    C -- Hayır --> E[i = 1..len: TR = max(high-low, |high-prev_close|, |low-prev_close|) hesapla]
+    E --> F{trs boş mu?}
+    F -- Evet --> G[ATR = 0 döndür]
+    F -- Hayır --> H[ilk_atr = ilk 14 TR'nin ortalaması]
+    H --> I[EMA smoothing: kalan TR'ler üzerinde atr güncelle]
+    I --> D
+
+    D --> J[extract_pivots: threshold = ATR * 0.25]
+
+    J --> K{klines.len < 7?}
+    K -- Evet --> L[boş pivot listesi döndür]
+    K -- Hayır --> M[i = 3..len-3 döngüsü]
+
+    M --> N[Tip A Wick: 3 sağ-sol mumda high en yüksek mi ve aralık ≥ threshold?]
+    N --> O{Swing High A?}
+    O -- Evet --> P[SwingHigh/A pivotu listeye ekle]
+    O -- Hayır --> Q[Tip A Wick: low en düşük mü ve aralık ≥ threshold?]
+    P --> Q
+    Q --> R{Swing Low A?}
+    R -- Evet --> S[SwingLow/A pivotu listeye ekle]
+    R -- Hayır --> T[Tip B Close: 3 mumda close en yüksek mi ve |close-open| ≥ threshold*0.5?]
+    S --> T
+    T --> U{Swing High B?}
+    U -- Evet --> V[SwingHigh/B pivotu listeye ekle]
+    U -- Hayır --> W[Tip B Close: close en düşük mü ve |close-open| ≥ threshold*0.5?]
+    V --> W
+    W --> X{Swing Low B?}
+    X -- Evet --> Y[SwingLow/B pivotu listeye ekle]
+    X -- Hayır --> Z0{i'yi artır, i < len-3?}
+    Y --> Z0
+    Z0 -- Evet --> N
+    Z0 -- Hayır --> Z1[pivot listesini döndür]
+
+    Z1 --> Z2[detect_liquidity_zones: threshold = ATR * 0.05]
+
+    Z2 --> Z3[i = 0..pivots.len döngüsü]
+    Z3 --> Z4[j = i+1..pivots.len döngüsü]
+    Z4 --> Z5{aynı mum indeksi mi?}
+    Z5 -- Hayır --> Z6[j'yi artır]
+    Z5 -- Evet --> Z7{farklı tip mi? A vs B}
+    Z7 -- Hayır --> Z6
+    Z7 -- Evet --> Z8{aynı yön mü?}
+    Z8 -- Hayır --> Z6
+    Z8 -- Evet --> Z9{|fiyat A - fiyat B| > threshold?}
+    Z9 -- Evet --> Z10[Likidite Bölgesi ekle, confidence = A+]
+    Z10 --> Z6
+    Z9 -- Hayır --> Z6
+    Z6 -- Evet --> Z4
+    Z6 -- Hayır --> Z3
+    Z3 -- Evet --> Z4
+    Z3 -- Hayır --> Z11[Likidite bölgeleri listesini döndür]
+    Z11 --> Z([Bitiş])

@@ -1,0 +1,61 @@
+graph TD
+    A([Başlangıç: spawn_ring_source]) --> B[GenerationalRingBuffer::new oluştur]
+    B --> C[cursor = gen_ring.get_head()]
+
+    C --> D{sonsuz döngü}
+    D --> E[gen_ring.read_slot(cursor)]
+    E --> F{slot var mı?}
+    F -- Hayır --> G[500 mikrosaniye uyu]
+    G --> D
+    F -- Evet --> H[contracts::wire::decode ile event çöz]
+    H --> I{decode başarılı mı?}
+    I -- Hayır --> J[cursor += 1]
+    I -- Evet --> K{event.payload türü?}
+    J --> D
+    K -- Trade --> L[symbol çöz, sink.send((sym, price))]
+    K -- BookTicker --> M{best_ask_price > 0?}
+    M -- Evet --> N[sink.send((sym, best_ask_price))]
+    M -- Hayır --> O{best_bid_price > 0?}
+    O -- Evet --> P[sink.send((sym, best_bid_price))]
+    O -- Hayır --> J
+    N --> J
+    P --> J
+    L --> J
+    K -- Diğer --> J
+
+    Q([spawn_binance_source]) --> R[sembollerden stream adresleri üret]
+    R --> S[WS URL oluştur]
+    S --> T[connect_async ile bağlan]
+    T --> U{bağlantı başarılı mı?}
+    U -- Hayır --> V[eprintln + return]
+    U -- Evet --> W[SUBSCRIBE mesajı gönder]
+    W --> X{sonsuz mesaj okuma döngüsü}
+    X --> Y[read.next() ile mesaj al]
+    Y --> Z{Text mesajı mı?}
+    Z -- Evet --> AA[EventParser::parse ile çöz]
+    AA --> AB{Trade event mi?}
+    AB -- Evet --> AC[sink.send((sym, price))]
+    AB -- Hayır --> X
+    Z -- Hayır --> X
+    AC --> X
+
+    AD([spawn_pricefeed_ring_source]) --> AE[with_name /demir_yumruk_pricefeed aç]
+    AE --> AF[cursor = get_head()]
+    AF --> AG{sonsuz döngü}
+    AG --> AH[read_slot(cursor)]
+    AH --> AI{slot var mı?}
+    AI -- Evet --> AJ[decode, symbol boşsa cursor += 1 ve devam]
+    AJ --> AK[event.payload türü?]
+    AK -- Trade --> AL[sink.send]
+    AK -- BookTicker --> AM[sink.send]
+    AK -- FundingRate --> AN[sink.send mark + index]
+    AK -- Diğer --> AO[cursor += 1]
+    AL --> AO
+    AM --> AO
+    AN --> AO
+    AO --> AG
+    AI -- Hayır --> AP[head = get_head, head > cursor mu?]
+    AP -- Evet --> AQ[cursor = head]
+    AP -- Hayır --> AR[500 mikrosaniye uyu]
+    AQ --> AG
+    AR --> AG

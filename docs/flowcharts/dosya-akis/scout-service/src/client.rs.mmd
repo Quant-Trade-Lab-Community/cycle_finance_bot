@@ -1,0 +1,37 @@
+graph TD
+    A([Başlangıç]) --> B[BinanceClient::new: reqwest client oluştur]
+    B --> C[fetch_symbols: exchangeInfo GET isteği]
+
+    C --> D[symbols dizisini filtrele: USDT + TRADING + PERPETUAL]
+    D --> E[sembolleri sırala ve döndür]
+
+    E --> F[stream_book_tickers / stream_partial_depths: stream adlarını oluştur]
+    F --> G[stream_loop çağır]
+
+    G --> H[backoff = WS_BACKOFF_BASE_SECS]
+    H --> I[sonsuz döngü: connect_async(BINANCE_WS)]
+
+    I --> J{bağlantı başarılı mı?}
+    J -- Hayır --> K[stream hatası yazdır]
+    J -- Evet --> L[backoff sıfırla, write/read ayrıştır]
+
+    L --> M[SUBSCRIBE mesajı gönder]
+    M --> N{gönderim başarılı mı?}
+    N -- Hayır --> O[1 sn bekle, continue]
+    N -- Evet --> P[heartbeat interval oluştur]
+
+    P --> Q[select: heartbeat tick mi mesaj mı?]
+    Q -- heartbeat --> R[Ping gönder; hata varsa bağlantıyı bırak]
+    Q -- mesaj --> S{mesaj türü?}
+    S -- Text --> T[parse et; data al, handler(data) çağır]
+    S -- Ping --> U[Pong gönder]
+    S -- Close/Err/None --> V[bağlantıyı bırak]
+    T --> Q
+    R --> Q
+    U --> Q
+
+    K --> W[jitter + backoff kadar bekle]
+    O --> I
+    V --> W
+    W --> X[backoff *= 2, cap'e sınırla]
+    X --> I

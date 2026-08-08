@@ -1,0 +1,53 @@
+graph TD
+    A([Başlangıç]) --> B[tracing_subscriber başlat]
+    B --> C[parse_args: CLI argümanlarını oku]
+    C --> D[banner yazdır: sembol, aralık, limit, port]
+    D --> E[rtrb RingBuffer oluştur: 65536 kapasite]
+    E --> F[Snapshot ve AppState Arc Mutex oluştur]
+
+    F --> G[Tokio görevi: canlı akış üreticisi]
+    G --> G1{sonsuz döngü}
+    G1 --> G2[drain_ring_buffer ile canlı veri al]
+    G2 --> G3[producer.push ile ring buffer a ekle — doluysa bırak]
+    G3 --> G4[200ms uyu]
+    G4 --> G1
+
+    F --> H[trb-solver thread başlat: core sabitleme dene]
+    H --> H1{sonsuz döngü}
+    H1 --> H2[consumer.pop ile tüm biriken veriyi boşalt]
+    H2 --> H3[started = Instant::now]
+    H3 --> H4[catch_unwind ile analyzer::analyze çalıştır]
+    H4 --> H5{sonuç Ok Ok report mu?}
+    H5 -- Evet --> H6[snap.report = Some, last_error = None, analiz süresi yazdır]
+    H5 -- Hayır --> H7{Ok Err e mi?}
+    H7 -- Evet --> H8[snap.last_error = hata, hata yazdır]
+    H7 -- Hayır --> H9[Err p: panik yakalandı, last_error = panik mesajı]
+    H6 --> H10[total_cycles += 1, last_updated_ms güncelle]
+    H8 --> H10
+    H9 --> H10
+    H10 --> H11[refresh saniye uyu]
+    H11 --> H1
+
+    F --> I[HTTP Router kur: api/trb + api/trb/status]
+    I --> J[TCP listener bağla 127.0.0.1:port]
+    J --> K{port bağlanabildi mi?}
+    K -- Hayır --> L1[hata yazdır + exit 1]
+    K -- Evet --> L[axum::serve: HTTP daemon]
+    L --> M{HTTP isteği geldi}
+
+    M --> M1[GET api/trb: get_report]
+    M1 --> M2{snap.report var mı?}
+    M2 -- Evet --> M3[success JSON: report + last_updated + total_cycles]
+    M2 -- Hayır --> M4{last_error var mı?}
+    M4 -- Evet --> M5[error JSON: message]
+    M4 -- Hayır --> M6[warming JSON: ilk analiz bekleniyor]
+    M --> M7[GET api/trb/status: get_status]
+    M7 --> M8{report ve last_updated var mı?}
+    M8 -- Evet --> M9[healthy = is_stable ve 60 saniyeden güncel]
+    M8 -- Hayır --> M10[healthy = false]
+    M9 --> M11[status JSON döndür: grid, total_cycles]
+    M10 --> M11
+    M3 --> M
+    M5 --> M
+    M6 --> M
+    M11 --> M

@@ -1,0 +1,47 @@
+graph TD
+    A([Başlangıç: analyze_liquidity]) --> B{klines.len() < 5?}
+    B -- Evet --> B1([Bitiş: boş LiquidityResult döner])
+    B -- Hayır --> C[find_equal_levels(true) -> EQH bulunur]
+
+    C --> D[find_equal_levels(false) -> EQL bulunur]
+    D --> E[find_fvgs -> bullish ve bearish FVG'ler bulunur]
+    E --> F[find_sweeps -> sweep noktaları bulunur]
+    F --> G[LiquidityResult doldurulur ve döner]
+
+    G --> Z([Bitiş])
+
+    H([Alt süreç: find_equal_levels]) --> I[for i in 0..n: çift döngü j=i+5..n]
+    I --> J{p1 ve p2 farkı %0.05 içinde mi?}
+    J -- Evet --> J1[ortalamaları seviye olarak eklenir]
+    J1 --> K
+    J -- Hayır --> K
+    K --> K1{döngüler bitti mi?}
+    K1 -- Hayır --> I
+    K1 -- Evet --> L[seviyeler sıralanır ve yakın çiftler silinir]
+    L --> L1([Alt süreç bitti: seviyeler döner])
+
+    M([Alt süreç: find_fvgs]) --> N[for i in 2..len: k1 ve k3 karşılaştırılır]
+    N --> O{k1.high < k3.low?}
+    O -- Evet --> O1[bullish FVG eklenir]
+    O1 --> P
+    O -- Hayır --> P
+    P --> Q{k1.low > k3.high?}
+    Q -- Evet --> Q1[bearish FVG eklenir]
+    Q1 --> R
+    Q -- Hayır --> R
+    R --> R1{döngü bitti mi?}
+    R1 -- Hayır --> N
+    R1 -- Evet --> R2([Alt süreç bitti: iki FVG listesi döner])
+
+    S([Alt süreç: find_sweeps]) --> T[for i in 5..len: gövde ve iğneler hesaplanır]
+    T --> U{üst iğne > 3*gövde ve high öncekileri geçti, close altında mı?}
+    U -- Evet --> U1[BUY_SIDE_SWEEP eklenir]
+    U1 --> V
+    U -- Hayır --> V
+    V --> W{alt iğne > 3*gövde ve low öncekileri geçti, close üstünde mi?}
+    W -- Evet --> W1[SELL_SIDE_SWEEP eklenir]
+    W1 --> X
+    W -- Hayır --> X
+    X --> X1{döngü bitti mi?}
+    X1 -- Hayır --> T
+    X1 -- Evet --> X2([Alt süreç bitti: sweep listesi döner])

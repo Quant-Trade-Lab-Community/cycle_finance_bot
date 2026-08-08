@@ -1,0 +1,36 @@
+graph TD
+    A([Başlangıç: main]) --> B[Args::parse ile config yolunu al]
+    B --> C[AlertConfig::load(config)]
+    C --> D{yükleme başarılı mı?}
+    D -- Hayır --> E[eprintln + exit 1]
+    D -- Evet --> F[Uyarı özetini konsola yaz]
+    F --> G[AlertEngine::new_with_rx + spawn_alert_sink]
+    G --> H[(price_tx, price_rx) flume kanalı]
+
+    H --> I{data_source türü?}
+    I -- binance --> J[symbols belirle, tokio::spawn sonsuz döngü]
+    I -- pricefeed --> K[is_ring_alive kontrolü, spawn_pricefeed_ring_source]
+    I -- diğer (ring) --> L[is_ring_alive kontrolü, spawn_ring_source]
+
+    J --> M[spawn_binance_source, bağlantı koparsa 3 sn bekle]
+    M --> J
+    K --> N
+    L --> N
+    N --> O[tokio::spawn: price_rx.recv_async döngüsü]
+    O --> P{price > Decimal::ZERO mu?}
+    P -- Evet --> Q[engine.on_price(symbol, price)]
+    P -- Hayır --> O
+    Q --> O
+
+    N --> R[stdin CLI thread: add/list/quit komutları]
+    R --> S{komut?}
+    S -- quit/exit/q --> T[exit 0]
+    S -- list --> U[aktif uyarıları listele]
+    S -- add --> V[koşul/fiyat çöz, rule ekle]
+    S -- diğer --> W[bilinmeyen komut]
+    U --> R
+    V --> R
+    W --> R
+
+    N --> X[ctrl_c sinyali bekle]
+    X --> Y[Kapanıyor + Bitiş]

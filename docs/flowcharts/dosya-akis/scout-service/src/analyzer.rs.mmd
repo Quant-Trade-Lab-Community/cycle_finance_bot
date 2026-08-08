@@ -1,0 +1,60 @@
+graph TD
+    A([Başlangıç]) --> B[get_depth_candidates: her symbol state'i tara]
+    B --> C[state.refresh(now)]
+    C --> D{is_recent mi?}
+    D -- Hayır --> E[atla]
+    D -- Evet --> F{price_score > 0 mi?}
+    F -- Hayır --> E
+    F -- Evet --> G[skorlu listeye ekle]
+
+    E --> B
+    G --> H[skora göre azalan sırala]
+    H --> I[DEPTH_CANDIDATE_COUNT kadar ilk adayı döndür]
+
+    A --> J[get_best_opportunity: depth_symbols üzerinde döngü]
+    J --> K{state var ve is_recent mi?}
+    K -- Hayır --> L[atla]
+    K -- Evet --> M[calc_opportunity]
+
+    M --> N{opportunity var mı?}
+    N -- Hayır --> L
+    N -- Evet --> O{verdict türü?}
+    O -- Guclu --> P[en yüksek skorlu strong'u sakla]
+    O -- Iyi --> Q[en yüksek skorlu good'u sakla]
+    O -- Diger --> R[yoksay]
+    P --> L
+    Q --> L
+    R --> L
+    L --> J
+
+    J --> S[best_strong yoksa best_good döndür]
+
+    A --> T[get_symbol_metrics: depth_symbols üzerinde döngü]
+    T --> U{state var ve is_recent mi?}
+    U -- Hayır --> V[atla]
+    U -- Evet --> W[calc_opportunity sonucu varsa listeye ekle]
+    V --> T
+    W --> T
+    T --> X[metrik listesini döndür]
+
+    A --> Y[calc_opportunity]
+    Y --> Z{mid ve spread geçerli mi?}
+    Z -- Hayır --> AA[None döndür]
+    Z -- Evet --> AB{price_ticks_per_s >= MIN_TICKS?}
+    AB -- Hayır --> AA
+    AB -- Evet --> AC{ob_updates ve ob_changes sıfırdan büyük mü?}
+    AC -- Hayır --> AA
+    AC -- Evet --> AD[efficiency ve score hesapla]
+
+    AD --> AE{verdict eşiklerini kontrol et}
+    AE -- eff>=0.05 ve score>=30 --> AF[Guclu]
+    AE -- eff>=0.03 ve score>=10 --> AG[Iyi]
+    AE -- eff>=0.01 ve score>=3 --> AH[Normal]
+    AE -- eff<0.01 ve ob_changes>200 --> AI[BotGurultu]
+    AE -- diger --> AJ[Zayif]
+
+    AF --> AK[Opportunity oluştur ve döndür]
+    AG --> AK
+    AH --> AK
+    AI --> AK
+    AJ --> AK

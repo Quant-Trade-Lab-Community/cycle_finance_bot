@@ -1,0 +1,19 @@
+graph TD
+    A([Başlangıç]) --> B[test_ridge_regularization_condition_number]
+
+    B --> C[size = 50 tekil singular matris oluştur tümü 1.0 rank 1]
+    C --> D[alpha = 0.1]
+    D --> E[MatrixMath::regularize_correlation_matrix çağrısı]
+
+    E --> F[i = 0]
+    F --> G{i < 50?}
+    G -- Evet --> H[assert_eq: regularized[i][i] == 1.0 + alpha köşegen kaydırma kontrolü]
+    H --> I[i += 1]
+    I --> G
+    G -- Hayır --> J[condition_number_mock = 50.0 / alpha]
+    J --> K{condition_number_mock < 1000.0?}
+    K -- Evet --> L[Test geçti]
+    K -- Hayır --> M[assert panik: Condition number must be < 1000]
+
+    L --> Z([Bitiş])
+    M --> Z([Bitiş])

@@ -1,0 +1,23 @@
+graph TD
+    A([Başlangıç: PaperSnapshot::build]) --> B["Girdiler: cash, equity, realized_pnl, commission, risk_status, last_price, positions, open_orders, recent_trades, mark_prices, position_mode, margin_types"]
+
+    B --> C[positions.all() üzerinde döngü]
+    C --> D["mark = mark_prices.get(symbol)"]
+    D --> E["unrealized = mark ise pos.unrealized_pnl(mark)"]
+    E --> F["unrealized_pnl_pct = (unrealized / |qty|) * 100"]
+    F --> G["margin_type = margin_types.get veya varsayılan CROSSED"]
+    G --> H["liquidation_price = pos.liquidation_price(0.005)"]
+    H --> I[PositionView oluştur]
+    I --> J{döngüde pozisyon kaldı mı?}
+    J -- Evet --> C
+    J -- Hayır --> K[PaperSnapshot struct'ı doldur]
+    K --> L[SnapshotBuilder / From DomainEvent]
+
+    L --> M["From<&DomainEvent> for TradeView"]
+    M --> N{event türü?}
+    N -- OrderFilled --> O["TradeView: order_id, symbol, side, price, qty, fee"]
+    N -- Liquidation --> P["TradeView: LIQ_sembol, qty, fee=0"]
+    N -- Diğer --> Q["Boş TradeView"]
+    O --> R([Bitiş])
+    P --> R
+    Q --> R

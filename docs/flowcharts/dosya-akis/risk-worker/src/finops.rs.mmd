@@ -1,0 +1,14 @@
+graph TD
+    A([Başlangıç]) --> B[FinOpsOptimizer oluştur: last_30d_profit, current_cloud_cost]
+
+    B --> C{evaluate_cost_efficiency çağrıldı}
+    C --> D[threshold = last_30d_profit * 0.20]
+
+    D --> E{current_cloud_cost > threshold?}
+    E -- Evet --> F[println: Cloud cost %20'yi aşıyor uyarısı]
+    F --> G[println: Zstandard repack ve unused index düşürme tetiklenir]
+    G --> H[Yorum: ClickHouse Adapter ALTER TABLE MODIFY SETTING çağrısı]
+    E -- Hayır --> I[println: Cost efficiency within limits]
+
+    H --> Z([Bitiş])
+    I --> Z([Bitiş])

@@ -1,0 +1,20 @@
+graph TD
+    A([Başlangıç: Core Ontoloji]) --> B[Tick&#40;i64&#41;: tick bazlı fiyat]
+    A --> C[Volume&#40;u64&#41;: hacim]
+    A --> D[AssetDefinition: tick_size + min_move]
+    A --> E[Bar: timestamp, high, low, open, close, volume]
+    A --> F[Bias: Bullish / Bearish / Neutral]
+
+    subgraph AssetDefinition
+        G[default_asset: tick_size 1e-6, min_move 1] --> H[btc: tick_size 1e-6, min_move 50]
+    end
+
+    subgraph Bar metotları
+        I[spread_ticks = high - low saturating] --> J[mid_tick = &#40;high + low&#41; / 2]
+        J --> K[price = close * tick_size]
+    end
+
+    subgraph Bias metotları
+        L[Bullish -> "Bullish"] --> M[Bearish -> "Bearish"]
+        M --> N[Neutral -> "Neutral"]
+    end

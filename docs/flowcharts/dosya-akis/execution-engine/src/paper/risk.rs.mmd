@@ -1,0 +1,43 @@
+graph TD
+    A([Başlangıç: RiskManager::new]) --> B["initial: starting_equity, max_leverage, max_drawdown_pct, max_daily_loss, min_position_notional"]
+    B --> C["maintenance_margin_rate = 0.005, peak_equity = starting_equity"]
+    C --> D["status = Ok, realized_pnl = 0"]
+
+    D --> E[check_order(requested_notional, leverage, cash)]
+    E --> F{status MaxDrawdown/MaxDailyLoss aşıldı mı?}
+    F -- Evet --> G["Err: trading halted"]
+    F -- Hayır --> H{|requested_notional| < min_position_notional?}
+    H -- Evet --> I["Err: pozisyon boyutu minimumun altında"]
+    H -- Hayır --> J{notional / leverage > cash?}
+    J -- Evet --> K["Err: kaldıraç için marj yetersiz"]
+    J -- Hayır --> L{leverage > max_leverage?}
+    L -- Evet --> M["Err: kaldıraç limiti aşıldı"]
+    L -- Hayır --> N["Ok döndür"]
+
+    G --> O([Bitiş: check_order])
+    I --> O
+    K --> O
+    M --> O
+    N --> O
+
+    D --> P[on_mark_tick(positions, mark_prices, cash)]
+    P --> Q["unrealized = total_unrealized_pnl"]
+    Q --> R["equity = cash + unrealized"]
+    R --> S{equity > peak_equity?}
+    S -- Evet --> T["peak_equity = equity"]
+    S -- Hayır --> U
+    T --> U["drawdown = (peak - equity) / peak"]
+    U --> V["daily_loss = realized_pnl + unrealized"]
+    V --> W{drawdown > max_drawdown_pct?}
+    W -- Evet --> X["status = MaxDrawdownBreached"]
+    W -- Hayır --> Y{daily_loss <= -max_daily_loss?}
+    Y -- Evet --> Z1["status = MaxDailyLossBreached"]
+    Y -- Hayır --> Z2["status = Ok"]
+    X --> Z3[Her pozisyon için likidasyon kontrolü]
+    Z1 --> Z3
+    Z2 --> Z3
+    Z3 --> Z4{mark <= liq_price? Long / mark >= liq? Short}
+    Z4 -- Evet --> Z5["status = Liquidation, sembolü listeye ekle"]
+    Z4 -- Hayır --> Z6
+    Z5 --> Z6["likidasyon listesini döndür"]
+    Z6 --> Z([Bitiş: on_mark_tick])

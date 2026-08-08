@@ -1,0 +1,15 @@
+graph TD
+    A([Başlangıç]) --> B[redis modülünü tanımla]
+    B --> C[clickhouse modülünü tanımla]
+    C --> D[ai modülünü tanımla]
+    D --> E[vault modülünü tanımla]
+    E --> F[telemetry modülünü tanımla]
+    F --> G[binance modülünü tanımla]
+    G --> H[RedisAdapter ve RedisHealth yeniden dışa aktar]
+    H --> I([init_adapter])
+    I --> J[RedisAdapter::new]
+    J --> K{health durumu?}
+    K -- Connected --> L[Adapter initialized | Redis: connected]
+    K -- Degraded --> M[Adapter initialized | Redis: DEGRADED]
+    L --> N([Bitiş])
+    M --> N

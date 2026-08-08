@@ -1,0 +1,27 @@
+graph TD
+    A([Başlangıç]) --> B[--watch argümanı ve WATCH_SEC ortam değişkenini oku]
+    B --> C{--watch modu var mı?}
+
+    C -- Hayır --> D[render: market_data.db SQLite bağlantısını aç]
+    D --> E{veritabanı açıldı mı?}
+    E -- Evet --> F[SQL sorgusu: sembol bazında count, volume, min, max]
+    F --> G{sorgu hazırlanabildi mi?}
+    G -- Evet --> H[her satırı Row yapısına eşle]
+    H --> I{satırlar boş mu?}
+    I -- Hayır --> J[her satır için volatilite yüzdesi hesapla]
+    J --> K[ilk 15 parite tablosunu yaz]
+    K --> L[volatiliteye göre sırala]
+    L --> M[en yüksek riskli 10 pariteyi yaz]
+    M --> Z([Bitiş])
+    I -- Evet --> N[Yeterli veri bulunamadı yaz]
+    N --> Z([Bitiş])
+    G -- Hayır --> O[Yeterli veri bulunamadı yaz]
+    O --> Z([Bitiş])
+    E -- Hayır --> P[Veritabanı açılamadı hatası yaz]
+    P --> Z([Bitiş])
+
+    C -- Evet --> Q[ekranı temizle]
+    Q --> R[ilk render çiz]
+    R --> S[sonsuz döngü: watch_sec saniye bekle]
+    S --> T[imleci ekranın başına al]
+    T --> R

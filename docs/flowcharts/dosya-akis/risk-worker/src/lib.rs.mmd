@@ -1,0 +1,10 @@
+graph TD
+    A([Başlangıç]) --> B[lib.rs modül bildirimleri yüklenir]
+
+    B --> C[pub mod matrix -> matrix.rs modülünü dahil et]
+    B --> D[pub mod cache -> cache.rs modülünü dahil et]
+    B --> E[pub mod finops -> finops.rs modülünü dahil et]
+
+    C --> Z([Bitiş])
+    D --> Z([Bitiş])
+    E --> Z([Bitiş])

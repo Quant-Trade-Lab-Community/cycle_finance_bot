@@ -1,0 +1,38 @@
+graph TD
+    A([Başlangıç]) --> B[analyze_inflows: inflow dizisi al]
+    B --> C{inflows boş mu?}
+    C -- Evet --> E1[Err: DataStall]
+    C -- Hayır --> D[PhaseSpace::from_inflows ile grid kur]
+    D --> E[NSSolver oluştur]
+    E --> F{Her inflow için solver.step}
+    F --> G{adım başarılı mı?}
+    G -- Hayır --> E1
+    G -- Evet --> H{tüm inflow'lar bitti mi?}
+    H -- Hayır --> F
+    H -- Evet --> I[state = solver.state]
+
+    I --> J[total_liq, ob_depth, last_price hesapla]
+    J --> K[burst = analyze_cavitation: tasfiye şok dalgası]
+    K --> L[calibration = calibrate inflows]
+    L --> M{kalibrasyon başarılı mı?}
+    M -- Evet --> N1[Optimize edilmiş viskozite ve Cs]
+    M -- Hayır --> N2[Varsayılan: grid.viscous, Cs 0.05, maliyet 0]
+    N1 --> O[grad = solver.mean_pressure_gradient]
+    N2 --> O
+    O --> P[dir = order_flow::net_direction grad, burst]
+    P --> Q[twap_curve = build_twap_curve grad, dir]
+    Q --> R[narrative = narrative::narrate state, calibration, burst]
+    R --> S[audit = narrative::audit_meta]
+    S --> T[TrbReport döndür: tüm katmanlar birleştirilir]
+
+    T --> U[analyze: load_from_sqlite ile tarihsel veri al]
+    U --> V[live = drain_ring_buffer canlı veri al]
+    V --> W[merge_sources sqlite + live]
+    W --> X{extra_live boş değil mi?}
+    X -- Evet --> Y[merge_sources + extra_live tekrar]
+    X -- Hayır --> Z1{inflows boş mu?}
+    Y --> Z1
+    Z1 -- Evet --> E2[Err: DataStall]
+    Z1 -- Hayır --> Z2[report = analyze_inflows inflows]
+    Z2 --> Z3[symbol, interval, audit.data_source ata]
+    Z3 --> Z([Bitiş])

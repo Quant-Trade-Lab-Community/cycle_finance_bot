@@ -1,0 +1,24 @@
+graph TD
+    A([Başlangıç]) --> B[RiskEngine::new(max_position, daily_loss_limit)]
+    B --> C[current_position = 0, current_pnl = 0]
+
+    C --> D[process_signal(signal, strategy_id)]
+    D --> E{signal tipi?}
+    E -- BuyMarket/BuyLimit --> F{current_position + quantity > max_position?}
+    F -- Evet --> G[None: reddet]
+    F -- Hayır --> H[Some(signal): izin ver]
+    E -- SellMarket/SellLimit --> I{current_position - quantity < -max_position?}
+    I -- Evet --> J[None: reddet]
+    I -- Hayır --> H
+    E -- None/CancelAll --> H
+    H --> K[update_position(delta)]
+    K --> L[current_position += delta]
+    L --> M[update_pnl(delta)]
+    M --> N[current_pnl += delta]
+    N --> O[is_daily_loss_exceeded]
+    O --> P{current_pnl <= -daily_loss_limit?}
+    P -- Evet --> Q[true döndür]
+    P -- Hayır --> R[false döndür]
+    G --> Z([Bitiş])
+    Q --> Z
+    R --> Z

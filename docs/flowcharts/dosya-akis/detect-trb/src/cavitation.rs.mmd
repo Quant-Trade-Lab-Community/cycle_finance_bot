@@ -1,0 +1,36 @@
+graph TD
+    A([Başlangıç]) --> B[analyze_cavitation: tasfiye hacmi, ortalama basınç, fiyat, OB derinliği]
+    B --> C{liquidation_volume <= 0 mı?}
+    C -- Evet --> C1[Ok: None — kavitasyon yok]
+    C -- Hayır --> D[Senaryolar: long squeeze ve short squeeze]
+    D --> E{Her senaryo için is_long, p_vapor}
+
+    E --> F[Bubble::new: yarıçap = tasfiye hacmi / OB derinliği]
+    F --> G{1000 Euler-Maruyama adımı}
+
+    G --> H[step: Rayleigh-Plesset ODE]
+    H --> H1{radius <= 1e-9 mu?}
+    H1 -- Evet --> G[Çökmüş kabarcık — adımı atla]
+    H1 -- Hayır --> H2[r_ddot = basınç farkı / rho x radius eksi hız terimi]
+    H2 --> H3{r_ddot NaN veya Inf mi?}
+    H3 -- Evet --> H4[Kabarcığı yeniden başlat: radius 1e-6, hız 0]
+    H4 --> G
+    H3 -- Hayır --> H5[wall_velocity += r_ddot x DT, radius += hız x DT]
+    H5 --> H6{radius <= 0 mı?}
+    H6 -- Evet --> H7[radius = 1e-9 a sıfırla, hız 0]
+    H6 -- Hayır --> I{is_burst: radius >= 0.7 mi?}
+    H7 --> I
+    I -- Hayır --> G
+    I -- Evet --> J[burst_signal: Minnaert frekansı + genlik]
+    J --> K[score = genlik x log10 frekans]
+    K --> L{en güçlü sinyal mi?}
+    L -- Evet --> M[strongest güncelle]
+    L -- Hayır --> N[break: sonraki senaryoya geç]
+    M --> N
+    N --> O{tüm senaryolar bitti mi?}
+    O -- Hayır --> E
+    O -- Evet --> P{strongest var mı?}
+    P -- Evet --> P1[Ok: en güçlü BurstSignal]
+    P -- Hayır --> P2[Ok: None]
+    P1 --> Z([Bitiş])
+    P2 --> Z

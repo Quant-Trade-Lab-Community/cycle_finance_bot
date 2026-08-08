@@ -1,0 +1,42 @@
+classDiagram
+    direction LR
+
+    class OwnedEvent {
+        +symbol : [u8; 16]
+        +payload : EventType
+        +new_trade() OwnedEvent
+        +new_orderbook() OwnedEvent
+        +new_liquidation() OwnedEvent
+        +new_funding_rate() OwnedEvent
+        +new_bookticker() OwnedEvent
+        +new_open_interest() OwnedEvent
+        +new_opportunity() OwnedEvent
+        +new_symbol_metrics() OwnedEvent
+    }
+
+    class EventType {
+        <<enum u8>>
+        Trade : price · quantity · ts · is_buyer_maker
+        Orderbook[20] : bids + asks
+        Liquidation : side · price · qty · ts
+        FundingRate : mark · index · rate · next_funding
+        BookTicker : best bid + best ask (fiyat + miktar)
+        OpenInterest : oi · ts
+        Opportunity : score · eff · bps/s · ticks/s · ob/sk · spread · verdict
+        SymbolMetrics : 6 mikroyapı metriği
+    }
+
+    class WireCodec {
+        <<compact binary>>
+        +DEPTH_FRAME_SIZE : 659 B
+        +MAX_FRAME_SIZE : 659 B
+        +encode(ev : OwnedEvent, buf) Option~usize~
+        +decode(buf) Option~OwnedEvent~
+        -write_decimal(buf, off, d) Option~usize~
+        -read_decimal(buf, off) Decimal
+        +tag : u8 (0=Trade ... 7=SymbolMetrics)
+        +i64 mantissa + u8 scale := Decimal
+    }
+
+    OwnedEvent --> "1" EventType : payload
+    WireCodec ..> OwnedEvent : encode/decode<br/>(sıfır kopya hot path)

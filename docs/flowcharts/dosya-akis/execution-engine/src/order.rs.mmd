@@ -1,0 +1,16 @@
+graph TD
+    A([Başlangıç]) --> B[OrderSide enum tanımla: Buy / Sell]
+    B --> C[OrderType enum tanımla: Limit / Market / StopLoss / StopLossLimit / TakeProfit / TakeProfitLimit / LimitMaker]
+    C --> D[TimeInForce enum tanımla: Gtc / Ioc / Fok]
+    D --> E[OrderPositionSide enum tanımla: Both / Long / Short]
+    E --> F[OrderRequest struct tanımla]
+
+    F --> G[symbol: String]
+    F --> H[side: OrderSide]
+    F --> I[order_type: OrderType]
+    F --> J[quantity: Decimal]
+    F --> K[price: Option<Decimal>]
+    F --> L[time_in_force: Option<TimeInForce>]
+    F --> M[position_side: OrderPositionSide]
+
+    M --> Z([Bitiş])

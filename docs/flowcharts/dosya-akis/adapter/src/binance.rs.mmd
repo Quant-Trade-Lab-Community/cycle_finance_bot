@@ -1,0 +1,45 @@
+graph TD
+    A([Başlangıç: start_binance_ws_client]) --> B[fetch_usdt_spot_pairs]
+    B --> C[hedef semboller: btcusdt/ethusdt/solusdt/heiusdt]
+    C --> D[her sembol için @trade ve @depth20@100ms stream'i ekle]
+    D --> E{pairs getirildi mi?}
+    E -- Hayır --> F[eprintln: pairs alınamadı]
+    E -- Evet --> G[chunks: 200'erli gruplara böl]
+    G --> H{her chunk için döngü}
+    H --> I[tokio::spawn: start_ws_chunk(tx, chunk, id)]
+    I --> J[600 ms bekle - WAF koruması]
+    J --> K{tüm chunk'lar başladı mı?}
+    K -- Hayır --> H
+    K -- Evet --> L[handle.await ile chunk'ları bekle]
+    L --> M([Bitiş])
+    F --> M
+
+    N([start_ws_chunk]) --> O[backoff_ms = 1000 başlat]
+    O --> P{sonsuz yeniden bağlanma döngüsü}
+    P --> Q[connect_async: wss://fstream.binance.com/stream]
+    Q --> R{bağlantı başarılı mı?}
+    R -- Hayır --> S[backoff süresi uyu, backoff ikiye katla (max 60 sn)]
+    S --> P
+    R -- Evet --> T[backoff sıfırla, ws_stream split]
+    T --> U[SUBSCRIBE mesajı gönder]
+    U --> V{gönderim başarılı mı?}
+    V -- Hayır --> P
+    V -- Evet --> W[30 sn'lik ping interval başlat]
+
+    W --> X{select! döngüsü}
+    X --> Y{ping tick mi?}
+    Y -- Evet --> Z[Ping mesajı gönder]
+    Z --> AA{gönderim hatası var mı?}
+    AA -- Evet --> AB[bağlantıyı kopar, yeniden bağlan]
+    AA -- Hayır --> X
+    X --> AC{read.next() mesaj geldi mi?}
+    AC -- Evet --> AD{mesaj türü?}
+    AD -- Text --> AE[tx.send_async(bytes) - bounded kuyruğa ilet]
+    AE --> AF{kuyruk düştü mü?}
+    AF -- Evet --> AG[return - kapan]
+    AF -- Hayır --> X
+    AD -- Close --> AH[Sunucu kapattı, yeniden bağlan]
+    AD -- Diğer --> X
+    AC -- Err/None --> AH
+    AB --> P
+    AH --> P

@@ -1,0 +1,20 @@
+graph TD
+    A([Başlangıç]) --> B[Condition enum: Above/Below/Cross/Touch]
+    B --> C[AlertRule: symbol, condition, price, tolerance_pct, voice, cooldown_sec, repeat]
+    C --> D[AlertConfig: data_source, symbols, alerts]
+    D --> E([load: config dosyasını oku])
+
+    E --> F[fs::read_to_string(path)]
+    F --> G{dosya okundu mu?}
+    G -- Hayır --> H[Err: config okunamadı]
+    G -- Evet --> I[toml::from_str ile ayrıştır]
+    I --> J{toml geçerli mi?}
+    J -- Hayır --> K[Err: toml hatası]
+    J -- Evet --> L{alerts boş mu?}
+    L -- Evet --> M[Err: hiçbir uyarı tanımlı değil]
+    L -- Hayır --> N[Ok(cfg) döndür]
+
+    N --> O([unique_symbols: uyarı sembollerini topla])
+    O --> P[HashMap ile tekil sembolleri birleştir]
+    P --> Q[Sembol listesini döndür]
+    Q --> R([Bitiş])

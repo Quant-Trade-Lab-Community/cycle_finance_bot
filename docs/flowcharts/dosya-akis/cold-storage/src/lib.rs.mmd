@@ -1,0 +1,16 @@
+graph TD
+    A([Başlangıç: DiskBuffer::new]) --> B[OpenOptions: read+write+create ile dosya aç]
+    B --> C{dosya açıldı mı?}
+    C -- Hayır --> D[Err döndür]
+    C -- Evet --> E[file.set_len(size) ile boyutlandır]
+    E --> F[MmapMut::map_mut ile belleğe eşle]
+    F --> G{mmap başarılı mı?}
+    G -- Hayır --> D
+    G -- Evet --> H[DiskBuffer döndür]
+    H --> I([Bitiş])
+
+    J([write_slice]) --> K{offset + data.len() <= mmap.len() mi?}
+    K -- Evet --> L[mmap[offset..] kısmına data'yı kopyala]
+    K -- Hayır --> M[Sınır aşıldı - yazma yapma]
+    L --> N([Bitiş])
+    M --> N

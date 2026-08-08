@@ -1,0 +1,30 @@
+graph TD
+    A([Başlangıç]) --> B[connect(database_url): PgPoolOptions max_connections 5]
+    B --> C{pool bağlantısı başarılı mı?}
+    C -- Hata --> D[sqlx::Error dön]
+    C -- Başarılı --> E[CREATE TABLE IF NOT EXISTS domain_events]
+    E --> F[CREATE TABLE IF NOT EXISTS account_snapshots]
+    F --> G[PostgresEventStore { pool } dön]
+
+    G --> H[append(event)]
+    H --> I[event türüne göre event_type string eşle]
+    I --> J[payload = serde_json::to_value]
+    J --> K[INSERT INTO domain_events VALUES bind]
+    K --> L{execute başarılı mı?}
+    L -- Evet --> M[Ok dön]
+    L -- Hata --> N[sqlx::Error dön]
+
+    G --> O[replay(limit)]
+    O --> P[SELECT payload FROM domain_events ORDER BY id ASC LIMIT]
+    P --> Q[her satır payload try_get]
+    Q --> R{serde_json::from_value başarılı mı?}
+    R -- Evet --> S[events.push]
+    R -- Hayır --> T[atla]
+    S --> U[Vec DomainEvent dön]
+    T --> U
+
+    G --> V[save_snapshot(event_count, snapshot)]
+    V --> W[INSERT INTO account_snapshots VALUES bind]
+    W --> X{execute başarılı mı?}
+    X -- Evet --> Y[Ok dön]
+    X -- Hata --> Z[sqlx::Error dön]

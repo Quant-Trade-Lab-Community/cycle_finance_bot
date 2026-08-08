@@ -1,0 +1,63 @@
+graph TD
+    A([Başlangıç]) --> B[WINDOW_SEC ve TRACK_SEC env değişkenlerini oku, window_ms / track_ms hesapla]
+    B --> C[flat_threshold = 0.001, breakout_threshold = 0.005 tanımla]
+    C --> D[Terminal banner'ını yazdır]
+
+    D --> E[GenerationalRingBuffer 160k slot oluştur, read_cursor = head]
+    E --> F[history, active_anomalies, failed_history, next_anomaly_id, last_anomaly_trigger_ts başlat]
+
+    F --> G{sonsuz döngü}
+
+    G --> H{gen_ring.read_slot(read_cursor) var mı?}
+    H -- Hayır --> I[spin_loop ile CPU'yu boşta çevir]
+    I --> G
+    H -- Evet --> J{wire::decode başarılı mı?}
+    J -- Hayır --> K[read_cursor += 1]
+    K --> G
+    J -- Evet --> L{symbol HEIUSDT ile başlıyor mu?}
+    L -- Hayır --> K
+    L -- Evet --> M{EventType::Trade mi?}
+    M -- Hayır --> K
+    M -- Evet --> N[TradeRecord oluştur, history.push_back]
+
+    N --> O{Tarih temizleme: öndeki kayıt history_limit'ten eski mi?}
+    O -- Evet --> P[history.pop_front]
+    P --> O
+    O -- Hayır --> Q{history.first var ve current_ts - first.timestamp >= window_ms mi?}
+
+    Q -- Hayır --> R[Anomali takip adımına geç]
+    Q -- Evet --> S[split_ts hesapla, önceki ve şimdiki dönem için hacim + fiyat listelerini topla]
+    S --> T{prev_prices ve curr_prices ikisi de dolu mu?}
+    T -- Hayır --> R
+    T -- Evet --> U[price_delta ve vol_increased / price_flat hesapla, anomaly_detected ve expected_outcome belirle]
+    U --> V{anomaly_detected > 0 ve son tetiklemeden 1000ms geçti mi?}
+    V -- Hayır --> R
+    V -- Evet --> W[Sinyal mesajını ve zaman damgasını yazdır, active_anomalies'e ekle, id artır]
+
+    W --> R
+    R --> X{Anomali takip döngüsü: i < active_anomalies.len mi?}
+    X -- Evet --> Y[price_change = current_price - anomaly.start_price, success hesapla]
+    Y --> Z{success take-profit hedefine ulaştı mı?}
+    Z -- Evet --> AA[BAŞARILI yazdır, failed_history temizle, anomaliyi kaldır]
+    Z -- Hayır --> AB{current_ts >= anomaly.end_ts süre doldu mu?}
+    AB -- Hayır --> AC[i += 1]
+    AB -- Evet --> AD[BAŞARISIZ yazdır, failed_history.push_back(anomaly_type)]
+
+    AD --> AE{failed_history.len > 3 mü?}
+    AE -- Evet --> AF[failed_history.pop_front]
+    AE -- Hayır --> AG{failed_history.len == 3 mü?}
+    AG -- Evet --> AH{3 sinyal aynı tür mü yoksa hepsi farklı mı?}
+    AH -- Aynı --> AI[KÜMELEME UYARISI: büyük patlama ihtimali yazdır]
+    AH -- Farklı --> AJ[KÜMELEME UYARISI: kararsızlık / testere yazdır]
+    AI --> AK[failed_history temizle]
+    AJ --> AK
+    AK --> AL[anomaliyi kaldır]
+    AG -- Hayır --> AM[anomaliyi kaldır]
+    AF --> AM
+    AA --> X
+    AC --> X
+    AL --> X
+    AM --> X
+
+    X -- Hayır --> K
+    K --> G

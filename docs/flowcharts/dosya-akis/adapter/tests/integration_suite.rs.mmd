@@ -1,0 +1,39 @@
+graph TD
+    A([Başlangıç: test_vault_grace_period_rotation]) --> B[VaultAdapter::new]
+    B --> C{current_key_version == 1 mi?}
+    C -- Evet --> D[rotate_keys çağır]
+    D --> E{current_key_version == 2 mi?}
+    E -- Evet --> F[5 dk grace period içinde v1 geçerli doğrulanır]
+    E -- Hayır --> G[test başarısız]
+    F --> H([Bitiş - test geçti])
+    G --> H
+
+    I([test_redis_idempotency_armor]) --> J[RedisAdapter::new]
+    J --> K{health Connected mı?}
+    K -- Hayır --> L[set_idempotency_key hata vermeli - fail-closed]
+    L --> M[test geçti - bağlantı yok]
+    K -- Evet --> N[generate_client_order_id üret]
+    N --> O[10.000 kez set_idempotency_key dene]
+    O --> P[success_count sayaç]
+    P --> Q{success_count == 1 mi?}
+    Q -- Evet --> R[check_ack_status == Confirmed mı?]
+    Q -- Hayır --> S[test başarısız]
+    R -- Evet --> T([Bitiş - test geçti])
+    R -- Hayır --> S
+    M --> T
+    S --> T
+
+    U([test_websocket_recon_rate_limit]) --> V[allowed = min(1000, 120)]
+    V --> W{allowed == 120 mi?}
+    W -- Evet --> X([Bitiş - test geçti])
+    W -- Hayır --> Y[test başarısız]
+    Y --> X
+
+    Z([test_gdpr_right_to_erasure_registry]) --> AA[ClickHouseAdapter::new]
+    AA --> AB[execute_right_to_erasure 2 kez çağır]
+    AB --> AC{erasure_count(user_hash) == 2 mi?}
+    AC -- Evet --> AD{erasure_count(yok) == 0 mi?}
+    AC -- Hayır --> AE[test başarısız]
+    AD -- Evet --> AF([Bitiş - test geçti])
+    AD -- Hayır --> AE
+    AE --> AF

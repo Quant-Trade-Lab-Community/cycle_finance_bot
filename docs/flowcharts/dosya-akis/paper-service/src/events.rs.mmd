@@ -1,0 +1,20 @@
+graph TD
+    A([Başlangıç]) --> B[open_wal_store: load_snapshot_path env PAPER_SLED_PATH]
+    B --> C{SledEventStore::open başarılı mı?}
+    C -- Evet --> D[Arc Mutex Box SledEventStore dön]
+    C -- Hayır --> E[uyarı bas, Arc Mutex Box InMemoryEventStore dön]
+    D --> Z([Bitiş])
+    E --> Z
+
+    B --> S[InMemoryEventStore: events Vec push]
+    S --> SA[append: events.push(event)]
+    S --> SR[replay: events.clone]
+
+    B --> SL[SledEventStore: counter işle]
+    SL --> SLA[append: key = counter.to_be_bytes, serde_json serialize]
+    SLA --> SLB[db.insert key value]
+    SLB --> SLC[counter += 1 + __counter güncelle]
+    SL --> SLR[replay: db.iter ile tüm kayıtları tara]
+    SLR --> SLD[__counter anahtarını atla]
+    SLD --> SLE[u64 anahtara göre sırala]
+    SLE --> SLF[serde_json::from_slice ile DomainEvent listesine çevir]

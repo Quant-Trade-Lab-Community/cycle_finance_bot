@@ -1,0 +1,25 @@
+graph TD
+    A([Başlangıç: ExecutionBroker]) --> B[new&#40;&#41;: slippage %0.05, depth 250M, slice_count 100, interval 50ms]
+
+    subgraph execute
+        C[execute&#40;signal, size, tick_size&#41;] --> D[chunks = size / 100, en az 1]
+        D --> E[base_tick = signal entry, base_price = base_tick * tick_size]
+        E --> F[now_ms = sistem zamanı]
+        F --> G[depth_impact = slippage * &#40;size / depth&#41; clamp 0..1]
+        G --> H[döngü: her dilim i için]
+        H --> I[slip = &#40;i / slice_count&#41; * slippage / 100]
+        I --> J[price = base_price * &#40;1 + slip + depth_impact&#41;]
+        J --> K[ChildOrder: price, chunks, expires = now + i * 50ms]
+        K --> L{i < slice_count?}
+        L -- Evet --> H
+        L -- Hayır --> M[ChildOrder listesi döndür]
+    end
+
+    subgraph plan
+        N[plan&#40;orders, size&#41;] --> O{plan boş mu?}
+        O -- Evet --> P[avg = 0.0]
+        O -- Hayır --> Q[avg = ortalama, max, min hesapla]
+        P --> R[first/last expires al]
+        Q --> R
+        R --> S[ExecutionPlan: slices, chunk_size, avg, max, min, duration, iceberg=true]
+    end

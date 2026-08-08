@@ -22,6 +22,8 @@ pub enum DomainEvent {
         order_id: String,
         symbol: String,
         side: String,
+        /// "BOTH" (one-way) veya "LONG"/"SHORT" (hedge hedef tarafı)
+        position_side: String,
         fill_price: Decimal,
         fill_qty: Decimal,
         commission: Decimal,

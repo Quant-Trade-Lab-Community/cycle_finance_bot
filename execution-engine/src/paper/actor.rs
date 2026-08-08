@@ -1,9 +1,7 @@
-use crate::order::{OrderRequest, OrderSide, OrderType};
+use crate::order::{OrderPositionSide, OrderRequest, OrderSide, OrderType};
 use crate::paper::account::AccountState;
 use crate::paper::domain_event::DomainEvent;
-use crate::paper::hybrid_book::HybridOrderBook;
 use crate::paper::config::PaperConfig;
-use crate::paper::db_writer::{PersistEvent, start_db_writer};
 use crate::paper::position::{PositionManager, PositionSide};
 use crate::paper::risk::RiskManager;
 use crate::paper::snapshot::{PaperSnapshot, TradeView};
@@ -14,6 +12,52 @@ use tokio::time::{sleep, Duration};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PositionMode {
+    OneWay,
+    Hedge,
+}
+
+impl PositionMode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            PositionMode::OneWay => "ONE_WAY",
+            PositionMode::Hedge => "HEDGE",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_uppercase().as_str() {
+            "ONE_WAY" | "ONE-WAY" | "BOTH" => Some(PositionMode::OneWay),
+            "HEDGE" | "DUAL" => Some(PositionMode::Hedge),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MarginType {
+    Crossed,
+    Isolated,
+}
+
+impl MarginType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MarginType::Crossed => "CROSSED",
+            MarginType::Isolated => "ISOLATED",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_uppercase().as_str() {
+            "CROSSED" | "CROSS" => Some(MarginType::Crossed),
+            "ISOLATED" | "ISOLATE" => Some(MarginType::Isolated),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum OrderRejectReason {
@@ -35,24 +79,30 @@ pub enum ActorCommand {
         order: OrderRequest,
         response_tx: oneshot::Sender<Result<OrderAck, OrderRejectReason>>,
     },
-    PriceUpdate {
-        symbol: String,
-        price: Decimal,
-    },
     MarkPriceUpdate {
         symbol: String,
         mark_price: Decimal,
         funding_rate: Decimal,
         timestamp: u64,
     },
+    SetPositionMode {
+        mode: PositionMode,
+        response_tx: oneshot::Sender<Result<(), String>>,
+    },
+    SetMarginType {
+        symbol: String,
+        margin_type: MarginType,
+        response_tx: oneshot::Sender<Result<(), String>>,
+    },
 }
 
-/// PRICE_ONLY modunda bekleyen limit emri
+/// Mark price kaynağıyla bekleyen limit emri
 #[derive(Debug, Clone)]
 pub struct OpenOrder {
     pub order_id: String,
     pub symbol: String,
     pub side: OrderSide,
+    pub position_side: OrderPositionSide,
     pub quantity: Decimal,
     pub remaining: Decimal,
     pub limit_price: Decimal,
@@ -61,15 +111,16 @@ pub struct OpenOrder {
 
 pub struct PaperEngineActor {
     config: PaperConfig,
-    orderbook: HybridOrderBook,
     account: AccountState,
     positions: PositionManager,
     risk: RiskManager,
     open_orders: Vec<OpenOrder>,
-    db_tx: mpsc::UnboundedSender<PersistEvent>,
     event_tx: Option<mpsc::UnboundedSender<DomainEvent>>,
     last_funding_ts: u64,
-    prices: HashMap<String, Decimal>,
+    position_mode: PositionMode,
+    default_margin_type: MarginType,
+    margin_types: HashMap<String, MarginType>,
+    isolated_wallets: HashMap<String, Decimal>,
     mark_prices: HashMap<String, Decimal>,
     funding_rates: HashMap<String, Decimal>,
     recent_trades: Vec<TradeView>,
@@ -88,34 +139,29 @@ impl PaperEngineActor {
         replay_events: &[DomainEvent],
     ) -> Self {
         let account = AccountState::new(config.initial_usdt, config.initial_btc);
-        let orderbook = HybridOrderBook::new(config.slippage_model.clone(), config.market_impact_factor);
         let risk = RiskManager::new(
             config.initial_usdt,
-            config.max_position_qty,
             config.max_leverage,
             config.max_drawdown_pct,
             config.max_daily_loss,
+            config.min_position_notional,
         );
 
-        let (db_tx, db_rx) = mpsc::unbounded_channel();
-        let db_path = config.db_path.clone();
-        let batch_interval = config.batch_write_interval_ms;
-
-        tokio::spawn(async move {
-            start_db_writer(db_rx, db_path, batch_interval).await;
-        });
+        let position_mode = PositionMode::from_str(&config.position_mode).unwrap_or(PositionMode::OneWay);
+        let default_margin_type = MarginType::from_str(&config.margin_type).unwrap_or(MarginType::Crossed);
 
         let mut actor = Self {
             config,
-            orderbook,
             account,
             positions: PositionManager::new(),
             risk,
             open_orders: Vec::new(),
-            db_tx,
             event_tx,
             last_funding_ts: 0,
-            prices: HashMap::new(),
+            position_mode,
+            default_margin_type,
+            margin_types: HashMap::new(),
+            isolated_wallets: HashMap::new(),
             mark_prices: HashMap::new(),
             funding_rates: HashMap::new(),
             recent_trades: Vec::new(),
@@ -123,6 +169,7 @@ impl PaperEngineActor {
                 Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO,
                 crate::paper::risk::RiskStatus::Ok, Decimal::ZERO,
                 &PositionManager::new(), 0, vec![], &HashMap::new(),
+                "ONE_WAY".to_string(), &HashMap::new(),
             ))),
         };
 
@@ -147,6 +194,8 @@ impl PaperEngineActor {
             self.open_orders.len(),
             self.recent_trades.clone(),
             &self.mark_prices,
+            self.position_mode.as_str().to_string(),
+            &self.margin_types,
         );
         *self.snapshot.write() = snap;
     }
@@ -160,9 +209,18 @@ impl PaperEngineActor {
         let mut replayed_fills = 0usize;
         for ev in events {
             match ev {
-                DomainEvent::OrderFilled { symbol, side, fill_price, fill_qty, commission, cash_delta, realized_pnl, leverage, .. } => {
+                DomainEvent::OrderFilled { symbol, side, position_side, fill_price, fill_qty, commission, cash_delta, realized_pnl, leverage, .. } => {
                     let signed = if side == "BUY" { *fill_qty } else { -*fill_qty };
-                    let _ = self.positions.apply_fill(symbol, signed, *fill_price, *leverage);
+                    if self.position_mode == PositionMode::Hedge {
+                        let ps = match position_side.as_str() {
+                            "LONG" => PositionSide::Long,
+                            "SHORT" => PositionSide::Short,
+                            _ => PositionSide::Long,
+                        };
+                        let _ = self.positions.apply_fill_hedge(symbol, ps, signed, *fill_price, *leverage);
+                    } else {
+                        let _ = self.positions.apply_fill(symbol, signed, *fill_price, *leverage);
+                    }
                     self.account.add_free_funds("USDT", *cash_delta);
                     self.risk.record_realized(*realized_pnl);
                     let _ = commission;
@@ -187,8 +245,8 @@ impl PaperEngineActor {
     }
 
     pub async fn run(mut self, mut cmd_rx: mpsc::UnboundedReceiver<ActorCommand>) {
-        println!("PaperEngineActor: Started in {} mode.", self.config.slippage_model);
-        println!("PaperEngineActor: Matching mode = {}", self.config.matching_mode);
+        println!("PaperEngineActor: Started | mode={} | margin={} | price=mark",
+            self.position_mode.as_str(), self.default_margin_type.as_str());
 
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
@@ -196,15 +254,19 @@ impl PaperEngineActor {
                     let result = self.process_order(order).await;
                     let _ = response_tx.send(result);
                 }
-                ActorCommand::PriceUpdate { symbol, price } => {
-                    self.orderbook.apply_price(price);
-                    self.prices.insert(symbol.clone(), price);
-                    self.check_limit_orders(symbol, price);
-                }
                 ActorCommand::MarkPriceUpdate { symbol, mark_price, funding_rate, timestamp } => {
                     self.mark_prices.insert(symbol.clone(), mark_price);
-                    self.funding_rates.insert(symbol, funding_rate);
+                    self.funding_rates.insert(symbol.clone(), funding_rate);
                     self.on_mark_tick(timestamp);
+                    self.check_limit_orders(symbol, mark_price);
+                }
+                ActorCommand::SetPositionMode { mode, response_tx } => {
+                    let res = self.set_position_mode(mode);
+                    let _ = response_tx.send(res);
+                }
+                ActorCommand::SetMarginType { symbol, margin_type, response_tx } => {
+                    let res = self.set_margin_type(&symbol, margin_type);
+                    let _ = response_tx.send(res);
                 }
             }
             self.publish_snapshot();
@@ -212,8 +274,9 @@ impl PaperEngineActor {
     }
 
     pub fn last_price(&self) -> Decimal {
-        // Görüntüleme için BTCUSDT öncelikli; yoksa son gelen fiyat
-        self.prices.get("BTCUSDT").copied().unwrap_or(self.orderbook.last_price)
+        self.mark_prices.get("BTCUSDT").copied()
+            .or_else(|| self.mark_prices.values().next().copied())
+            .unwrap_or(Decimal::ZERO)
     }
 
     pub fn account(&self) -> &AccountState {
@@ -232,8 +295,90 @@ impl PaperEngineActor {
         &self.open_orders
     }
 
+    pub fn position_mode(&self) -> PositionMode {
+        self.position_mode
+    }
+
     pub fn equity(&self) -> Decimal {
         self.risk.equity(&self.positions, &self.mark_prices, self.account.get_free("USDT"))
+    }
+
+    // ── Mod değişiklikleri ───────────────────────────────────────
+
+    fn set_position_mode(&mut self, mode: PositionMode) -> Result<(), String> {
+        if mode == self.position_mode {
+            return Ok(());
+        }
+        if !self.positions.all().is_empty() {
+            return Err("Cannot change position mode with open positions".into());
+        }
+        if !self.open_orders.is_empty() {
+            return Err("Cannot change position mode with open orders".into());
+        }
+        self.position_mode = mode;
+        println!("[PAPER] Position mode -> {}", mode.as_str());
+        Ok(())
+    }
+
+    fn set_margin_type(&mut self, symbol: &str, margin_type: MarginType) -> Result<(), String> {
+        if self.positions.total_abs_qty(symbol) > Decimal::ZERO {
+            return Err("Cannot change margin type with open position".into());
+        }
+        self.margin_types.insert(symbol.to_string(), margin_type);
+        println!("[PAPER] {} margin -> {}", symbol, margin_type.as_str());
+        Ok(())
+    }
+
+    fn margin_type_of(&self, symbol: &str) -> MarginType {
+        self.margin_types.get(symbol).copied().unwrap_or(self.default_margin_type)
+    }
+
+    // ── Marj kilitleme (cross vs isolated) ───────────────────────
+
+    fn lock_margin(&mut self, symbol: &str, amount: Decimal) {
+        if amount <= Decimal::ZERO {
+            return;
+        }
+        match self.margin_type_of(symbol) {
+            MarginType::Crossed => {
+                let _ = self.account.lock_funds("USDT", amount);
+            }
+            MarginType::Isolated => {
+                let _ = self.account.deduct_free_funds("USDT", amount);
+                *self.isolated_wallets.entry(symbol.to_string()).or_default() += amount;
+            }
+        }
+    }
+
+    fn release_margin(&mut self, symbol: &str, amount: Decimal) {
+        if amount <= Decimal::ZERO {
+            return;
+        }
+        match self.margin_type_of(symbol) {
+            MarginType::Crossed => self.account.unlock_funds("USDT", amount),
+            MarginType::Isolated => {
+                let w = self.isolated_wallets.entry(symbol.to_string()).or_default();
+                let rel = amount.min(*w);
+                *w -= rel;
+                self.account.add_free_funds("USDT", rel);
+            }
+        }
+    }
+
+    fn apply_fill_dispatch(
+        &mut self,
+        symbol: &str,
+        target_side: Option<PositionSide>,
+        signed_qty: Decimal,
+        price: Decimal,
+        leverage: Decimal,
+    ) -> (Decimal, Decimal) {
+        match self.position_mode {
+            PositionMode::OneWay => self.positions.apply_fill(symbol, signed_qty, price, leverage),
+            PositionMode::Hedge => {
+                self.positions.apply_fill_hedge(symbol, target_side.unwrap_or(PositionSide::Long), signed_qty, price, leverage)
+            }
+        }
     }
 
     async fn process_order(&mut self, order: OrderRequest) -> Result<OrderAck, OrderRejectReason> {
@@ -242,35 +387,55 @@ impl PaperEngineActor {
             + (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().subsec_millis() as u64 % (self.config.latency_jitter_ms + 1));
         sleep(Duration::from_millis(delay)).await;
 
-        if self.config.matching_mode == "PRICE_ONLY" {
-            return self.process_price_only(order);
-        }
-
-        self.process_sweep(order).await
+        self.process_price_only(order)
     }
 
     // ─────────────────────────────────────────────────────────────
-    // PRICE_ONLY: gerçek fiyat verisiyle (order book'suz) dolum
+    // PRICE_ONLY: mark price ile (order book'suz) dolum
     // ─────────────────────────────────────────────────────────────
     fn process_price_only(&mut self, order: OrderRequest) -> Result<OrderAck, OrderRejectReason> {
-        // Emir sembolünün güncel fiyatını kullan
-        let last = *self.prices.get(&order.symbol).unwrap_or(&self.orderbook.last_price);
-        if last <= Decimal::ZERO {
+        // Fiyat kaynağı: mark price. Yoksa emir reddedilir.
+        let mark = *self.mark_prices.get(&order.symbol).unwrap_or(&Decimal::ZERO);
+        if mark <= Decimal::ZERO {
             return Err(OrderRejectReason::MarketUnavailable);
         }
 
+        // Hedge modda LONG/SHORT zorunlu; one-way'de BOTH beklenir.
+        let target_side = match (self.position_mode, order.position_side) {
+            (PositionMode::Hedge, OrderPositionSide::Long) => Some(PositionSide::Long),
+            (PositionMode::Hedge, OrderPositionSide::Short) => Some(PositionSide::Short),
+            (PositionMode::Hedge, OrderPositionSide::Both) => {
+                return Err(OrderRejectReason::RiskRejected("position_side required in HEDGE mode".into()));
+            }
+            (PositionMode::OneWay, _) => None,
+        };
+
         let leverage = self.config.max_leverage.min(Decimal::ONE.max(self.config.max_leverage));
         let order_id = format!("PAPER_{}", now_ms());
+        let signed = if order.side == OrderSide::Buy { order.quantity } else { -order.quantity };
 
         match order.order_type {
             OrderType::Market => {
-                // Risk kontrolü (marj/pozisyon)
                 if let Err(msg) = self.risk.check_order(
-                    &self.positions, &order.symbol, order.quantity, last, leverage,
+                    order.quantity,
+                    leverage,
                     self.account.get_free("USDT"),
                 ) {
                     return Err(OrderRejectReason::RiskRejected(msg.to_string()));
                 }
+
+                // Marj değişimi (pozisyon tarafı bazında, USDT notional)
+                let before = match self.position_mode {
+                    PositionMode::OneWay => self.positions.get(&order.symbol).map(|p| p.quantity).unwrap_or(Decimal::ZERO),
+                    PositionMode::Hedge => self.positions
+                        .get_hedge(&order.symbol, target_side.unwrap())
+                        .map(|p| p.quantity)
+                        .unwrap_or(Decimal::ZERO),
+                };
+                let after = before + signed;
+                let margin_delta = after.abs() - before.abs();
+                let margin_locked = if margin_delta > Decimal::ZERO { margin_delta / leverage } else { Decimal::ZERO };
+                let margin_released = if margin_delta < Decimal::ZERO { -margin_delta / leverage } else { Decimal::ZERO };
 
                 self.emit(DomainEvent::OrderCreated {
                     order_id: order_id.clone(),
@@ -279,73 +444,44 @@ impl PaperEngineActor {
                     side: format!("{:?}", order.side).to_uppercase(),
                     order_type: "MARKET".to_string(),
                     qty: order.quantity,
-                    price: Some(last),
+                    price: Some(mark),
                 });
 
-                // Net marj: pozisyon büyüklüğündeki değişime göre
-                let before_qty = self.positions.get(&order.symbol).map(|p| p.quantity.abs()).unwrap_or(Decimal::ZERO);
-                let after_qty = (before_qty - order.quantity).abs();
-                let margin_released = if before_qty > after_qty { (before_qty - after_qty) * last / leverage } else { Decimal::ZERO };
-                let margin_locked = if after_qty > before_qty { (after_qty - before_qty) * last / leverage } else { Decimal::ZERO };
-
-                match order.side {
-                    OrderSide::Buy => {
-                        let fee = (order.quantity * last) * self.config.taker_fee;
-                        if self.account.get_free("USDT") < (margin_locked + fee) {
-                            return Err(OrderRejectReason::InsufficientFunds);
-                        }
-                        if margin_locked > Decimal::ZERO {
-                            let _ = self.account.lock_funds("USDT", margin_locked);
-                        }
-                        if margin_released > Decimal::ZERO {
-                            self.account.unlock_funds("USDT", margin_released);
-                        }
-                        let _ = self.account.deduct_free_funds("USDT", fee);
-                        self.account.add_free_funds("BTC", order.quantity);
-                        let (realized, _) = self.positions.apply_fill(&order.symbol, order.quantity, last, leverage);
-                        self.risk.record_realized(realized);
-                        self.account.add_free_funds("USDT", realized);
-                        self.emit_fill(&order_id, &order.symbol, "BUY", last, order.quantity, fee, realized, leverage, margin_released, margin_locked);
-                        self.persist_trade(&order.symbol, "BUY", last, order.quantity, fee);
-                        Ok(OrderAck { order_id, avg_price: last, executed_qty: order.quantity })
-                    }
-                    OrderSide::Sell => {
-                        let fee = (order.quantity * last) * self.config.taker_fee;
-                        if self.account.get_free("USDT") < (margin_locked + fee) {
-                            return Err(OrderRejectReason::InsufficientFunds);
-                        }
-                        if margin_locked > Decimal::ZERO {
-                            let _ = self.account.lock_funds("USDT", margin_locked);
-                        }
-                        if margin_released > Decimal::ZERO {
-                            self.account.unlock_funds("USDT", margin_released);
-                        }
-                        let _ = self.account.deduct_free_funds("USDT", fee);
-                        self.account.subtract_free_funds_unchecked("BTC", order.quantity); // short: borçlan
-                        let (realized, _) = self.positions.apply_fill(&order.symbol, -order.quantity, last, leverage);
-                        self.risk.record_realized(realized);
-                        self.account.add_free_funds("USDT", realized);
-                        self.emit_fill(&order_id, &order.symbol, "SELL", last, order.quantity, fee, realized, leverage, margin_released, margin_locked);
-                        self.persist_trade(&order.symbol, "SELL", last, order.quantity, fee);
-                        Ok(OrderAck { order_id, avg_price: last, executed_qty: order.quantity })
-                    }
+                let fee = order.quantity * self.config.taker_fee;
+                if self.account.get_free("USDT") < (margin_locked + fee) {
+                    return Err(OrderRejectReason::InsufficientFunds);
                 }
+
+                self.lock_margin(&order.symbol, margin_locked);
+                self.release_margin(&order.symbol, margin_released);
+                let _ = self.account.deduct_free_funds("USDT", fee);
+
+                let (realized, _) = self.apply_fill_dispatch(&order.symbol, target_side, signed, mark, leverage);
+                self.risk.record_realized(realized);
+                self.account.add_free_funds("USDT", realized);
+
+                let side_str = match order.side { OrderSide::Buy => "BUY", OrderSide::Sell => "SELL" };
+                let pos_side_str = self.position_side_str(target_side);
+                self.emit_fill(&order_id, &order.symbol, side_str, &pos_side_str, mark, order.quantity, fee, realized, leverage, margin_released, margin_locked);
+                self.persist_trade(&order.symbol, side_str, mark, order.quantity, fee);
+                Ok(OrderAck { order_id, avg_price: mark, executed_qty: order.quantity })
             }
             OrderType::Limit => {
-                let limit_price = order.price.unwrap_or(last);
+                let limit_price = order.price.unwrap_or(mark);
                 if let Err(msg) = self.risk.check_order(
-                    &self.positions, &order.symbol, order.quantity, limit_price, leverage,
+                    order.quantity,
+                    leverage,
                     self.account.get_free("USDT"),
                 ) {
                     return Err(OrderRejectReason::RiskRejected(msg.to_string()));
                 }
 
-                // Marj için fonları kilitle
-                let margin = (order.quantity * limit_price) / leverage;
+                // Marj için fonları kilitle (USDT notional / leverage)
+                let margin = order.quantity / leverage;
                 if self.account.get_free("USDT") < margin {
                     return Err(OrderRejectReason::InsufficientFunds);
                 }
-                let _ = self.account.lock_funds("USDT", margin);
+                self.lock_margin(&order.symbol, margin);
 
                 self.emit(DomainEvent::OrderCreated {
                     order_id: order_id.clone(),
@@ -357,14 +493,14 @@ impl PaperEngineActor {
                     price: Some(limit_price),
                 });
 
-                // Fiyat zaten seviyeyi geçtiyse anında doldur
+                // Fiyat zaten seviyeyi geçtiyse anında doldur (mark price ile)
                 let crossed = match order.side {
-                    OrderSide::Buy => last <= limit_price,
-                    OrderSide::Sell => last >= limit_price,
+                    OrderSide::Buy => mark <= limit_price,
+                    OrderSide::Sell => mark >= limit_price,
                 };
 
                 if crossed {
-                    self.fill_limit(&order_id, &order.symbol, order.side, order.quantity, limit_price, leverage, margin);
+                    self.fill_limit(&order_id, &order.symbol, order.side, target_side, order.quantity, limit_price, leverage, margin);
                     return Ok(OrderAck { order_id, avg_price: limit_price, executed_qty: order.quantity });
                 }
 
@@ -372,6 +508,7 @@ impl PaperEngineActor {
                     order_id,
                     symbol: order.symbol.clone(),
                     side: order.side,
+                    position_side: order.position_side,
                     quantity: order.quantity,
                     remaining: order.quantity,
                     limit_price,
@@ -383,11 +520,23 @@ impl PaperEngineActor {
         }
     }
 
+    fn position_side_str(&self, target_side: Option<PositionSide>) -> String {
+        match self.position_mode {
+            PositionMode::OneWay => "BOTH".to_string(),
+            PositionMode::Hedge => match target_side {
+                Some(PositionSide::Long) => "LONG".to_string(),
+                Some(PositionSide::Short) => "SHORT".to_string(),
+                None => "BOTH".to_string(),
+            },
+        }
+    }
+
     fn emit_fill(
         &self,
         order_id: &str,
         symbol: &str,
         side: &str,
+        position_side: &str,
         price: Decimal,
         qty: Decimal,
         fee: Decimal,
@@ -401,6 +550,7 @@ impl PaperEngineActor {
             order_id: order_id.to_string(),
             symbol: symbol.to_string(),
             side: side.to_string(),
+            position_side: position_side.to_string(),
             fill_price: price,
             fill_qty: qty,
             commission: fee,
@@ -411,11 +561,8 @@ impl PaperEngineActor {
     }
 
     fn check_limit_orders(&mut self, symbol: String, price: Decimal) {
-        if self.config.matching_mode != "PRICE_ONLY" {
-            return;
-        }
         let mut filled: Vec<usize> = Vec::new();
-        let mut fill_data: Vec<(String, String, OrderSide, Decimal, Decimal, Decimal, Decimal)> = Vec::new();
+        let mut fill_data: Vec<(String, String, OrderSide, Option<PositionSide>, Decimal, Decimal, Decimal, Decimal)> = Vec::new();
         for (i, o) in self.open_orders.iter().enumerate() {
             if o.symbol != symbol {
                 continue;
@@ -425,51 +572,71 @@ impl PaperEngineActor {
                 OrderSide::Sell => price >= o.limit_price,
             };
             if crossed {
-                fill_data.push((o.order_id.clone(), o.symbol.clone(), o.side, o.remaining, o.limit_price, o.leverage, o.quantity * o.limit_price / o.leverage));
+                let target = match o.position_side {
+                    OrderPositionSide::Long => Some(PositionSide::Long),
+                    OrderPositionSide::Short => Some(PositionSide::Short),
+                    OrderPositionSide::Both => None,
+                };
+                fill_data.push((o.order_id.clone(), o.symbol.clone(), o.side, target, o.remaining, o.limit_price, o.leverage, o.quantity / o.leverage));
                 filled.push(i);
             }
         }
-        for (order_id, symbol, side, qty, limit_price, leverage, margin) in fill_data {
-            self.fill_limit(&order_id, &symbol, side, qty, limit_price, leverage, margin);
+        for (order_id, symbol, side, target, qty, limit_price, leverage, margin) in fill_data {
+            self.fill_limit(&order_id, &symbol, side, target, qty, limit_price, leverage, margin);
         }
         for i in filled.into_iter().rev() {
             self.open_orders.remove(i);
         }
     }
 
-    fn fill_limit(&mut self, order_id: &str, symbol: &str, side: OrderSide, qty: Decimal, price: Decimal, leverage: Decimal, margin_locked: Decimal) {
-        let fee = (qty * price) * self.config.maker_fee;
-        let before_qty = self.positions.get(symbol).map(|p| p.quantity.abs()).unwrap_or(Decimal::ZERO);
-        let after_qty = (before_qty - qty).abs();
-        let margin_released = if before_qty > after_qty { (before_qty - after_qty) * price / leverage } else { Decimal::ZERO };
-        let margin_net_locked = if after_qty > before_qty { (after_qty - before_qty) * price / leverage } else { Decimal::ZERO };
+    fn fill_limit(
+        &mut self,
+        order_id: &str,
+        symbol: &str,
+        side: OrderSide,
+        target_side: Option<PositionSide>,
+        qty: Decimal,
+        price: Decimal,
+        leverage: Decimal,
+        margin_locked: Decimal,
+    ) {
+        let fee = qty * self.config.maker_fee;
+        let signed = if side == OrderSide::Buy { qty } else { -qty };
+
+        let before = match self.position_mode {
+            PositionMode::OneWay => self.positions.get(symbol).map(|p| p.quantity).unwrap_or(Decimal::ZERO),
+            PositionMode::Hedge => self.positions
+                .get_hedge(symbol, target_side.unwrap_or(PositionSide::Long))
+                .map(|p| p.quantity)
+                .unwrap_or(Decimal::ZERO),
+        };
+        let after = before + signed;
+        let margin_delta = after.abs() - before.abs();
+        let margin_net_locked = if margin_delta > Decimal::ZERO { margin_delta / leverage } else { Decimal::ZERO };
+        let margin_released = if margin_delta < Decimal::ZERO { -margin_delta / leverage } else { Decimal::ZERO };
 
         // Bekleyen emrin kilitlediği marjı serbest bırak, net artışı tekrar kilitle
-        self.account.unlock_funds("USDT", margin_locked);
-        if margin_net_locked > Decimal::ZERO {
-            let _ = self.account.lock_funds("USDT", margin_net_locked);
-        }
+        self.release_margin(symbol, margin_locked);
+        self.lock_margin(symbol, margin_net_locked);
         let _ = self.account.deduct_free_funds("USDT", fee);
+
+        let (realized, _) = self.apply_fill_dispatch(symbol, target_side, signed, price, leverage);
+        self.risk.record_realized(realized);
+        self.account.add_free_funds("USDT", realized);
 
         match side {
             OrderSide::Buy => {
-                self.account.add_free_funds("BTC", qty);
-                let (realized, _) = self.positions.apply_fill(symbol, qty, price, leverage);
-                self.risk.record_realized(realized);
-                self.account.add_free_funds("USDT", realized);
-                self.emit_fill(order_id, symbol, "BUY", price, qty, fee, realized, leverage, margin_released, margin_net_locked);
+                self.account.add_free_funds("BTC", qty / price);
             }
             OrderSide::Sell => {
-                self.account.subtract_free_funds_unchecked("BTC", qty);
-                let (realized, _) = self.positions.apply_fill(symbol, -qty, price, leverage);
-                self.risk.record_realized(realized);
-                self.account.add_free_funds("USDT", realized);
-                self.emit_fill(order_id, symbol, "SELL", price, qty, fee, realized, leverage, margin_released, margin_net_locked);
+                self.account.subtract_free_funds_unchecked("BTC", qty / price);
             }
         }
         let side_str = match side { OrderSide::Buy => "BUY", OrderSide::Sell => "SELL" };
+        let pos_side_str = self.position_side_str(target_side);
+        self.emit_fill(order_id, symbol, side_str, &pos_side_str, price, qty, fee, realized, leverage, margin_released, margin_net_locked);
         self.persist_trade(symbol, side_str, price, qty, fee);
-        println!("[PAPER] LIMIT {} Filled: {} @ {}. Fee: {} USDT", side_str, qty, price, fee);
+        println!("[PAPER] LIMIT {} {} Filled: {} @ {}. Fee: {} USDT", pos_side_str, side_str, qty, price, fee);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -490,35 +657,49 @@ impl PaperEngineActor {
 
         // Likidasyon: pozisyonları mark fiyatından kapat
         for sym in liquidated {
-            if let Some(pos) = self.positions.get(&sym).cloned() {
-                let mark = *self.mark_prices.get(&sym).unwrap_or(&pos.avg_entry_price);
-                let side_str = match pos.side { PositionSide::Long => "BUY", PositionSide::Short => "SELL" };
-                let closing_side = match pos.side { PositionSide::Long => "SELL", PositionSide::Short => "BUY" };
-                let (realized, _) = self.positions.apply_fill(&sym, -pos.quantity, mark, pos.leverage);
+            let targets: Vec<(String, PositionSide, Decimal, Decimal)> = self.positions.all()
+                .iter()
+                .filter(|p| p.symbol == sym)
+                .map(|p| (p.symbol.clone(), p.side, p.quantity, p.leverage))
+                .collect();
+            for (symbol, side, pos_qty, leverage) in targets {
+                let mark = *self.mark_prices.get(&symbol).unwrap_or(&self.positions.all().iter().find(|p| p.symbol == symbol).map(|p| p.avg_entry_price).unwrap_or(Decimal::ZERO));
+                let closing_side = match side { PositionSide::Long => "SELL", PositionSide::Short => "BUY" };
+                let side_label = match side { PositionSide::Long => "LONG", PositionSide::Short => "SHORT" };
+                let signed = match side { PositionSide::Long => -pos_qty.abs(), PositionSide::Short => pos_qty.abs() };
+                let (realized, _) = self.apply_fill_dispatch(&symbol, Some(side), signed, mark, leverage);
+
                 self.risk.record_realized(realized);
-                // Marjı serbest bırak ve realizasyonu cash'e ekle
-                let margin = (pos.quantity.abs() * pos.avg_entry_price) / pos.leverage;
-                self.account.unlock_funds("USDT", margin);
+                // Marjı serbest bırak (USDT notional / leverage); izole wallet'tan düşülür
+                let margin = pos_qty.abs() / leverage;
+                self.release_margin(&symbol, margin);
                 self.account.add_free_funds("USDT", realized);
                 let order_id = format!("PAPER_LIQ_{}", now_ms());
-                self.emit_fill(&order_id, &sym, closing_side, mark, pos.quantity.abs(), Decimal::ZERO, realized, pos.leverage, margin, Decimal::ZERO);
+                self.emit_fill(&order_id, &symbol, closing_side, side_label, mark, pos_qty.abs(), Decimal::ZERO, realized, leverage, margin, Decimal::ZERO);
                 self.emit(DomainEvent::Liquidation {
-                    symbol: sym.clone(),
-                    side: side_str.to_string(),
+                    symbol: symbol.clone(),
+                    side: side_label.to_string(),
                     price: mark,
-                    qty: pos.quantity.abs(),
+                    qty: pos_qty.abs(),
                 });
-                self.persist_trade(&sym, side_str, mark, pos.quantity.abs(), Decimal::ZERO);
-                println!("[PAPER] ⚠️ LIQUIDATION: {} @ {}", sym, mark);
+                self.persist_trade(&symbol, side_label, mark, pos_qty.abs(), Decimal::ZERO);
+                println!("[PAPER] ⚠️ LIQUIDATION: {} {} @ {}", symbol, side_label, mark);
             }
         }
     }
 
     fn apply_funding(&mut self) {
-        for (sym, pos) in self.positions.all().clone() {
+        let funding_data: Vec<(String, Decimal)> = self.positions.all()
+            .iter()
+            .map(|p| {
+                let notional = p.notional(*self.mark_prices.get(&p.symbol).unwrap_or(&p.avg_entry_price));
+                (p.symbol.clone(), notional)
+            })
+            .collect();
+        for (sym, notional) in funding_data {
             let rate = *self.funding_rates.get(&sym).unwrap_or(&Decimal::ZERO);
             // Binance funding_rate, 8 saatlik periyot başına verilir (per-interval)
-            let payment = pos.notional(*self.mark_prices.get(&sym).unwrap_or(&pos.avg_entry_price)) * rate;
+            let payment = notional * rate;
             self.account.add_free_funds("USDT", -payment);
             self.emit(DomainEvent::FundingRateApplied {
                 symbol: sym.clone(),
@@ -530,16 +711,9 @@ impl PaperEngineActor {
     }
 
     fn persist_trade(&mut self, symbol: &str, side: &str, price: Decimal, quantity: Decimal, fee: Decimal) {
+        // Tek olay kanalı: kalıcılık (SQLite/PG) katman artık yalnızca
+        // DomainEvent akışından beslenir (paper-service projection).
         let timestamp = now_ms();
-        let _ = self.db_tx.send(PersistEvent::Trade {
-            order_id: format!("PAPER_{}", timestamp),
-            symbol: symbol.to_string(),
-            side: side.to_string(),
-            price,
-            quantity,
-            fee,
-            timestamp,
-        });
         self.recent_trades.push(TradeView {
             order_id: format!("PAPER_{}", timestamp),
             symbol: symbol.to_string(),
@@ -552,75 +726,6 @@ impl PaperEngineActor {
         if self.recent_trades.len() > 200 {
             let excess = self.recent_trades.len() - 200;
             self.recent_trades.drain(..excess);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // LEGACY: L2_SWEEP / LINEAR_IMPACT (order book tabanlı)
-    // ─────────────────────────────────────────────────────────────
-    async fn process_sweep(&mut self, order: OrderRequest) -> Result<OrderAck, OrderRejectReason> {
-        match order.order_type {
-            crate::order::OrderType::Market => {
-                if order.side == crate::order::OrderSide::Buy {
-                    let estimated_price = if self.orderbook.last_price > Decimal::ZERO { self.orderbook.last_price } else { Decimal::from(999_999) };
-                    let estimated_cost = order.quantity * estimated_price;
-
-                    if self.account.get_free("USDT") < estimated_cost {
-                        return Err(OrderRejectReason::InsufficientFunds);
-                    }
-
-                    match self.orderbook.sweep_buy(order.quantity) {
-                        Ok(trades) => {
-                            let mut total_cost = Decimal::ZERO;
-                            let mut total_qty = Decimal::ZERO;
-                            for t in trades {
-                                total_cost += t.price * t.quantity;
-                                total_qty += t.quantity;
-                            }
-                            let avg_price = total_cost / total_qty;
-                            let fee = total_cost * self.config.taker_fee;
-
-                            if self.account.get_free("USDT") < (total_cost + fee) {
-                                return Err(OrderRejectReason::InsufficientFunds);
-                            }
-
-                            let _ = self.account.deduct_free_funds("USDT", total_cost + fee);
-                            self.account.add_free_funds("BTC", total_qty);
-                            self.persist_trade(&order.symbol, "BUY", avg_price, total_qty, fee);
-                            Ok(OrderAck { order_id: format!("PAPER_{}", now_ms()), avg_price, executed_qty: total_qty })
-                        }
-                        Err(e) if e == "MARKET_UNAVAILABLE" => Err(OrderRejectReason::MarketUnavailable),
-                        Err(_) => Err(OrderRejectReason::InsufficientDepth),
-                    }
-                } else {
-                    if self.account.get_free("BTC") < order.quantity {
-                        return Err(OrderRejectReason::InsufficientFunds);
-                    }
-                    match self.orderbook.sweep_sell(order.quantity) {
-                        Ok(trades) => {
-                            let mut total_revenue = Decimal::ZERO;
-                            let mut total_qty = Decimal::ZERO;
-                            for t in trades {
-                                total_revenue += t.price * t.quantity;
-                                total_qty += t.quantity;
-                            }
-                            let avg_price = total_revenue / total_qty;
-                            let fee = total_revenue * self.config.taker_fee;
-
-                            let _ = self.account.deduct_free_funds("BTC", total_qty);
-                            self.account.add_free_funds("USDT", total_revenue - fee);
-                            self.persist_trade(&order.symbol, "SELL", avg_price, total_qty, fee);
-                            Ok(OrderAck { order_id: format!("PAPER_{}", now_ms()), avg_price, executed_qty: total_qty })
-                        }
-                        Err(e) if e == "MARKET_UNAVAILABLE" => Err(OrderRejectReason::MarketUnavailable),
-                        Err(_) => Err(OrderRejectReason::InsufficientDepth),
-                    }
-                }
-            }
-            _ => {
-                println!("[PAPER] Legacy mode does not support this order type yet.");
-                Err(OrderRejectReason::MarketUnavailable)
-            }
         }
     }
 }

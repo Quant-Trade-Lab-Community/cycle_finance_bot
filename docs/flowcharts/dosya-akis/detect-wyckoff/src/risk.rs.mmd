@@ -1,0 +1,22 @@
+graph TD
+    A([Başlangıç: AdaptiveRiskEngine]) --> B[new&#40;max_risk_bp, ar_low, avg_volume, entry&#41;]
+    B --> C[stop = entry - &#40;entry * max_risk_bp / 10000&#41;]
+    C --> D[current_stop = stop, ut_confirmation_pending = false]
+
+    subgraph evaluate
+        E[evaluate&#40;bar, phase&#41;] --> F{distribution_weight > 0.8 ve ut_confirmation_pending?}
+        F -- Hayır --> G[RiskAction::Idle döndür]
+        F -- Evet --> H{bar.close < ar_low ve volume > avg_volume * 1.3?}
+        H -- Evet --> I[ut_confirmation_pending = false]
+        I --> J[RiskAction::HedgeAndReverse döndür]
+        H -- Hayır --> K[RiskAction::TightenStop döndür]
+    end
+
+    subgraph record
+        L[record&#40;action, tick_size&#41;] --> M{current_stop > 0?}
+        M -- Evet --> N[stop_bp = 10000 * abs&#40;stop - ar_low&#41; / stop]
+        M -- Hayır --> O[stop_bp = 0]
+        N --> P[RiskRecord oluştur]
+        O --> P
+        P --> Z([Bitiş: RiskRecord])
+    end

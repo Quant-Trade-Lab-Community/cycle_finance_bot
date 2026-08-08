@@ -1,0 +1,36 @@
+graph TD
+    A([Başlangıç]) --> B[spawn_ring_bridge: actor_tx clone edilir]
+    B --> P[spawn_pricefeed_reader thread başlat]
+    B --> O[spawn_order_reader thread başlat]
+
+    P --> P1[cursor = GenerationalRingBuffer pricefeed get_head]
+    P1 --> P2{sonsuz döngü}
+    P2 --> P3{read_slot(cursor) slot var mı?}
+    P3 -- Evet --> P4[wire::decode + decode_symbol sembol çöz]
+    P4 --> P5{event türü nedir?}
+    P5 -- Trade --> P6[MarkPriceUpdate send: mark_price = trade price]
+    P5 -- BookTicker --> P7[best_ask > 0 ise ask, yoksa best_bid seç]
+    P7 --> P8{price > 0 mı?}
+    P8 -- Evet --> P6
+    P8 -- Hayır --> P9[cursor += 1]
+    P5 -- FundingRate --> P10[MarkPriceUpdate send: mark_price + funding_rate + next_funding_time]
+    P5 -- Diğer --> P9
+    P6 --> P9
+    P10 --> P9
+    P9 --> P2
+    P3 -- Hayır --> P11{get_head > cursor mı?}
+    P11 -- Evet --> P12[cursor = head, slot overwrite olmuş]
+    P11 -- Hayır --> P13[sleep 500us]
+    P12 --> P2
+    P13 --> P2
+
+    O --> O1[cursor = OrderRingBuffer get_head]
+    O1 --> O2{sonsuz döngü}
+    O2 --> O3{read_slot(cursor) slot var mı?}
+    O3 -- Evet --> O4[OrderRequest oluştur: side/order_type/position_side eşle]
+    O4 --> O5[SubmitOrder send + oneshot channel]
+    O5 --> O6[blocking_recv ile actor yanıtını bekle]
+    O6 --> O7[cursor += 1]
+    O7 --> O2
+    O3 -- Hayır --> O8[sleep 500us]
+    O8 --> O2

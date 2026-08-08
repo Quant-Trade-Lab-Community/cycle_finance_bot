@@ -23,7 +23,6 @@ Cargo.lock
 .env
 
 # Paper service runtime artifacts
-paper_wal/
+data-engine/data/
 paper-*.db
-market_data.db
 __pycache__/

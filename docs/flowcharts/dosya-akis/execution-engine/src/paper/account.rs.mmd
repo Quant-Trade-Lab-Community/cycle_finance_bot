@@ -1,0 +1,37 @@
+graph TD
+    A([Başlangıç]) --> B[AccountState::new(initial_quote, initial_base)]
+    B --> C["free_balances: USDT + BTC ekle"]
+    C --> D[locked_balances boş hashmap]
+
+    D --> E[get_free(asset)]
+    D --> F[get_locked(asset)]
+    D --> G[lock_funds(asset, amount)]
+    G --> H{free < amount?}
+    H -- Evet --> I["Err: yetersiz bakiye"]
+    H -- Hayır --> J["free -= amount, locked += amount"]
+    I --> Z
+    J --> Z
+
+    D --> K[unlock_funds(asset, amount)]
+    K --> L["unlock = min(locked, amount)"]
+    L --> M["locked -= unlock, free += unlock"]
+    M --> Z
+
+    D --> N[deduct_locked_funds(asset, amount)]
+    N --> O["düşülecek = min(locked, amount)"]
+    O --> P["locked -= düşülecek"]
+    P --> Z
+
+    D --> Q[add_free_funds(asset, amount)]
+    Q --> R["free += amount"]
+    R --> Z
+
+    D --> S[deduct_free_funds(asset, amount)]
+    S --> T{free < amount?}
+    T -- Evet --> U["Err: komisyon için yetersiz bakiye"]
+    T -- Hayır --> V["free -= amount"]
+    U --> Z
+    V --> Z
+
+    D --> W[subtract_free_funds_unchecked: short borçlanma, free -= amount]
+    W --> Z([Bitiş])

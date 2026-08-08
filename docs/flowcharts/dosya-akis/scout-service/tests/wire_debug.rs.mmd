@@ -1,0 +1,18 @@
+graph TD
+    A([Başlangıç]) --> B[dec yardımcısı: f64 -> Decimal, 6 basamağa ölçekle]
+    B --> C[test: opportunity_encode_debug]
+
+    C --> D[OwnedEvent::new_opportunity: TESTUSDT fırsatı oluştur]
+    D --> E[wire::encode: buffer'a encode et]
+    E --> F{len == Some(72) mi?}
+    F -- Hayır --> G[assert panikle]
+    F -- Evet --> H[wire::decode: geri çöz]
+
+    H --> I{decode başarılı mı?}
+    I -- Hayır --> J[expect panikle]
+    I -- Evet --> K[payload türü eşleştir]
+    K --> L{EventType::Opportunity mi?}
+    L -- Hayır --> M[panic: tip eslesmedi]
+    L -- Evet --> N{verdict == 0 mi?}
+    N -- Evet --> O[test geçer]
+    N -- Hayır --> G

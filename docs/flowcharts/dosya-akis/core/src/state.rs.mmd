@@ -1,0 +1,11 @@
+graph TD
+    A([Başlangıç]) --> B[StateManager::new: balances = Arc<RwLock<0.0>>]
+    B --> C[on_account_update(new_balance)]
+    C --> D[balances.write() -> kilidi al]
+    D --> E[*b = new_balance]
+    E --> F[Balance updated via WebSocket logla]
+
+    F --> G[perform_rest_audit]
+    G --> H[5 dakikada bir REST full audit mesajı yazdır]
+    H --> I[REST sonucuyla balances uzlaştır]
+    I --> Z([Bitiş])

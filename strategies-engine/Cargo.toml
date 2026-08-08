@@ -1,0 +1,11 @@
+[package]
+name = "strategies-engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "mod.rs"
+
+[dependencies]
+transport = { path = "../cycle-engine/transport" }
+rust_decimal = { workspace = true }

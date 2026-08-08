@@ -1,0 +1,52 @@
+graph TD
+    A([Başlangıç]) --> B[Paper Trading terminal banner'ını yazdır]
+    B --> C[PaperState oluştur: 10k bakiye, %20 max drawdown, margin_mode = Cross]
+
+    C --> D[State'i Arc + Mutex içine al, rustyline DefaultEditor başlat]
+    D --> E{sonsuz döngü}
+
+    E --> F[readline "paper> " komut satırını bekle]
+    F --> G{Ok(line) mu?}
+    G -- Hayır --> H[break ile döngüden çık]
+    H --> I([Bitiş])
+    G -- Evet --> J[add_history_entry, satırı kelimelere böl]
+    J --> K{parts boş mu?}
+    K -- Evet --> E
+    K -- Hayır --> L[İlk kelimeye göre komut seç]
+
+    L --> M{help mi?}
+    M -- Evet --> N[Yardım komutlarını listele]
+    M -- Hayır --> O{status mi?}
+    O -- Evet --> P[state kilitle, dummy fiyatlarla total equity hesapla]
+    P --> Q[Hesap durumunu yazdır: bakiye, PnL, equity, komisyon, margin mode]
+    Q --> R{Pozisyonlar boş mu?}
+    R -- Evet --> S[None yazdır]
+    R -- Hayır --> T[Pozisyonları sembol, miktar, giriş fiyatı ve kaldıraçla listele]
+
+    O -- Hayır --> U{set mi?}
+    U -- Evet --> V{parts.len < 3 mi?}
+    V -- Evet --> W[Kullanım şablonunu yazdır]
+    V -- Hayır --> X{İkinci kelime leverage mi?}
+    X -- Evet --> Y{parts.len == 4 ve kaldıraç u32 parse edilebiliyor mu?}
+    Y -- Evet --> Z[st.leverage hashmap'ine sembol ve kaldıraç ekle]
+    Y -- Hayır --> AA[Geçersiz kaldıraç mesajı yazdır]
+    X -- Hayır --> AB{margin mi?}
+    AB -- Evet --> AC{mode cross veya isolated mı?}
+    AC -- Evet --> AD[margin_mode'u güncelle]
+    AC -- Hayır --> AE[Mode cross veya isolated olmalı mesajı yazdır]
+    AB -- Hayır --> AF[Bilinmeyen set komutu yazdır]
+
+    U -- Hayır --> AG{exit veya quit mi?}
+    AG -- Evet --> AH[Terminali kapat, process::exit(0)]
+    AG -- Hayır --> AI[Bilinmeyen komut mesajı yazdır]
+
+    N --> E
+    S --> E
+    T --> E
+    W --> E
+    Z --> E
+    AA --> E
+    AD --> E
+    AE --> E
+    AF --> E
+    AI --> E

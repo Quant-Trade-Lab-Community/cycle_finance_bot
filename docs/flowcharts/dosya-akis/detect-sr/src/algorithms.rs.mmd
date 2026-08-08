@@ -1,0 +1,83 @@
+graph TD
+    A([Başlangıç: swing_extrema]) --> B[extrema = boş vektör, n = kline sayısı]
+    B --> C{n < window*2+1?}
+
+    C -- Evet --> Z([Bitiş: boş liste döner])
+    C -- Hayır --> D[for i in window..(n-window)]
+    D --> E[current_high, current_low alınır, swing flag'leri true]
+    E --> F[for j in 1..=window: sol ve sağ mumlar karşılaştırılır]
+
+    F --> G{i-j veya i+j mumu high'ı geçti mi?}
+    G -- Evet --> G1[is_swing_high = false]
+    G1 --> H
+    G -- Hayır --> H
+    H --> I{i-j veya i+j mumu low'u geçti mi?}
+    I -- Evet --> I1[is_swing_low = false]
+    I1 --> J
+    I -- Hayır --> J
+
+    J --> J1{j penceresi bitti mi?}
+    J1 -- Hayır --> F
+    J1 -- Evet --> K{is_swing_high?}
+    K -- Evet --> K1[current_high eklenir]
+    K1 --> L
+    K -- Hayır --> L
+    L --> L1{is_swing_low?}
+    L1 -- Evet --> L2[current_low eklenir]
+    L2 --> M
+    L1 -- Hayır --> M
+
+    M --> M1{i döngüsü bitti mi?}
+    M1 -- Hayır --> D
+    M1 -- Evet --> N[extrema cluster_points ile %0.2 toleransta kümelenir]
+    N --> Z([Bitiş: kümelenmiş seviyeler döner])
+
+    AA([Başlangıç: kmeans_1d]) --> AB[data = tüm high ve low değerleri]
+    AB --> AC{data boş mu?}
+    AC -- Evet --> AC1([Bitiş: boş liste döner])
+    AC -- Hayır --> AD[data sıralanır]
+    AD --> AE[başlangıç merkezleri eşit aralıklarla seçilir]
+    AE --> AF[for 0..100 iterasyon]
+    AF --> AG[her değer en yakın merkeze atanır]
+    AG --> AH[yeni merkezler = küme ortalamaları]
+
+    AH --> AI{merkez değişimi > 0.00001 mi?}
+    AI -- Evet --> AJ[changed = true]
+    AJ --> AK
+    AI -- Hayır --> AK
+    AK --> AL{changed false veya 100 iterasyon bitti mi?}
+    AL -- Hayır --> AF
+    AL -- Evet --> AM[merkezler büyükten küçüğe sıralanır]
+    AM --> AN([Bitiş: K merkez döner])
+
+    BA([Başlangıç: volume_profile]) --> BB{klines boş mu?}
+    BB -- Evet --> BB1([Bitiş: boş liste döner])
+    BB -- Hayır --> BC[min/max fiyat bulunur, bin_size hesaplanır]
+    BC --> BD[her mum: typical_price'ın bin'ine hacim eklenir]
+    BD --> BE[profile hacme göre büyükten küçüğe sıralanır]
+    BE --> BF[ilk 5 kutunun fiyat seviyesi hesaplanır]
+    BF --> BG[seviyeler büyükten küçüğe sıralanır]
+    BG --> BH([Bitiş: SR seviyeleri döner])
+
+    CA([Başlangıç: kde_peaks]) --> CB{klines boş mu?}
+    CB -- Evet --> CB1([Bitiş: boş liste döner])
+    CB -- Hayır --> CC[bandwidth=0.005, min/max fiyat ve close'lar toplanır]
+    CC --> CD[100 adımda her x için Gauss kernel yoğunluğu hesaplanır]
+    CD --> CE[yerel maksimumlar (peaks) bulunur]
+    CE --> CF[peaks yoğunluğa göre sıralanır, ilk 5 alınır]
+    CF --> CG[seviyeler büyükten küçüğe sıralanır]
+    CG --> CH([Bitiş: SR seviyeleri döner])
+
+    DA([Başlangıç: cluster_points]) --> DB{points boş mu?}
+    DB -- Evet --> DB1([Bitiş: boş liste döner])
+    DB -- Hayır --> DC[points sıralanır, ilk nokta kümeye eklenir]
+    DC --> DD[for i in 1..: komşu fark %tolerans içinde mi?]
+    DD -- Evet --> DD1[current_cluster'a eklenir]
+    DD1 --> DE
+    DD -- Hayır --> DD2[mevcut kümenin ortalaması eklenir, yeni küme başlar]
+    DD2 --> DE
+    DE --> DE1{noktalar bitti mi?}
+    DE1 -- Hayır --> DD
+    DE1 -- Evet --> DF[son kümenin ortalaması eklenir]
+    DF --> DG[kümeler büyükten küçüğe sıralanır]
+    DG --> DH([Bitiş: küme merkezleri döner])

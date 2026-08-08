@@ -1,0 +1,39 @@
+graph TD
+    A([Başlangıç]) --> B[LobSimulator::new: bids/asks 10 seviye, bid_count=0, ask_count=0]
+    B --> C[update_bids(new_bids)]
+    C --> D[count = min(10, new_bids.len)]
+    D --> E[ilk count seviyeyi bids dizisine kopyala, bid_count = count]
+    E --> F[update_asks(new_asks)]
+    F --> G[count = min(10, new_asks.len)]
+    G --> H[ilk count seviyeyi asks dizisine kopyala, ask_count = count]
+
+    H --> I[simulate_buy(qty)]
+    I --> J[total_cost = 0, filled_qty = 0]
+    J --> K{her ask seviyesi için}
+    K -- Evet --> L{qty == 0?}
+    L -- Evet --> M[döngüden çık]
+    L -- Hayır --> N[fill = min(qty, level_qty)]
+    N --> O[total_cost += level_price * fill, filled_qty += fill, qty -= fill]
+    O --> K
+    K -- Hayır --> M
+    M --> P{filled_qty == 0?}
+    P -- Evet --> Q[(0, 0) döndür]
+    P -- Hayır --> R[avg_price = total_cost / filled_qty]
+    R --> S[(avg_price, filled_qty) döndür]
+
+    S --> T[simulate_sell(qty)]
+    T --> U[total_revenue = 0, filled_qty = 0]
+    U --> V{her bid seviyesi için}
+    V -- Evet --> W{qty == 0?}
+    W -- Evet --> X[döngüden çık]
+    W -- Hayır --> Y[fill = min(qty, level_qty)]
+    Y --> Z[total_revenue += level_price * fill, filled_qty += fill, qty -= fill]
+    Z --> V
+    V -- Hayır --> X
+    X --> AA{filled_qty == 0?}
+    AA -- Evet --> AB[(0, 0) döndür]
+    AA -- Hayır --> AC[avg_price = total_revenue / filled_qty]
+    AC --> AD[(avg_price, filled_qty) döndür]
+    Q --> ZA([Bitiş])
+    AB --> ZA
+    AD --> ZA

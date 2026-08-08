@@ -1,0 +1,13 @@
+graph TD
+    A([Başlangıç]) --> B[allocate_huge_buffer(size_bytes) çağrılır]
+    B --> C[vec![0; size_bytes] ile buffer ayır]
+
+    C --> D[page_size = 4096, i = 0 olarak başlat]
+    D --> E{i < size_bytes mi?}
+    E -- Evet --> F[buffer[i] = 1 yaz, i += page_size]
+    F --> E
+    E -- Hayır --> G[buffer.fill(0) ile belleği sıfırla]
+
+    G --> H[Allocated mesajını yazdır]
+    H --> I[Buffer'ı döndür]
+    I --> Z([Bitiş])

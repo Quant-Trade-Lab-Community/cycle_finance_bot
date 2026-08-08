@@ -1,0 +1,43 @@
+graph TD
+    A([Başlangıç]) --> B[Strateji motoru banner'ını yazdır, hedef binary yolunu göster]
+    B --> C[running = AtomicBool(false) başlat]
+    C --> D[spawn_strategy ile HEIUSDT child process başlat]
+
+    D --> E{Child başlatılabildi mi?}
+    E -- Hayır --> F[Strateji başlatılamadı mesajı yazdır]
+    E -- Evet --> G[running = true, strateji çalışıyor mesajı yazdır]
+
+    F --> H[rustyline DefaultEditor başlat]
+    G --> H
+    H --> I{sonsuz döngü}
+
+    I --> J[readline "strategy> " komut satırını bekle]
+    J --> K{Ok(line) mu?}
+    K -- Hayır --> L[break ile döngüden çık]
+    L --> M([Bitiş])
+    K -- Evet --> N[add_history_entry, satırı kelimelere böl]
+    N --> O{parts boş mu?}
+    O -- Evet --> I
+    O -- Hayır --> P[İlk kelimeye göre komut seç]
+
+    P --> Q{help mi?}
+    Q -- Evet --> R[Yardım komutlarını listele]
+    Q -- Hayır --> S{status mi?}
+    S -- Evet --> T{running durumuna göre RUNNING veya DURDU yazdır}
+    S -- Hayır --> U{restart mi?}
+    U -- Evet --> V[Child process'i kill et]
+    V --> W[spawn_strategy ile yeniden başlat]
+    W --> X{Yeniden başlatma başarılı mı?}
+    X -- Evet --> Y[running = true, yeniden başlatıldı mesajı yazdır]
+    X -- Hayır --> Z[running = false, yeniden başlatılamadı mesajı yazdır]
+    U -- Hayır --> AA{exit veya quit mi?}
+    AA -- Evet --> AB[Terminali kapat, process::exit(0)]
+    AA -- Hayır --> AC[Bilinmeyen komut mesajı yazdır]
+
+    R --> I
+    T --> I
+    Y --> I
+    Z --> I
+    AC --> I
+
+    D -. spawn_strategy işlevi .-> AD[Command::spawn ile child başlat, hata olursa None dön]

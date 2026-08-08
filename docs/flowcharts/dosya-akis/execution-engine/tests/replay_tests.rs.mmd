@@ -1,0 +1,40 @@
+graph TD
+    A([Başlangıç: test_replay_rebuilds_positions_and_cash]) --> B["PaperConfig::load_from_env() (HEDGE, CROSSED, 500 USDT)"]
+    B --> C["OrderFilled event hazırla: BUY 100 USDT @ 50000, komisyon 0.05, marj 5, leverage 20"]
+
+    C --> D["PaperEngineActor::new_with_events(config, None, &events)"]
+    D --> E["AccountState + RiskManager kurulur"]
+    E --> F{replay_events boş değil}
+    F -- Evet --> G["rebuild_from_events(events)"]
+    G --> H{event OrderFilled}
+    H -- Evet --> I{position_mode == Hedge?}
+    I -- Evet --> J["positions.apply_fill_hedge(BTCUSDT, Long, +100, 50000, 20)"]
+    I -- Hayır --> K["positions.apply_fill(...)"]
+    J --> L["account.add_free_funds(USDT, cash_delta=-5.05)"]
+    K --> L
+    L --> M["risk.record_realized(0)"]
+    M --> N["replayed_fills = 1, log yazdır"]
+    N --> O["publish_snapshot()"]
+
+    O --> P["positions().get_hedge(BTCUSDT, Long) kontrol"]
+    P --> Q{pozisyon açık mı?}
+    Q -- Evet --> R{quantity == 100?}
+    Q -- Hayır --> S["assert panic: pozisyon yok"]
+    R -- Evet --> T{avg_entry_price == 50000?}
+    R -- Hayır --> S
+    T -- Evet --> U{"get_free(USDT) == 500 - 5.05 kontrol"}
+    T -- Hayır --> S
+    U -- Evet --> V([Bitiş: test başarılı])
+    U -- Hayır --> S
+    S --> V
+
+    %% Diğer test senaryoları
+    V --> W[test_replay_close_realizes_pnl: BUY + SELL eventleri]
+    W --> X["Hedge Long pozisyon kapanır: realized_pnl 2, cash + 6.949"]
+    X --> Y{pozisyon kapanmış olmalı}
+    Y -- Evet --> Z["cash == 500 - 5.05 + 6.949 kontrol"]
+    Y -- Hayır --> AA["assert panic"]
+    Z --> AB[test_funding_applies_to_cash: OrderFilled + FundingRateApplied]
+    AA --> AB
+    AB --> AC["cash = 500 - 5 - 5 kontrol"]
+    AC --> AD([Bitiş: tüm replay testleri])

@@ -1,0 +1,89 @@
+flowchart TB
+    subgraph DIS["Dış Dünya"]
+        BINWS["Binance Futures WebSocket<br/>fstream.binance.com/stream"]
+        BINREST["Binance Futures REST<br/>fapi.binance.com (klines + premiumIndex)"]
+        BINORD["Binance WS Order API v3<br/>ws-api.binance.com (LIVE emir)"]
+    end
+
+    subgraph K0["Katman 0 — contracts"]
+        C_EV["events.rs :: OwnedEvent + EventType (8 tip)"]
+        C_WIRE["wire.rs :: typed binary codec (44B–659B)"]
+    end
+
+    subgraph K1["Katman 1 — transport (IPC)"]
+        RING["GenerationalRingBuffer<br/>/dev/shm · 160k slot<br/>torn-read korumalı"]
+        ORING["OrderRingBuffer<br/>/dev/shm (STRATEGY→EXECUTION)"]
+        PRING["PriceFeed ring<br/>/dev/shm/demir_yumruk_pricefeed"]
+        SCRING["Scout ring<br/>/dev/shm/demir_yumruk_scout"]
+    end
+
+    subgraph K2["Katman 2 — core motor"]
+        PARSER["EventParser (simdjson · zero-copy)"]
+        VALID["DataValidator<br/>stale ≤ 200ms · crossed book · circuit breaker"]
+        DBW["SQLite batch writer<br/>(10k / 1sn · market_data.db)"]
+        ORCH["TitaniumOrchestrator (spin-loop)"]
+        RISKC["RiskEngine + LOB simülasyonu"]
+        TSC["TscTimer (RDTSC) + RT prio 99"]
+    end
+
+    subgraph DET["Analiz Servisleri"]
+        DETSR["detect-sr (stdout)"]
+        DETTR["detect-trend :3001"]
+        DETMS["detect-ms :3002 (SMC 7 katman)"]
+        DETLQ["detect-liquidity :3003"]
+        DETPT["detect-pattern :3004"]
+        DETWK["detect-wyckoff :3005"]
+        DETTB["detect-trb :3006 (CFD çözücü)"]
+    end
+
+    subgraph TRADE["Strateji & Yürütme"]
+        PRICEF["price-feed daemon :3004"]
+        SCOUT["scout-service (fırsat radarı)"]
+        HEI["heiusdt (breakout stratejisi)"]
+        PAPER["paper-service REST :8080<br/>JWT · actor · event store"]
+        EXEC["execution-engine<br/>PAPER actor / LIVE"]
+        OHLCV["ohlcv-engine (klines client)"]
+    end
+
+    subgraph OPS["Operasyonel"]
+        ALERT["alert-service (sesli koşul uyarıları)"]
+        RISKWW["risk-worker (60sn)"]
+        COLDS["cold-starter + cold-storage"]
+        ADAPT["adapter crate (5/6 modül mock)"]
+    end
+
+    BINWS -->|"raw JSON trade+depth20"| PARSER
+    BINREST -->|"klines REST"| OHLCV
+    BINWS -->|"raw JSON"| PRICEF
+    BINWS -->|"bookTicker+depth10"| SCOUT
+
+    PARSER --> VALID
+    VALID --> C_WIRE
+    C_WIRE --> DBW
+    C_WIRE --> RING
+    RING --> ORCH
+    ORCH --> STRAT["strateji binary'leri (heusdt …)"]
+    STRAT --> RISKC
+    RISKC --> ORING
+    ORING --> EXEC
+    EXEC -.->|"LIVE mod"| BINORD
+
+    OHLCV --> DETSR
+    OHLCV --> DETTR
+    OHLCV --> DETMS
+    OHLCV --> DETLQ
+    OHLCV --> DETPT
+    OHLCV --> DETWK
+    RING --> DETTB
+    DBW --> DETTB
+
+    SCOUT --> SCRING
+    PRICEF --> PRING
+    PRING --> HEI
+    PRING --> ALERT
+    PRING --> PAPER
+RING --> ALPS
+    HEI -->|"detect-ms seviyeleri"| DETMS
+    HEI -->|"MARKET emir + JWT"| PAPER
+
+    OPS -->|"planlanan"| TRADE

@@ -1,0 +1,25 @@
+graph TD
+    A([Başlangıç]) --> B[Baslık yazdır: BACKTEST ENGINE TERMINAL v1.0]
+    B --> C[GenerationalRingBuffer::new(160_000) oluştur]
+    C --> D[csv_path dosyasını aç, BufReader oluştur]
+    D --> E[start = Instant::now, count = 0]
+
+    E --> F{her satır için}
+    F -- Evet --> G{line Ok mu?}
+    G -- Evet --> H[line.split(',') -> parts]
+    H --> I{parts.len() >= 4?}
+    I -- Evet --> J[symbol, price, qty, ts ayır]
+    J --> K[WebSocket JSON formatına mock_json dönüştür]
+    K --> L[gen_ring.push(mock_json.as_bytes)]
+    L --> M[count += 1]
+    M --> N{count % 100_000 == 0?}
+    N -- Evet --> O[std::thread::yield_now]
+    N -- Hayır --> P[atla]
+    O --> P
+    P --> F
+    G -- Hayır --> F
+    I -- Hayır --> F
+    F -- Hayır --> Q[elapsed = start.elapsed]
+    Q --> R[Yüklenen tick ve geçen süre bilgisi yazdır]
+    R --> S[Tick/saniye hesapla ve yazdır]
+    S --> Z([Bitiş])

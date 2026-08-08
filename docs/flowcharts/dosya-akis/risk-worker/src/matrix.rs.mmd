@@ -1,0 +1,31 @@
+graph TD
+    A([Başlangıç]) --> B{Matris hesaplama isteği}
+
+    B --> C[regularize_correlation_matrix: n = matrix.len]
+    C --> D[reg_matrix = matrix.to_vec kopyasını oluştur]
+    D --> E[i = 0]
+
+    E --> F{i < n?}
+    F -- Evet --> G[reg_matrix[i][i] += alpha köşegen kaydırma]
+    G --> H[i += 1]
+    H --> F
+    F -- Hayır --> I[println: Tikhonov Regularization alpha değeri]
+    I --> J[reg_matrix döndür]
+
+    B --> K[calculate_dynamic_vwap: total_pv = 0, total_v = 0]
+    K --> L{is_night_session?}
+    L -- Evet --> M[modifier = 0.5 gece likidite daralması]
+    L -- Hayır --> N[modifier = 1.0]
+    M --> O[prices ve volumes zip ile eşle]
+    N --> O
+    O --> P[her (p, v) çifti için adj_v = v * modifier]
+    P --> Q[total_pv += p * adj_v]
+    Q --> R[total_v += adj_v]
+    R --> P
+    P --> S{total_v == 0?}
+    S -- Evet --> T[0.0 döndür]
+    S -- Hayır --> U[total_pv / total_v döndür]
+
+    J --> Z([Bitiş])
+    T --> Z([Bitiş])
+    U --> Z([Bitiş])

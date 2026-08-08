@@ -1,0 +1,16 @@
+graph TD
+    A([Başlangıç]) --> B[push_and_read yardımcı işlevi: wire::encode → ring.push → read_slot → wire::decode]
+
+    B --> C{Trade roundtrip testi: BTCUSDT trade event'i encode/decode sonrası korunuyor mu?}
+    C -- Evet --> D[Sembol, fiyat, miktar, zaman damgası ve alıcı-satıcı yönü karşılaştır]
+    C -- Hayır --> E[panic: Trade bekleniyordu]
+
+    D --> F{Depth20 roundtrip testi: 20 kademe emir defteri eşit mi?}
+    F -- Evet --> G[bids ve asks dizileri tamamen eşleşir]
+    F -- Hayır --> H[panic: Orderbook bekleniyordu]
+
+    G --> I{Overwrite/generation testi: capacity=2 ring'de slot üzerine yazılınca eski okuma geçersiz mi?}
+    I -- Evet --> J[read_slot(base) None döner, read_slot(base + 2) Some döner]
+    I -- Hayır --> K[assert başarısız, test hata verir]
+
+    J --> Z([Bitiş: tüm testler başarıyla geçti])

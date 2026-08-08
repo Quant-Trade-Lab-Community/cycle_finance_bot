@@ -27,6 +27,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Birim ve Entegrasyon Testleri
       run: cargo test --release
+    - name: Tüm Feature Setleri Derlenebiliyor mu (full + https)
+      run: cargo check --workspace --all-features
 
   performance-wcet:
     runs-on: ubuntu-latest
@@ -35,15 +37,34 @@ jobs:
     - uses: actions/checkout@v3
     - name: 750µs Maksimum Tick Gecikme Testi (WCET)
       run: cargo bench
-      
-  # Kaos testleri staging'de tetiklenir
+
+  # Kaos testleri staging'de GERÇEK Chaos Mesh senaryosu ile tetiklenir.
+  # Varsayılan: cluster erişilemiyorsa adım "skip" ile geçer (CI kırmızıya dönmez),
+  # kubeconfig sağlandığında network-partition + orkestratör kurtarma doğrulanır.
   chaos-mesh-staging:
     runs-on: ubuntu-latest
     needs: performance-wcet
     steps:
     - uses: actions/checkout@v3
-    - name: Chaos Mesh 20 Senaryo Tetiklemesi
-      run: echo "Triggering Chaos Mesh scenarios on AWS izole cluster (Staging)..."
+    - name: Cluster erişilebilirliği
+      id: cluster
+      run: |
+        if command -v kubectl >/dev/null 2>&1 && kubectl cluster-info >/dev/null 2>&1; then
+          echo "reachable=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "reachable=false" >> "$GITHUB_OUTPUT"
+          echo "Kaos testleri için cluster yok — staging'de KUBECONFIG ile çalışır."
+        fi
+    - name: Gerçek Chaos Mesh — Network Partition (10dk maske + kurtarma doğrulama)
+      if: steps.cluster.outputs.reachable == 'true'
+      run: |
+        kubectl apply -f additional-services/k8s/chaos_network_partition.yaml
+        # Orkestratör ve WAL servislerinin partition boyunca ayakta kalması:
+        sleep 30
+        kubectl wait --for=condition=Ready pod -l app=paper-service --timeout=60s
+        # Kaos senaryosunu temizle, ardından iletişimin geri geldiğini doğrula
+        kubectl delete -f additional-services/k8s/chaos_network_partition.yaml --wait=false
+        kubectl rollout status deployment/paper-service --timeout=60s
 
   # MANİFESTO
   # "Bu testleri geçmeyen sistem, 20 yıl değil 20 saniye dayanır. Artık kod yazmak kadar, 

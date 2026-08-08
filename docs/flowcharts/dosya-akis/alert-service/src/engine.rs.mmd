@@ -1,0 +1,58 @@
+graph TD
+    A([Başlangıç: on_price fiyat değerlendirme]) --> B[now = now_secs, triggered listesi oluştur]
+    B --> C[alerts kilidini al, runtimes kilidini al]
+
+    C --> D{her alert için döngü}
+    D --> E{alert.symbol == symbol? (ascii duyarsız)}
+    E -- Hayır --> D
+    E -- Evet --> F[state = rt.entry(i) veya Runtime::new]
+    F --> G[evaluate: koşulu değerlendir]
+
+    G --> H{condition türü?}
+    H -- Above --> I{state == Armed?}
+    I -- Evet --> J[should_trigger = price >= target]
+    I -- Hayır --> K{price < target - tol?}
+    K -- Evet --> L[state = Armed]
+    K -- Hayır --> M[should_trigger = false]
+    H -- Below --> N{state == Armed?}
+    N -- Evet --> O[should_trigger = price <= target]
+    N -- Hayır --> P{price > target + tol?}
+    P -- Evet --> Q[state = Armed]
+    P -- Hayır --> R[should_trigger = false]
+    H -- Touch --> S{near = |price - target| <= tol?}
+    S -- Evet --> T{state == Armed?}
+    T -- Evet --> U[should_trigger = near]
+    T -- Hayır --> V{near değilse state = Armed, false}
+    S -- Hayır --> W[false]
+    H -- Cross --> X[side_above = price >= target]
+    X --> Y{crossed = önceki yönden farklı mı?}
+    Y -- Evet --> Z[should_trigger = true]
+    Y -- Hayır --> AA[should_trigger = false]
+    Z --> AB[last_side_above güncelle]
+    AA --> AB
+    J --> AB
+    M --> AB
+    O --> AB
+    R --> AB
+    U --> AB
+    W --> AB
+    V --> AB
+
+    AB --> AC{should_trigger doğru mu?}
+    AC -- Hayır --> AD{başka alert var mı?}
+    AC -- Evet --> AE{cooldown_sec > 0 ve geçen süre < cooldown?}
+    AE -- Evet --> AD
+    AE -- Hayır --> AF[last_trigger_ts = now, state = Triggered]
+    AF --> AG[AlertEvent oluşturup triggered listesine ekle]
+    AG --> AH{repeat false mu?}
+    AH -- Evet --> AI[state = Triggered bırak]
+    AH -- Hayır --> AD
+    AI --> AD
+    AD -- Evet --> D
+    AD -- Hayır --> AJ[runtimes kilidini bırak]
+
+    AJ --> AK[her triggered event için events.send]
+    AK --> AL([Bitiş])
+
+    AM([spawn_alert_sink]) --> AN[while rx.recv -> audio::trigger çağır]
+    AN --> AO[sonsuz bekleme]

@@ -7,7 +7,7 @@ use order::OrderRequest;
 use signer::BinanceSigner;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::SinkExt;
 use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot};

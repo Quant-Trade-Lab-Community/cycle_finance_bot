@@ -1,0 +1,21 @@
+graph TD
+    A([Başlangıç]) --> B[utc_hour = (ts_ms / 3600000) % 24 hesapla]
+
+    B --> C[is_active_session: Londra + NY seansı UTC 08:00-16:00 mı?]
+    C --> D{session_weight: aktif seans mı?}
+    D -- Evet --> E[Ağırlık = 1.0]
+    D -- Hayır -->     F[Ağırlık = 0.5]
+
+    E --> G[filter_by_window: klines'ı pencereye göre filtrele]
+    F --> G
+    G --> H{klines boş mu?}
+    H -- Evet --> I[boş liste döndür]
+    H -- Hayır --> J[latest_time = son mumun close_time, window_ms = aktif_saat * 3600000]
+    J --> K[latest_time - open_time <= window_ms olan mumları seç]
+    K --> I
+
+    I --> L[weighted_merge: Core*0.4 + Amplified*0.3 + Acute*0.3 hesapla]
+    L --> M[confluence_index: 3 skorun pozitif/negatif uyumunu say]
+    M --> N[dominant_count = max(pozitif, negatif)]
+    N --> O[confluence = dominant_count/3 * 100 hesapla]
+    O --> P([Bitiş])

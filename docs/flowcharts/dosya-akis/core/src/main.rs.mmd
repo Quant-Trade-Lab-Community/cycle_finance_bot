@@ -1,0 +1,50 @@
+graph TD
+    A([Başlangıç]) --> B[run_mode = RUN_MODE env veya DATA varsayılan]
+    B --> C{run_mode ne?}
+
+    C -- DATA --> D[GenerationalRingBuffer::new(160_000) oluştur]
+    D --> E[flume::bounded(1_000_000) db kuyruğu]
+    E --> F[db writer thread'ini başlat]
+    F --> G[LockFreeDispatcher oluştur, tx ve rx al]
+    G --> H[tüketici thread'i başlat: RT priority 99]
+    H --> I{while rx.recv() -> bytes}
+    I -- Evet --> J[EventParser::parse(&mut bytes)]
+    J --> K{Some(owned_event)?}
+    K -- Evet --> L{validator.is_valid?}
+    L -- Hayır --> M[invalid_count += 1, continue]
+    L -- Evet --> N{Orderbook mu?}
+    N -- Evet --> O[depth_count += 1]
+    N -- Hayır --> P[atla]
+    O --> P
+    P --> Q{wire::encode başarılı mı?}
+    Q -- Evet --> R[gen_ring_data.push(frame)]
+    Q -- Hayır --> S[atla]
+    R --> S
+    S --> T{db_tx.try_send başarılı mı?}
+    T -- Hayır --> U[db_drop_count += 1]
+    T -- Evet --> V[atla]
+    U --> V
+    V --> W[total_parse_time += süre, tick_count += 1]
+    W --> X{last_report >= 1 sn?}
+    X -- Evet --> Y[istatistik yazdır, sayaçları sıfırla]
+    X -- Hayır --> Z[atla]
+    Y --> Z
+    Z --> I
+    K -- Hayır --> X
+    M --> X
+    I -- Hayır --> AA[start_binance_ws_client(tx).await]
+    AA --> AB[return]
+
+    C -- PAPER --> AC[paper_cli::start_paper_cli]
+    C -- STRATEGY --> AD[spawn_detector_bridge_watcher]
+    AD --> AE[strategy_cli::start_strategy_cli]
+    C -- BACKTEST --> AF[backtester::start_backtester(csv_path)]
+    C -- CORRELATION --> AG[correlation_cli::start_correlation_cli]
+    C -- bilinmeyen --> AH[Geçerli RUN_MODE uyarısı yazdır]
+
+    AB --> AI([Bitiş])
+    AC --> AI
+    AE --> AI
+    AF --> AI
+    AG --> AI
+    AH --> AI

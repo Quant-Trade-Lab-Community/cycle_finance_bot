@@ -1,0 +1,74 @@
+graph TD
+    A([Başlangıç]) --> B[serve: app = build_router, state = Arc AppState]
+    B --> C{https feature açık ve PAPER_TLS_CERT/KEY dolu mu?}
+    C -- Evet --> D[RustlsConfig::from_pem_file ile sertifika yükle]
+    D --> E{PEM yükleme başarılı mı?}
+    E -- Evet --> F[axum_server::bind_rustls ile HTTPS serve]
+    E -- Hayır --> G[uyarı bas, HTTP'e düş]
+    C -- Hayır --> G
+    G --> H[TcpListener::bind(addr) + axum::serve HTTP]
+    F --> Z([Bitiş])
+
+    B --> R[build_router: route tablosu + CORS + with_state]
+
+    R --> L1[/api/v1/auth/login POST/]
+    R --> L2[/api/v1/auth/refresh POST/]
+    R --> L3[/api/v1/order POST/]
+    R --> L4[/api/v1/orders GET/]
+    R --> L5[/api/v1/account/balance GET/]
+    R --> L6[/api/v1/account/positions GET/]
+    R --> L7[/api/v1/account/trade-history GET/]
+    R --> L8[/api/v1/account/position-mode POST/]
+    R --> L9[/api/v1/account/margin-type POST/]
+    R --> L10[/api/v1/risk/liquidation-price/symbol GET/]
+    R --> L11[/api/v1/system/health GET/]
+    R --> L12[/metrics GET/]
+
+    L1 --> AL[auth_login: username != admin_user?]
+    AL -- Hayır --> AU[401 invalid credentials]
+    AL -- Evet --> AP[PasswordHash::new + Argon2::verify_password]
+    AP -- Hata --> AU
+    AP -- Başarılı --> AT[Claims üret: access 1sa, refresh 24sa]
+    AT --> ATK[make_token ile imzala]
+    ATK --> AOK[200 TokenResponse dön]
+
+    L2 --> AR[auth_refresh: verify_token(refresh_token)]
+    AR -- role == REFRESH --> ARK[200 yeni access_token üret]
+    AR -- Geçersiz --> ARU[401 invalid refresh token]
+
+    L3 --> PO[place_order: auth_middleware headers]
+    PO -- Yetkisiz --> POU[401 unauthorized]
+    PO -- Yetkili --> POI{idempotency.get(client_order_id) cache var mı?}
+    POI -- Evet --> POIP[cached http_status + body dön]
+    POI -- Hayır --> POS{side BUY/SELL mi?}
+    POS -- Hayır --> POE[400 + idempotency.set cache]
+    POS -- Evet --> POT{order_type MARKET/LIMIT mi?}
+    POT -- Hayır --> POE2[400 + idempotency.set cache]
+    POT -- Evet --> POP{position_side BOTH/LONG/SHORT mi?}
+    POP -- Hayır --> POE3[400 + idempotency.set cache]
+    POP -- Evet --> POD[OrderRequest struct oluştur]
+    POD --> POC[engine.submit_order: cmd_tx send + oneshot await]
+    POC -- Ok(ack) --> POK[metrics.record_order(true) + record_fill]
+    POK --> POCA[200 body + idempotency.set]
+    POC -- Err(msg) --> POF[metrics.record_order(false)]
+    POF --> POFA[400 body + idempotency.set]
+
+    L4 --> GO[get_orders: auth + snapshot.open_orders]
+    L5 --> GB[get_balance: auth + snapshot bakiyeleri]
+    L6 --> GP[get_positions: auth + snapshot.positions]
+    L7 --> GT[get_trade_history: auth + snapshot.recent_trades]
+    L8 --> SM[set_position_mode: PositionMode::from_str]
+    SM -- Geçersiz --> SME[400 mode hatası]
+    SM -- Geçerli --> SMO[engine.set_position_mode]
+    SMO --> SMOK[200 position_mode]
+    SMO -- Err --> SME
+    L9 --> MT[set_margin_type: MarginType::from_str]
+    MT -- Geçersiz --> MTE[400 margin_type hatası]
+    MT -- Geçerli --> MTO[engine.set_margin_type]
+    MTO --> MTOK[200 symbol + margin_type]
+    MTO -- Err --> MTE
+    L10 --> GL[get_liquidation_price: auth + snapshot'te sembolü bul]
+    GL -- Bulundu --> GLK[200 liquidation_price]
+    GL -- Yok --> GLN[404 no position]
+    L11 --> GH[get_health: snapshot + cmd_tx.is_closed kontrol]
+    L12 --> GM[get_metrics: metrics.render(cash_balance) text format]

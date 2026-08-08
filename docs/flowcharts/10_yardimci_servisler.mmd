@@ -1,0 +1,51 @@
+flowchart TB
+    subgraph VERI_GRS["Veri Kaynakları"]
+        R1["ring /demir_yumruk_ring (160k)"]
+        R2["pricefeed ring (20k)"]
+        BIN["doğrudan Binance WS (köprüsüz)"]
+        PFAPI["price-feed REST :3004"]
+    end
+
+    subgraph ALERT["alert-service"]
+        RULES["AlertRule config.toml<br/>Above · Below · Cross · Touch<br/>tolerans+ cooldown · voice"]
+        SM["Runtime state machine<br/>Armed → Triggered → re-arm"]
+        EVT["AlertEvent (flume)"]
+        AUI["audio.rs<br/>spd-say veya WAV üretimi<br/>(44.1kHz · G6-E6-G6 · paplay)"]
+    end
+
+    subgraph RISKW["risk-worker (60sn)"]
+        MAT["MatrixMath<br/>Tikhonov regularizasyon · DAR"]
+        VW["Dinamik VWAP (geçe likidite)"]
+        CACHE["RiskCache ArcRwLock<br/>max_pos · volat_index"]
+        FIN["FinOps<br/>maliyet > %20 karla → toplu repack"]
+    end
+
+    subgraph COLD["Soğuk Başlangıç"]
+        CLS["cold-start buffer (mmap disk)"]
+        RPL["replay_buffer_in_paper_mode()"]
+        TOLIVE["transition_to_live()"]
+        EMA["fetch_200_ema()"]
+    end
+
+    subgraph ADAPT["adapter — 6 modül (5 mock)"]
+        BA["binance.rs — TEK CANLI (8 stream)"]
+        CH["clickhouse.rs — schema + erasure (mock)"]
+        RD["redis.rs — idempotency NX (mock)"]
+        VT["vault.rs — rotasyon + fake JWT"]
+        AI2["ai.rs — Isolation forest / LLM tag (mock)"]
+        TL["telemetry.rs — eBPF / Jaeger / Chaos (mock)"]
+    end
+
+    RING --> ALERT
+    R2 --> ALERT
+    BIN --> ALERT
+    ALERT --> AUI
+
+    RING -.-> RISKW
+    R2 -.-> RISKW
+
+    EMA --> EMA
+    EMA400 --> EMA200
+    R2 --> RPL
+
+    D1[core] --> S2[core]

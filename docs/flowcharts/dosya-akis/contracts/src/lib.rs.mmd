@@ -1,0 +1,8 @@
+graph TD
+    A([Başlangıç]) --> B[lib.rs modül bildirimleri yüklenir]
+
+    B --> C[pub mod events -> events.rs modülünü dahil et]
+    B --> D[pub mod wire -> wire.rs modülünü dahil et]
+
+    C --> Z([Bitiş])
+    D --> Z([Bitiş])

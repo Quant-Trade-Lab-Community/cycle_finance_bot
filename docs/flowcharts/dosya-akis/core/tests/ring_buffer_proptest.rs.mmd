@@ -1,0 +1,21 @@
+graph TD
+    A([Başlangıç]) --> B[Proptest yapılandırması: 128 rastgele case üret]
+
+    B --> C[fresh_ring: PID + global sayaç ile benzersiz shm adı üret, ring oluştur]
+    C --> D{Roundtrip testi: push(seq) sonrası read_slot(seq) aynı veriyi döndürüyor mu?}
+    D -- Evet --> E[head == 1, slot.len ve slot.data rastgele veriyle karşılaştır]
+    D -- Hayır --> F[prop_assert başarısız, test reddedilir]
+
+    E --> G{Truncation testi: 702B üzerindeki veri SLOT_DATA_LEN'e kırpılıyor mu?}
+    G -- Evet --> H[slot.len == SLOT_DATA_LEN, verinin ilk 702 baytı eşleşir]
+    G -- Hayır --> F
+
+    H --> I{Overwrite testi: üzeri yazılan slot eski seq ile okunmayı reddediyor mu?}
+    I -- Evet --> J[capacity + ekstra push sonrası read_slot(0) None döner, generational check çalışır]
+    I -- Hayır --> F
+
+    J --> K{Monotonik head testi: get_head() hiç geriye gitmiyor mu?}
+    K -- Evet --> L[Her push sonrası head >= önceki head ve sonunda pushes sayısına eşit]
+    K -- Hayır --> F
+
+    L --> Z([Bitiş: tüm case'ler başarıyla geçti])

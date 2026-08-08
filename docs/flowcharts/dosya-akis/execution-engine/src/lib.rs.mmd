@@ -1,0 +1,53 @@
+graph TD
+    A([Başlangıç]) --> B[TRADING_MODE ortam değişkenini oku]
+    B --> C{TRADING_MODE == "PAPER"?}
+
+    C -- Evet --> D["PaperConfig::load_from_env()"]
+    D --> E["PaperEngineActor::new(config)"]
+    E --> F["mpsc::unbounded_channel() oluştur"]
+    F --> G["tokio::spawn: actor.run(cmd_rx)"]
+    G --> H[flume rx'den emir bekle]
+
+    H --> I{order_req geldi mi?}
+    I -- Evet --> J[oneshot channel oluştur]
+    J --> K["cmd_tx.send(SubmitOrder{order, response_tx})"]
+    K --> L{resp_rx.await sonucu?}
+    L -- Ok --> M["Paper Order Response logla"]
+    M --> H
+    L -- Hata --> H
+    I -- Hayır --> Z1([Bitiş: PAPER modu döner])
+
+    C -- Hayır --> N["BinanceSigner::new(api_key, secret_key)"]
+    N --> O["connect_async(ws_url)"]
+    O --> P{bağlantı başarılı?}
+
+    P -- Hata --> Q["3sn bekle, tekrar dene"]
+    Q --> O
+
+    P -- Başarılı --> R[WebSocket stream bağlı]
+    R --> S{order_req geldi mi?}
+    S -- Evet --> T[timestamp = now_millis]
+    T --> U["Query string hazırla: apiKey, quantity, side, symbol, timestamp, type"]
+    U --> V{price var mı?}
+    V -- Evet --> W[query'e &price ekle]
+    W --> X{tif var mı?}
+    V -- Hayır --> X
+    X -- Evet --> Y[query'e &timeInForce ekle]
+    X -- Hayır --> AA["sign(query_params) ile HMAC imza"]
+    Y --> AA
+    AA --> AB["JSON params oluştur: apiKey, symbol, side, type, quantity, timestamp, signature"]
+    AB --> AC{price var mı?}
+    AC -- Evet --> AD[json'e price ekle]
+    AC -- Hayır --> AE
+    AD --> AE{time_in_force var mı?}
+    AE -- Evet --> AF[json'e timeInForce ekle]
+    AE -- Hayır --> AG["ws_payload: id=timestamp, method=order.place"]
+    AF --> AG
+    AG --> AH["ws_stream.send(Message::Text)"]
+    AH --> AI{send başarılı?}
+    AI -- Evet --> S
+    AI -- Hata --> AJ["hata logla, reconnect için break"]
+    AJ --> O
+
+    S -- Hayır --> AK[inner loop sona erdi]
+    AK --> O

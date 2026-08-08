@@ -1,0 +1,31 @@
+graph TD
+    A([Başlangıç]) --> B[DetectorBridge::with_name(name, capacity)]
+    B --> C[ring = GenerationalRingBuffer::with_name, cursor = 0]
+    C --> D[poll(handler)]
+
+    D --> E[head = ring.get_head, hits = 0]
+    E --> F{cursor < head?}
+    F -- Evet --> G[seq = cursor]
+    G --> H{read_slot(seq) -> Some(slot)?}
+    H -- Evet --> I[decode_frame(&slot)]
+    I --> J{Some(ev) ve payload Opportunity mi?}
+    J -- Evet --> K[symbol_to_string, alanları çıkar]
+    K --> L[handler(&OpportunityHit)]
+    L --> M[hits += 1]
+    J -- Hayır --> N[atla]
+    M --> N
+    N --> O[cursor += 1]
+    H -- Hayır --> O
+    O --> F
+    F -- Hayır --> P[hits döndür]
+
+    P --> Q[spawn_watcher(handler)]
+    Q --> R[tokio::spawn: bridge oluştur]
+    R --> S{sonsuz döngü}
+    S --> T[bridge.poll(&mut handler)]
+    T --> U{hits > 0?}
+    U -- Evet --> V[İşlenen fırısat sayısını logla]
+    U -- Hayır --> W[atla]
+    V --> W
+    W --> X[sleep(100ms)]
+    X --> S

@@ -1,0 +1,55 @@
+graph TD
+    A([Başlangıç]) --> B[resolve_symbols: PRICE_FEED_SYMBOLS env veya alerts.toml'dan yükle]
+    B --> C[GenerationalRingBuffer /demir_yumruk_pricefeed oluştur]
+    C --> D[FeedState + RwLock oluştur]
+    D --> E[flume::bounded kuyruk 262144 oluştur]
+
+    E --> F[tokio::spawn: ws_pump]
+    E --> G[tokio::spawn: fetch_premium_index döngüsü]
+    E --> H[std::thread::spawn: ingest]
+    E --> I[tokio::spawn: JSON dosya yazıcı]
+    E --> J[Router: /api/lastprice, /api/lastprice/{symbol}, /health]
+
+    F --> F1[sonsuz döngü: connect_async WS]
+    F1 --> F2{WS bağlantısı başarılı mı?}
+    F2 -- Hayır --> F3[3sn bekle, yeniden bağlan]
+    F2 -- Evet --> F4[SUBSCRIBE mesajı gönder]
+    F4 --> F5{WS mesajı geldi mi?}
+    F5 -- Text --> F6[tx.send_async(bytes) - kuyruğa at]
+    F6 --> F5
+    F5 -- Ping --> F7[Pong gönder]
+    F7 --> F5
+    F5 -- Close --> F8[bağlantı koptu, yeniden bağlan]
+    F8 --> F1
+    F5 -- Diğer --> F5
+    F3 --> F1
+
+    G --> G1[sonsuz döngü: her sembol için premiumIndex REST çek]
+    G1 --> G2[state'e mark ve index değerlerini yaz]
+    G2 --> G3[200ms bekle]
+    G3 --> G1
+
+    H --> H1[ingest: rx.recv ile kuyruktan veri al]
+    H1 --> H2[EventParser::parse -> OwnedEvent]
+    H2 --> H3{parse başarılı mı?}
+    H3 -- Hayır --> H4[total += 1]
+    H3 -- Evet --> H5{DataValidator is_valid mi?}
+    H5 -- Hayır --> H4
+    H5 -- Evet --> H6[wire::encode -> ring.push]
+    H6 --> H7[update_state: Trade->last, FundingRate->mark/index, BookTicker->bid/ask]
+    H7 --> H4
+    H4 --> H8{1 saniye geçti mi?}
+    H8 -- Evet --> H9[ticks/s raporu yazdır]
+    H9 --> H1
+    H8 -- Hayır --> H1
+
+    J --> J1[GET /api/lastprice -> api_all]
+    J --> J2[GET /api/lastprice/{symbol} -> api_one]
+    J --> J3[GET /health -> api_health]
+    J1 --> K[axum::serve - istekleri dinle]
+    J2 --> K
+    J3 --> K
+
+    I --> I1[sonsuz döngü: state'i oku, JSON dosyasına yaz]
+    I1 --> I2[1sn bekle]
+    I2 --> I1

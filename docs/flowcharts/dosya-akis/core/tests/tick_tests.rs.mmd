@@ -1,0 +1,14 @@
+graph TD
+    A([Başlangıç]) --> B{Proptest test_tick_parsing_zero_allocation: trade payload parse edilip sembol BTCUSDT mi?}
+    B -- Evet --> C[parse başarılı, tick.symbol BTCUSDT ile eşleşir]
+    B -- Hayır --> D[prop_assert başarısız, test reddedilir]
+
+    C --> E{test_tick_allocation_mock: 1 milyon kez aynı payload parse edilince her seferinde Some döner mi?}
+    E -- Evet --> F[Tüm iterasyonlar başarıyla tamamlanır]
+    E -- Hayır --> G[assert başarısız, test hata verir]
+
+    F --> H{test_parse_mark_price_stream: markPrice akışı parse edilip FundingRate event'i üretilir mi?}
+    H -- Evet --> I[payload EventType::FundingRate olarak eşleşir]
+    H -- Hayır --> J[expect panik yapar, test başarısız olur]
+
+    I --> Z([Bitiş: tüm testler başarıyla geçti])

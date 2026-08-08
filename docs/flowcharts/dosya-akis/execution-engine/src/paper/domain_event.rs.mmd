@@ -1,0 +1,33 @@
+graph TD
+    A([Başlangıç]) --> B[DomainEvent enum tanımla]
+    B --> C[OrderCreated: order_id, client_oid, symbol, side, order_type, qty, price]
+
+    C --> D[OrderFilled: order_id, symbol, side, position_side, fill_price, fill_qty, commission, cash_delta, realized_pnl, leverage]
+
+    D --> E[Event uygulama akışı: rebuild_from_events]
+    E --> F{event türü?}
+
+    F -- OrderFilled --> G{position_mode == Hedge?}
+    G -- Evet --> H["positions.apply_fill_hedge(symbol, side, signed_qty, price, leverage)"]
+    G -- Hayır --> I["positions.apply_fill(symbol, signed_qty, price, leverage)"]
+    H --> J["account.add_free_funds(USDT, cash_delta)"]
+    I --> J
+    J --> K["risk.record_realized(realized_pnl)"]
+    K --> L["replayed_fills += 1"]
+
+    F -- FundingRateApplied --> M["account.add_free_funds(USDT, payment)"]
+
+    F -- OrderCancelled --> N[etkisiz: yok say]
+    F -- PositionOpened --> O[etkisiz: yok say]
+    F -- PositionClosed --> P[etkisiz: yok say]
+    F -- Liquidation --> Q[etkisiz: yok say]
+
+    L --> R{replayed_fills > 0?}
+    M --> R
+    N --> R
+    O --> R
+    P --> R
+    Q --> R
+    R -- Evet --> S["Replay logu yazdır"]
+    R -- Hayır --> T
+    S --> T([Bitiş])

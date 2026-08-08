@@ -1,0 +1,11 @@
+graph TD
+    A([Başlangıç]) --> B[mod bridge]
+    A --> C[mod events]
+    A --> D[mod idempotency]
+    A --> E[mod api]
+    A --> F[mod metrics]
+    A --> G[mod sqlite_projection]
+    A --> H{feature full açık mı?}
+    H -- Evet --> I[mod postgres_store]
+    H -- Hayır --> Z([Bitiş])
+    I --> Z

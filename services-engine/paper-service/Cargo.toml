@@ -1,0 +1,43 @@
+[package]
+name = "paper-service"
+version = "0.1.0"
+edition = "2021"
+default-run = "paper-service"
+
+[dependencies]
+tokio = { workspace = true }
+core = { path = "../../cycle-engine/core" }
+contracts = { path = "../../cycle-engine/contracts" }
+transport = { path = "../../cycle-engine/transport" }
+execution-engine = { path = "../../execution-engine" }
+rust_decimal = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sled = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+jsonwebtoken = { workspace = true }
+argon2 = { workspace = true }
+rand = { workspace = true }
+parking_lot = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true }
+rusqlite = { workspace = true }
+
+# Tam set (opsiyonel): --features full ile PostgreSQL + Redis etkinleşir
+sqlx = { version = "0.7", default-features = false, features = ["runtime-tokio", "postgres", "rust_decimal"], optional = true }
+fred = { version = "7.0", features = ["tokio-rustls", "serde-json"], optional = true }
+axum-server = { workspace = true, optional = true }
+
+[features]
+default = []
+full = ["dep:sqlx", "dep:fred"]
+https = ["dep:axum-server"]
+
+[[bin]]
+name = "paper-cli"
+path = "src/bin/paper_cli.rs"

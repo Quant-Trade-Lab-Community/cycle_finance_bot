@@ -1,0 +1,17 @@
+graph TD
+    A([Başlangıç]) --> B[pin_to_core(core_id) çağrılır]
+    B --> C[core_affinity::get_core_ids ile çekirdek listesini al]
+
+    C --> D{Çekirdek listesi alınabildi mi?}
+    D -- Hayır --> E[Çekirdek listesi alınamadı hatası yazdır]
+    D -- Evet --> F{core_id, mevcut çekirdek sayısından küçük mü?}
+    F -- Hayır --> G[İstenen çekirdek mevcut değil hatası yazdır]
+    F -- Evet --> H[set_for_current(core_ids[core_id]) ile süreci çekirdeğe sabitle]
+    H --> I{Sabitlenme başarılı mı?}
+    I -- Evet --> J[PINNED mesajı yazdır]
+    I -- Hayır --> K[Sabitleme başarısız hatası yazdır]
+
+    E --> Z([Bitiş])
+    G --> Z
+    J --> Z
+    K --> Z

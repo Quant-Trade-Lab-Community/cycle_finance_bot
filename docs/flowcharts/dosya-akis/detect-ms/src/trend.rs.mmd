@@ -1,0 +1,63 @@
+graph TD
+    A([Başlangıç]) --> B[linear_regression: değer listesi al]
+
+    B --> C{len < 2?}
+    C -- Evet --> D[slope=0, intercept=0, r²=0 döndür]
+    C -- Hayır --> E[x_mean ve y_mean hesapla]
+    E --> F[Her mum için ss_xy, ss_xx, ss_yy topla]
+    F --> G{ss_xx == 0?}
+    G -- Evet --> H[slope=0, intercept=y_mean, r²=0 döndür]
+    G -- Hayır --> I[slope = ss_xy/ss_xx, intercept = y_mean - slope*x_mean]
+    I --> J{ss_yy == 0?}
+    J -- Evet --> K[r² = 0]
+    J -- Hayır --> L[r² = ss_xy²/(ss_xx*ss_yy)]
+    K --> M[(slope, intercept, r²) döndür]
+    L --> M
+
+    M --> N[hurst_exponent: log-return değerleri al]
+
+    N --> O{len < 20?}
+    O -- Evet --> P[Hurst = 0.5 varsay (yetersiz veri)]
+    O -- Hayır --> Q[n = 8 başlat]
+
+    Q --> R{n <= len/2 döngüsü}
+    R -- Evet --> S[Her alt-seride ortalama ve kümülatif sapma serisi oluştur]
+    S --> T[Range = max-kümülatif - min-kümülatif hesapla]
+    T --> U[Standart sapma hesapla]
+    U --> V{std_dev > 1e-12?}
+    V -- Evet --> W[rs değerlerine range/std_dev ekle]
+    V -- Hayır --> X[alt-seri geç]
+    W --> X
+    X --> Y{rs değerleri var mı?}
+    Y -- Evet --> Z[avg_rs > 0 ise log(n) ve log(avg_rs) kaydet]
+    Y -- Hayır --> AA[n'yi 1.4 ile geometrik artır]
+    Z --> AA
+    AA --> AB{n <= len/2?}
+    AB -- Evet --> R
+    AB -- Hayır --> AC{log_ns.len < 2?}
+    AC -- Evet --> AD[Hurst = 0.5 varsay]
+    AC -- Hayır --> AE[log(n) vs log(RS) regresyonunun eğimi = Hurst]
+    AD --> AF[Hurst'ü 0-1 aralığına sınırla]
+    AE --> AF
+    AF --> P
+
+    P --> AG[analyze_trend: klines ve ATR al]
+
+    AG --> AH{klines boş veya ATR ≤ 0?}
+    AH -- Evet --> AI[Veri Yetersiz raporu döndür]
+    AH -- Hayır --> AJ[Son 50 mumun log-fiyat serisini oluştur]
+    AJ --> AK[linear_regression ile slope ve r² hesapla]
+    AK --> AL[log-return serisi üzerinden Hurst üssü hesapla]
+    AL --> AM[price_slope = slope * son_kapanış]
+    AM --> AN[raw_score = price_slope/ATR * 10 * r²]
+    AN --> AO[trend_score = raw_score'u -10 ile +10 arasına sınırla]
+    AO --> AP{Hurst > 0.60?}
+    AP -- Evet --> AQ[Etiket = Kalıcı Trend (Momentum)]
+    AP -- Hayır --> AR{Hurst < 0.40?}
+    AR -- Evet --> AS[Etiket = Ortalama Dönüş (Range)]
+    AR -- Hayır --> AT[Etiket = Belirsiz (Random Walk)]
+    AQ --> AU[TrendAnalysis döndür]
+    AS --> AU
+    AT --> AU
+    AI --> AU
+    AU --> Z([Bitiş])

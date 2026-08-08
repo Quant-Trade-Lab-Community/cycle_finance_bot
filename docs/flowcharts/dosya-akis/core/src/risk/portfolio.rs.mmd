@@ -1,0 +1,34 @@
+graph TD
+    A([Başlangıç]) --> B[Portfolio::new(initial_balance, max_drawdown)]
+    B --> C[cash_balance = initial_balance, starting_balance, realized_pnl = 0, total_commission = 0, positions boş HashMap, max_drawdown_limit]
+
+    C --> D[process_fill(symbol, fill_qty, fill_price, commission)]
+    D --> E[cash_balance -= commission, total_commission += commission]
+    E --> F[positions entry al veya Position::new oluştur -> pos]
+    F --> G{pozisyon kapanıyor mu? (işaretler zıt)}
+    G -- Evet --> H[close_qty = min(abs(fill_qty), abs(pos.qty))]
+    H --> I[realized = (fill_price - avg_entry_price) * close_qty * sign]
+    I --> J[realized_pnl += realized, cash_balance += realized]
+    J --> K[pos.quantity += fill_qty]
+    K --> L{pos.quantity == 0?}
+    L -- Evet --> M[avg_entry_price = 0]
+    L -- Hayır --> N[atla]
+    M --> N
+    G -- Hayır --> O[toplam değer = pos değeri + yeni alım değeri]
+    O --> P[pos.quantity += fill_qty]
+    P --> Q{pos.quantity != 0?}
+    Q -- Evet --> R[avg_entry_price = toplam / pos.qty]
+    Q -- Hayır --> S[atla]
+    R --> S
+    N --> S
+
+    S --> T[get_total_equity(current_prices)]
+    T --> U[her pozisyon için unrealized_pnl topla]
+    U --> V[cash_balance + unrealized_pnl döndür]
+    V --> W[is_drawdown_exceeded]
+    W --> X[drawdown = (starting - equity) / starting]
+    X --> Y{drawdown > max_drawdown_limit?}
+    Y -- Evet --> ZA[true döndür]
+    Y -- Hayır --> ZB[false döndür]
+    ZA --> Z([Bitiş])
+    ZB --> Z

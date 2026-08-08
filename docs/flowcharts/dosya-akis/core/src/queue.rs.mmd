@@ -1,0 +1,14 @@
+graph TD
+    A([Başlangıç]) --> B[LockFreeDispatcher::new]
+    B --> C[flume::bounded(262_144) kuyruk oluştur, tx/rx sakla]
+
+    C --> D[producer()]
+    D --> E[tx.clone() -> Sender<Vec<u8>> döndür]
+
+    C --> F[consumer()]
+    F --> G[rx.clone() -> Receiver<Vec<u8>> döndür]
+
+    E --> H[üretici tx.send ile veri gönderir]
+    H --> I[kuyruk doluysa üretici geri basınç alır]
+    I --> J[tüketici rx.recv ile veri alır]
+    J --> Z([Bitiş])

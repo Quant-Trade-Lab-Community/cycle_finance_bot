@@ -1,0 +1,51 @@
+graph TD
+    A([Başlangıç]) --> B[load_symbols: alerts.toml'dan sembolleri oku]
+    B --> C[ring = GenerationalRingBuffer oluştur, cursor = get_head]
+    C --> D[price_series ve vol_series haritalarını oluştur]
+    D --> E[spawn_price_corr_thread: price-feed takipçisini başlat]
+
+    E --> F[price_corr thread döngüsü]
+    F --> G{price-feed isteği başarılı mı?}
+    G -- Evet --> H[prices objesindeki her sembolün fiyatını CorrSeries'e yaz]
+    G -- Hayır --> I[200 ms bekle]
+    H --> I
+    I --> F
+
+    E --> J[ana döngü: ring.read_slot(cursor)]
+    J --> K{slot var mı?}
+    K -- Hayır --> L[50 us bekle]
+    L --> J
+    K -- Evet --> M[wire::decode ile event'i çöz]
+    M --> N{event çözüldü mü?}
+    N -- Hayır --> O[cursor += 1]
+    O --> J
+    N -- Evet --> P[decode_symbol ile sembolü oku]
+    P --> Q{sembol known listesinde mi?}
+    Q -- Hayır --> O
+    Q -- Evet --> SM[SymbolMetrics al veya oluştur]
+
+    SM --> EVT{event türü nedir?}
+    EVT -- Trade --> TR[process_tick: tüm metrikleri güncelle]
+    TR --> VV[vol_series'e trade hacmini ekle]
+    VV --> WW[tick_count += 1]
+    WW --> O
+    EVT -- Orderbook --> BB[ilk 5 kademe bids/asks'i DepthLevel'e çevir]
+    BB --> DD[update_depth: mid ve ortalama spread hesapla]
+    DD --> FF[refresh: WLOBI, slope ve sinyali hesapla]
+    FF --> O
+    EVT -- Diğer --> O
+
+    O --> R1{REFRESH_MS süresi geçti mi?}
+    R1 -- Hayır --> J
+    R1 -- Evet --> R2[reload_config: config dosyasını yeniden yükle]
+    R2 --> R3[korelasyon pencere sürelerini uygula]
+    R3 --> R4[render: ekranı temizle ve başlığı yaz]
+    R4 --> R5{sembol verisi var mı?}
+    R5 -- Hayır --> R6[veri bekleniyor uyarısı yaz]
+    R5 -- Evet --> R7[mikro-yapı metrik tablosunu çiz]
+    R7 --> R8[render_corr: fiyat korelasyon matrisini çiz]
+    R8 --> R9[render_corr: hacim korelasyon matrisini çiz]
+    R9 --> R10[listener_metrics.json çıktısını yaz]
+    R10 --> R11[tick ve depth sayaçlarını sıfırla]
+    R6 --> R11
+    R11 --> J

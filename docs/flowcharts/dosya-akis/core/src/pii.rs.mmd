@@ -1,0 +1,13 @@
+graph TD
+    A([Başlangıç]) --> B[PIIMasker::new(salt) -> salt sakla]
+    B --> C{PIIMasker kullanımı}
+
+    C --> D[PIIMasker::mask_data(raw_data)]
+    D --> E[raw_data + salt birleştir -> combined]
+    E --> F[saha3_hash_of_ + combined -> hashed]
+    F --> G[hash'i logla ve döndür]
+    G --> Z([Bitiş])
+
+    C --> H[PIIMasker::cleanup_old_logs]
+    H --> I[3 yıldan eski logları süpür]
+    I --> Z

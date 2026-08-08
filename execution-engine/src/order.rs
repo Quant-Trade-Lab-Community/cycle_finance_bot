@@ -28,6 +28,14 @@ pub enum TimeInForce {
     Fok,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum OrderPositionSide {
+    Both,
+    Long,
+    Short,
+}
+
 #[derive(Debug, Clone)]
 pub struct OrderRequest {
     pub symbol: String,
@@ -36,4 +44,6 @@ pub struct OrderRequest {
     pub quantity: Decimal,
     pub price: Option<Decimal>,
     pub time_in_force: Option<TimeInForce>,
+    /// Hedge modda LONG/SHORT; one-way modda BOTH.
+    pub position_side: OrderPositionSide,
 }

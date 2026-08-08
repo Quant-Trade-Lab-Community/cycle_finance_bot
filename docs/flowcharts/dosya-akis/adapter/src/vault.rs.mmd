@@ -1,0 +1,26 @@
+graph TD
+    A([Başlangıç: VaultAdapter::new]) --> B[VAULT_ADDR env oku, yoksa boş]
+    B --> C[current_key_version = 1]
+    C --> D([Bitiş])
+
+    E([health: async]) --> F{base_url boş mu?}
+    F -- Evet --> G[None döndür - mock modu]
+    F -- Hayır --> H[GET /v1/sys/health?standbyok=true]
+    H --> I{istek başarılı mı?}
+    I -- Hayır --> J[eprintln + None döndür]
+    I -- Evet --> K[VaultHealth JSON olarak çöz]
+    K --> L{JSON çözümleme başarılı mı?}
+    L -- Evet --> M[Some(health) döndür]
+    L -- Hayır --> G
+    J --> N([Bitiş])
+    G --> N
+    M --> N
+
+    O([rotate_keys]) --> P[current_key_version += 1]
+    P --> Q[5 dakikalık grace period mesajı yaz]
+    Q --> R([Bitiş])
+
+    S([generate_jwt]) --> T[now + 3600 exp saniye hesapla]
+    T --> U[refresh_at = exp - 600]
+    U --> V[mock JWT string döndür]
+    V --> W([Bitiş])

@@ -1,0 +1,19 @@
+graph TD
+    A([Başlangıç: ClickHouseAdapter::new]) --> B[deletion_registry HashMap başlat]
+    B --> C([Bitiş])
+
+    D([create_tick_table_schema]) --> E[MergeTree tablo SQL'i üret]
+    E --> F[Yıl/Ay/Gün bölümlemeli + ZSTD şeması]
+    F --> G[sql döndür]
+    G --> H([Bitiş])
+
+    I([execute_right_to_erasure]) --> J[ALTER TABLE ticks DELETE komutunu yazdır]
+    J --> K[deletion_registry'ye user_uuid_hash sayacını artır]
+    K --> L([Bitiş])
+
+    M([erasure_count]) --> N[registry'den silme sayısını oku]
+    N --> O[sayı döndür, yoksa 0]
+    O --> P([Bitiş])
+
+    Q([run_integrity_check]) --> R[Merkle Tree ve EC-12/4 kontrol simülasyonu]
+    R --> S([Bitiş])

@@ -10,17 +10,17 @@ pub struct PaperConfig {
     pub taker_fee: Decimal,
     pub base_latency_ms: u64,
     pub latency_jitter_ms: u64,
-    pub slippage_model: String,
-    pub market_impact_factor: Decimal,
     pub fee_deduction_asset: String,
     pub db_path: String,
     pub batch_write_interval_ms: u64,
     pub recover_state_on_startup: bool,
     pub wal_enabled: bool,
-    /// "PRICE_ONLY" (order book'suz, gerçek fiyat verisiyle dolum) veya "L2_SWEEP"/"LINEAR_IMPACT" (legacy)
-    pub matching_mode: String,
+    /// Başlangıç pozisyon modu: "ONE_WAY" veya "HEDGE" (API ile değiştirilebilir).
+    pub position_mode: String,
+    /// Varsayılan marj tipi: "CROSSED" veya "ISOLATED" (sembol bazında API ile değiştirilebilir).
+    pub margin_type: String,
     /// Risk parametreleri
-    pub max_position_qty: Decimal,
+    pub min_position_notional: Decimal,
     pub max_leverage: Decimal,
     pub max_drawdown_pct: Decimal,
     pub max_daily_loss: Decimal,
@@ -30,9 +30,9 @@ impl PaperConfig {
     pub fn load_from_env() -> Self {
         Self {
             initial_usdt: env::var("PAPER_INITIAL_USDT")
-                .unwrap_or_else(|_| "100000.0".to_string())
+                .unwrap_or_else(|_| "500.0".to_string())
                 .parse()
-                .unwrap_or(Decimal::from(100_000)),
+                .unwrap_or(Decimal::from(500)),
             initial_btc: env::var("PAPER_INITIAL_BTC")
                 .unwrap_or_else(|_| "0.0".to_string())
                 .parse()
@@ -53,16 +53,10 @@ impl PaperConfig {
                 .unwrap_or_else(|_| "2".to_string())
                 .parse()
                 .unwrap_or(2),
-            slippage_model: env::var("PAPER_SLIPPAGE_MODEL")
-                .unwrap_or_else(|_| "L2_SWEEP".to_string()),
-            market_impact_factor: env::var("PAPER_MARKET_IMPACT_FACTOR")
-                .unwrap_or_else(|_| "0.00001".to_string())
-                .parse()
-                .unwrap_or(Decimal::from_str("0.00001").unwrap()),
             fee_deduction_asset: env::var("PAPER_FEE_DEDUCTION_ASSET")
                 .unwrap_or_else(|_| "QUOTE".to_string()),
             db_path: env::var("PAPER_DB_PATH")
-                .unwrap_or_else(|_| "./market_data.db".to_string()),
+                .unwrap_or_else(|_| "./data-engine/data/market_data.db".to_string()),
             batch_write_interval_ms: env::var("PAPER_BATCH_WRITE_INTERVAL_MS")
                 .unwrap_or_else(|_| "100".to_string())
                 .parse()
@@ -75,12 +69,14 @@ impl PaperConfig {
                 .unwrap_or_else(|_| "true".to_string())
                 .parse()
                 .unwrap_or(true),
-            matching_mode: env::var("PAPER_MATCHING_MODE")
-                .unwrap_or_else(|_| "PRICE_ONLY".to_string()),
-            max_position_qty: env::var("PAPER_MAX_POSITION_QTY")
-                .unwrap_or_else(|_| "10.0".to_string())
+            position_mode: env::var("PAPER_POSITION_MODE")
+                .unwrap_or_else(|_| "HEDGE".to_string()),
+            margin_type: env::var("PAPER_MARGIN_TYPE")
+                .unwrap_or_else(|_| "CROSSED".to_string()),
+            min_position_notional: env::var("PAPER_MIN_POSITION_NOTIONAL")
+                .unwrap_or_else(|_| "6.0".to_string())
                 .parse()
-                .unwrap_or(Decimal::from(10)),
+                .unwrap_or(Decimal::from(6)),
             max_leverage: env::var("PAPER_MAX_LEVERAGE")
                 .unwrap_or_else(|_| "20.0".to_string())
                 .parse()

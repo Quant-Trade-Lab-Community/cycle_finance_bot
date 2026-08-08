@@ -1,0 +1,33 @@
+graph TD
+    A([Başlangıç]) --> B[candle_delta: taker_buy_volume ve sell_volume hesapla]
+    B --> C[delta = buy_vol - sell_vol döndür]
+
+    C --> D[cumulative_delta: klines üzerinde kümülatif delta serisi oluştur]
+
+    D --> E[detect_fvg: klines listesi al]
+
+    E --> F{klines.len < 3?}
+    F -- Evet --> G[boş FVG listesi döndür]
+    F -- Hayır --> H[i = 1..len-1 döngüsü: prev, curr, next mumlarını al]
+    H --> I[region_delta = 3 mumun toplam delta'sı]
+    I --> J{prev.high < next.low?  Bullish FVG}
+    J -- Evet --> K[gap_high = next.low, gap_low = prev.high]
+    K --> L{region_delta > 0?}
+    L -- Evet --> M[Etiket = Active Absorber]
+    L -- Hayır --> N[Etiket = Passive Gap]
+    M --> O[Bullish FVG kaydet: yön, delta, mid, timestamp, index]
+    N --> O
+    O --> P{prev.low > next.high?  Bearish FVG}
+    J -- Hayır --> P
+    P -- Evet --> Q[gap_high = prev.low, gap_low = next.high]
+    Q --> R{region_delta < 0?}
+    R -- Evet --> S[Etiket = Active Absorber]
+    R -- Hayır --> T[Etiket = Passive Gap]
+    S --> U[Bearish FVG kaydet: yön, delta, mid, timestamp, index]
+    T --> U
+    U --> V[i'yi artır, i < len-1?]
+    P -- Hayır --> V
+    V -- Evet --> H
+    V -- Hayır --> W[FVG listesini döndür]
+    G --> W
+    W --> Z([Bitiş])

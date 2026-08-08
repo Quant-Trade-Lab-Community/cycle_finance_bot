@@ -1,0 +1,20 @@
+graph TD
+    A([Başlangıç]) --> B[BinanceClient::new -> http Client oluştur]
+    B --> C[fetch_klines(symbol, interval, limit)]
+    C --> D[URL kur: fapi.binance.com/fapi/v1/klines]
+    D --> E[http.get(url).send]
+    E --> F{İstek başarılı mı?}
+    F -- Hayır --> G[Err döndür]
+    F -- Evet --> H[response.json -> Vec<Value>]
+    H --> I[for döngüsü: her satır]
+    I --> J{row as_array ve len >= 11 mi?}
+    J -- Hayır --> K[satırı atla]
+    J -- Evet --> L[d = Decimal::from_str yardımcısı]
+    L --> M[Kline doldur: open_time, open, high, low, close, volume, trades vb.]
+    M --> N[klines vektörüne ekle]
+    K --> O{son satır mı?}
+    N --> O
+    O -- Hayır --> I
+    O -- Evet --> P[Ok(klines) döndür]
+    P --> Z([Bitiş])
+    G --> Z([Bitiş])

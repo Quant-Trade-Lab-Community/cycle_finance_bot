@@ -1,0 +1,50 @@
+graph TD
+    A([Başlangıç]) --> B[analyze_liquidity: klines listesi al]
+
+    B --> C{klines boş mu?}
+    C -- Evet --> D[Sıfır değerli LiquidityAnalysis döndür]
+    C -- Hayır --> E[vwap: typical price = (high+low+close)/3 ve hacim toplamlarını hesapla]
+    E --> F{cum_vol == 0?}
+    F -- Evet --> G[VWAP = 0]
+    F -- Hayır --> H[VWAP = toplam(tp*vol) / toplam_vol]
+    G --> I[sigma = vwap_std_dev hesapla]
+    H --> I
+    I --> J{klines boş mu?}
+    J -- Evet --> K[std dev = 0]
+    J -- Hayır --> L[Her mum için vol*(tp - vwap)² topla]
+    L --> M{cum_vol == 0?}
+    M -- Evet --> K
+    M -- Hayır --> N[sigma = sqrt(toplanan / cum_vol)]
+    K --> O[volume_profile: 50 bucket oluştur]
+    N --> O
+    O --> P{klines boş veya bucket_count == 0?}
+    P -- Evet --> Q[boş profil döndür]
+    P -- Hayır --> R[price_min ve price_max bul]
+    R --> S{price_max <= price_min?}
+    S -- Evet --> Q
+    S -- Hayır --> T[bucket_size hesapla, bucket hacimlerini sıfırla]
+    T --> U[Her mumun hacmini kapladığı bucket'lara orantılı dağıt]
+    U --> V[bucket hacimlerini sırala, medyan hacmi bul]
+    V --> W[Her bucket için node oluştur]
+    W --> X{vol >= medyan * 1.5?}
+    X -- Evet --> Y[NodeType = HVN]
+    X -- Hayır --> Z0[NodeType = LVN]
+    Y --> Z1[Likidite skoru = hacim yüzdesi (1-10 arası)]
+    Z0 --> Z1
+    Z1 --> Z2[volume_profile listesi döndür]
+
+    Z2 --> Z3[current_price = son mumun kapanışı]
+    Z3 --> Z4[POC = hacmi en yüksek bucket'ın orta noktası]
+    Z4 --> Z5[detect_bsl_ssl: BSL = +1.5σ..+3σ arası HVN, SSL = -3σ..-1.5σ arası HVN]
+    Z5 --> Z6[BSL ve SSL bölge hacimlerini topla]
+    Z6 --> Z7{ssl_total > 0?}
+    Z7 -- Evet --> Z8[ratio = bsl_total / ssl_total]
+    Z7 -- Hayır --> Z9{bsl_total > 0?}
+    Z9 -- Evet --> Z10[ratio = MAX]
+    Z9 -- Hayır --> Z11[ratio = 1]
+    Z8 --> Z12[volatilite bandı = POC ± 1.5σ hesapla]
+    Z10 --> Z12
+    Z11 --> Z12
+    Z12 --> Z13[LiquidityAnalysis yapısını döndür]
+    D --> Z13
+    Z13 --> Z([Bitiş])

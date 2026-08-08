@@ -1,0 +1,24 @@
+graph TD
+    A([Başlangıç: trigger sesli uyarı üret]) --> B{voice metni boş mu?}
+    B -- Evet --> C[beep modu]
+    B -- Hayır --> D[konuşma modu]
+
+    C --> E[write_beep_wav: WAV üret]
+    E --> F{WAV oluşturuldu mu?}
+    F -- Hayır --> G[eprintln: WAV üretilemedi]
+    F -- Evet --> H[beep_cmd ile paplay/aplay çalıştır]
+    H --> I[2 sn sonra WAV dosyasını temizle]
+
+    D --> J[voice_cmd ile spd-say komutunu çalıştır]
+
+    G --> K[Console'a tetikleme bilgisini yaz]
+    I --> K
+    J --> K
+    K --> L([Bitiş])
+
+    M([write_beep_wav]) --> N[44100 Hz, 3 nota: G6/E6/G6]
+    N --> O[Zarf ve harmonik ile örnekler üret]
+    O --> P[RIFF/WAVE header ekle]
+    P --> Q[Dosyayı /tmp'e yaz]
+    Q --> R[path döndür]
+    R --> S([Bitiş])

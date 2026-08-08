@@ -29,7 +29,7 @@ impl RiskStatus {
 
 #[derive(Debug)]
 pub struct RiskManager {
-    pub max_position_qty: Decimal,
+    pub min_position_notional: Decimal,
     pub max_leverage: Decimal,
     pub max_drawdown_pct: Decimal,
     pub max_daily_loss: Decimal,
@@ -43,13 +43,13 @@ pub struct RiskManager {
 impl RiskManager {
     pub fn new(
         starting_equity: Decimal,
-        max_position_qty: Decimal,
         max_leverage: Decimal,
         max_drawdown_pct: Decimal,
         max_daily_loss: Decimal,
+        min_position_notional: Decimal,
     ) -> Self {
         Self {
-            max_position_qty,
+            min_position_notional,
             max_leverage,
             max_drawdown_pct,
             max_daily_loss,
@@ -61,13 +61,11 @@ impl RiskManager {
         }
     }
 
-    /// Emir girişi öncesi pozisyon/marj/kaldıraç kontrolü.
+    /// Emir girişi öncesi risk kontrolü. `requested_notional` USDT cinsindendir
+    /// (pozisyon boyutu). Max pozisyon limiti yoktur; minimum USDT boyutu vardır.
     pub fn check_order(
         &self,
-        positions: &PositionManager,
-        symbol: &str,
-        requested_qty: Decimal,
-        price: Decimal,
+        requested_notional: Decimal,
         leverage: Decimal,
         cash: Decimal,
     ) -> Result<(), &'static str> {
@@ -75,14 +73,13 @@ impl RiskManager {
             return Err("Trading halted by risk status");
         }
 
-        // Maks. pozisyon
-        let existing = positions.get(symbol).map(|p| p.quantity.abs()).unwrap_or(Decimal::ZERO);
-        if existing + requested_qty.abs() > self.max_position_qty {
-            return Err("Max position size exceeded");
+        // Minimum pozisyon boyutu (USDT)
+        if requested_notional.abs() < self.min_position_notional {
+            return Err("Position size below minimum (6 USDT)");
         }
 
-        // Kaldıraç: yeni pozisyonun marj ihtiyacı
-        let margin_required = (requested_qty.abs() * price) / leverage;
+        // Marj ihtiyacı: notional / leverage
+        let margin_required = requested_notional.abs() / leverage;
         if margin_required > cash {
             return Err("Insufficient margin for leverage");
         }
@@ -121,7 +118,8 @@ impl RiskManager {
 
         // Per-pozisyon likidasyon kontrolü
         let mut liquidated = Vec::new();
-        for (sym, pos) in positions.all() {
+        for pos in positions.all() {
+            let sym = &pos.symbol;
             let mark = *mark_prices.get(sym).unwrap_or(&pos.avg_entry_price);
             let liq_price = pos.liquidation_price(self.maintenance_margin_rate);
             let breached = match pos.side {

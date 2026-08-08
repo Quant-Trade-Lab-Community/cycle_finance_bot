@@ -1,0 +1,109 @@
+graph TD
+    A([Başlangıç]) --> B[encode: ev.symbol -> buf[1..17] kopyala]
+    B --> C{ev.payload hangi EventType?}
+
+    C -- Trade --> D[TAG_TRADE yaz, off = 17]
+    D --> D1[write_decimal: price]
+    D1 --> D2[write_decimal: quantity]
+    D2 --> D3[put_u64 timestamp, put_u8 is_buyer_maker]
+    D3 --> L[frame boyutunu döndür]
+
+    C -- Orderbook --> E[TAG_DEPTH yaz, off = 17]
+    E --> E1[p_scale ve q_scale ortak scale hesapla]
+    E1 --> E2{her bid/ask seviyesi (p,q) için}
+    E2 --> E3[p veya q sıfırsa 0, yoksa rescale + put_i64]
+    E3 --> E4{40 seviye bitti mi?}
+    E4 -- Hayır --> E2
+    E4 -- Evet --> L
+
+    C -- FundingRate --> F[TAG_FUNDING yaz, off = 17]
+    F --> F1[write_decimal: mark_price, index_price, funding_rate]
+    F1 --> F2[put_u64 next_funding_time]
+    F2 --> L
+
+    C -- BookTicker --> G[TAG_BOOKTICKER yaz, off = 17]
+    G --> G1[write_decimal: best_bid_price, best_bid_qty, best_ask_price, best_ask_qty]
+    G1 --> L
+
+    C -- Liquidation --> H[TAG_LIQUIDATION yaz]
+    H --> H1[put_u8 side]
+    H1 --> H2[write_decimal: price, quantity]
+    H2 --> H3[put_u64 timestamp]
+    H3 --> L
+
+    C -- OpenInterest --> I[TAG_OPEN_INTEREST yaz, off = 17]
+    I --> I1[write_decimal: open_interest]
+    I1 --> I2[put_u64 timestamp]
+    I2 --> L
+
+    C -- Opportunity --> J[TAG_OPPORTUNITY yaz, off = 17]
+    J --> J1[write_decimal: score, efficiency, price_bps, price_ticks, ob_changes, spread_bps]
+    J1 --> J2[put_u8 verdict]
+    J2 --> L
+
+    C -- SymbolMetrics --> K[TAG_SYMBOL_METRICS yaz, off = 17]
+    K --> K1[write_decimal: score, efficiency, price_bps, price_ticks, ob_changes, spread_bps]
+    K1 --> L
+
+    L --> M{write_decimal mantissa i64'e sığdı mı?}
+    M -- Hayır --> N[None döndür]
+    M -- Evet --> Z([Bitiş])
+    N --> Z
+
+graph TD
+    A2([Başlangıç]) --> B2{buf.len() < 17 mi?}
+    B2 -- Evet --> N2[None döndür]
+    B2 -- Hayır --> C2[tag = buf[0], symbol = buf[1..17] oku]
+    C2 --> D2{tag değeri?}
+
+    D2 -- TAG_TRADE --> E2{buf.len() < 44 mi?}
+    E2 -- Evet --> N2
+    E2 -- Hayır --> F2[read_decimal price/quantity, rd_u64 timestamp, rd_u8 is_buyer_maker]
+    F2 --> G2[OwnedEvent::Trade kur ve döndür]
+
+    D2 -- TAG_DEPTH --> H2{buf.len() < DEPTH_FRAME_SIZE mi?}
+    H2 -- Evet --> N2
+    H2 -- Hayır --> I2[p_scale/q_scale oku, 20 bid + 20 ask seviyesini çöz]
+    I2 --> J2[OwnedEvent::Orderbook kur ve döndür]
+
+    D2 -- TAG_FUNDING --> K2{buf.len() < 52 mi?}
+    K2 -- Evet --> N2
+    K2 -- Hayır --> L2[read_decimal mark/index/rate, rd_u64 next_funding_time]
+    L2 --> M2[OwnedEvent::FundingRate kur ve döndür]
+
+    D2 -- TAG_BOOKTICKER --> O2{buf.len() < 53 mi?}
+    O2 -- Evet --> N2
+    O2 -- Hayır --> P2[4x read_decimal: bid_price, bid_qty, ask_price, ask_qty]
+    P2 --> Q2[OwnedEvent::BookTicker kur ve döndür]
+
+    D2 -- TAG_LIQUIDATION --> R2{buf.len() < 44 mi?}
+    R2 -- Evet --> N2
+    R2 -- Hayır --> S2[rd_u8 side, read_decimal price/quantity, rd_u64 timestamp]
+    S2 --> T2[OwnedEvent::Liquidation kur ve döndür]
+
+    D2 -- TAG_OPEN_INTEREST --> U2{buf.len() < 34 mi?}
+    U2 -- Evet --> N2
+    U2 -- Hayır --> V2[read_decimal open_interest, rd_u64 timestamp]
+    V2 --> W2[OwnedEvent::OpenInterest kur ve döndür]
+
+    D2 -- TAG_OPPORTUNITY --> X2{buf.len() < 72 mi?}
+    X2 -- Evet --> N2
+    X2 -- Hayır --> Y2[6x read_decimal + rd_u8 verdict]
+    Y2 --> Z2[OwnedEvent::Opportunity kur ve döndür]
+
+    D2 -- TAG_SYMBOL_METRICS --> A3{buf.len() < 71 mi?}
+    A3 -- Evet --> N2
+    A3 -- Hayır --> B3[6x read_decimal]
+    B3 --> C3[OwnedEvent::SymbolMetrics kur ve döndür]
+
+    D2 -- Bilinmeyen tag --> N2
+
+    G2 --> Z3([Bitiş])
+    J2 --> Z3
+    M2 --> Z3
+    Q2 --> Z3
+    T2 --> Z3
+    W2 --> Z3
+    Z2 --> Z3
+    C3 --> Z3
+    N2 --> Z3

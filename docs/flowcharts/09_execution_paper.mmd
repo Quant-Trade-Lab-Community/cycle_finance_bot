@@ -1,0 +1,54 @@
+flowchart TB
+    subgraph ORD_FLOW["Emir Akışı"]
+        STRAT["Strateji (heiusdt / orchestrator)"]
+        OR_RING[OrderRingBuffer 10k]
+        BRIDGE["paper-service/spawn_order_reader<br/>IpcOrder → SubmitOrder"]
+    end
+
+    subgraph ACTOR["PaperEngineActor (tek yazıcı)"]
+        CMD["ActorCommand mpsc unbounded<br/>SubmitOrder + oneshot resp<br/>MarkPriceUpdate · SetPositionMode<br/>SetMarginType"]
+        PROCESS["process_order<br/>latency sample · min 6 USDT<br/>marginal lock · komisyon 0.05%"]
+        LIMIT["open_orders listesi<br/>limit fill tick-bazlı kontrol"]
+        FUND["funding 8 saatte bir<br/>(28_800_000 ms)"]
+        LIQ["likidasyon: mark fiyatından kapat"]
+        POS["PositionManager<br/>ONE_WAY map | HEDGE map<br/>avg giriş · netleştirme (flip)"]
+        RISK2["RiskEngine<br/>drawdown · günlük limit · max 20x"]
+        SNAP["publish_snapshot → Arc RWLOCK<br/>PaperSnapshot okuma arayüzü"]
+        EV["DomainEvent üretimi<br/>OrderCreated · OrderFilled · …"]
+    end
+
+    subgraph PERS["Event Store / Kalıcılık"]
+        SLED["SledEventStore<br/>paper_wal (serde_json)"]
+        PG["Postgres (--features full)<br/>domain_events · snapshots"]
+        DBA["start_db_writer<br/>SQLite WAL · batch 100ms/5000"]
+    end
+
+    subgraph API2["paper-service REST :8080"]
+        JWT["JWT auth<br/>access 1s · refresh 24s<br/>argon2 hash"]
+        IDEM["idempotency client_order_id<br/>(read cache → aynı sonuç)"]
+        ROUTES["/order · /orders · /account/balance<br/>/positions · /metrics · /health"]
+        METR["Prometheus metrikleri<br/>(order_place_total · fills …)"]
+    end
+
+    TR --> OR_RING --> BRIDGE
+    BRIDGE --> CMD
+    CMD --> PROCESS
+    PROCESS --> RISK2
+    RISK2 -->|red| REJ[RejectReason]
+    RISK2 -->|onay| MARKET
+    MARKET --> POS --> SNAP
+    MARKET --> EV
+    FUND --> LIQ
+    EV --> SLED
+    EV --> PG
+    EV --> DBSA
+    SNAP --> API
+    ROUTES --> ENGINE
+
+    subgraph CANLI["LIVE Yolu"]
+        SIGN["BinanceSigner (HMAC-SHA256)"]
+        W["ws-api.binance.com/ws-api/v3<br/>order.place"]
+    end
+
+    EV -.->|TRADING_MODE=LIVE ayrı yolda| SIGN
+    SIGN --> W

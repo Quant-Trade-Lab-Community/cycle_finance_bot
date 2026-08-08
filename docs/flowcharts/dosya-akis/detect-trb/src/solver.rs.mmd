@@ -1,0 +1,54 @@
+graph TD
+    A([Başlangıç]) --> B[NSSolver::step: inflow al]
+    B --> C[1. advect: upwind differencing — (u nokta nabla) u]
+
+    C --> C1[Paralel satırlar: iç noktalar ix 1..NX-1]
+    C1 --> C2{her iy için upwind türev}
+    C2 --> C3[u yönüne göre sol veya sağ fark seç]
+    C3 --> C4[new_u = u - DT çarpı adveksiyon]
+    C4 --> C5{new_u NaN veya Inf mi?}
+    C5 -- Evet --> E1[Err: DivergenceExplosion]
+    C5 -- Hayır --> C6[tüm satırlar yazıldı mı?]
+    C6 -- Hayır --> C1
+    C6 -- Evet --> D[2. diffuse: Thomas Algorithm ile x-yönü çöz]
+
+    D --> D1[r = nu çarpı DT / dx kare]
+    D1 --> D2[Her y dilimi için vel_x kolonunu çöz]
+    D2 --> D3[Her x dilimi için vel_y satırını çöz]
+    D3 --> D4[thomas_solve: ileri tarama + geri yerine koyma]
+    D4 --> D5{matris tekil veya NaN/Inf mi?}
+    D5 -- Evet --> E1
+    D5 -- Hayır --> E[3. force_apply: OI delta + funding Coriolis]
+
+    E --> E2[oi_force = oi_delta çarpı 1e-6 çarpı DT]
+    E2 --> E3[coriolis = eksi funding_rate çarpı 100 çarpı DT]
+    E3 --> E4[vel_x += oi_force, vel_y += coriolis, density güncelle]
+    E4 --> F[4. pressure_poisson: Jacobi iterasyonu]
+
+    F --> F1[div = grid.divergence]
+    F1 --> F2{POISSON_ITER = 20 iterasyon}
+    F2 --> F3[İç noktalar Jacobi adımı: laplacian p = rhs]
+    F3 --> F4{p_new NaN veya Inf mi?}
+    F4 -- Evet --> E1
+    F4 -- Hayır --> F5[Neumann sınır koşulları: dp/dn = 0]
+    F5 --> F6{tüm iterasyonlar bitti mi?}
+    F6 -- Hayır --> F2
+    F6 -- Evet --> G[5. velocity_correction: u = u - DT çarpı nabla p]
+
+    G --> G1[İç noktalar: dp_dx, dp_dy hesapla]
+    G1 --> G2[vel_x -= DT çarpı dp_dx, vel_y -= DT çarpı dp_dy]
+    G2 --> G3{vel_x NaN içeriyor mu?}
+    G3 -- Evet --> E1
+    G3 -- Hayır --> H[steps += 1]
+    H --> I{her inflow için tekrar?}
+    I -- Evet --> C
+    I -- Hayır --> J[state: durum raporu üret]
+
+    J --> K[mean_density, max_velocity, mean_pressure, viscous, divergence_norm]
+    K --> L{div_norm < eşik ve değerler sonlu mu?}
+    L -- Evet --> M[is_stable = true]
+    L -- Hayır --> N[is_stable = false]
+    M --> O[SolverState döndür]
+    N --> O
+    O --> P[mean_pressure_gradient: basınç gradyanı ortalaması]
+    P --> Z([Bitiş])

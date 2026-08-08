@@ -1,0 +1,38 @@
+graph TD
+    A([Başlangıç]) --> B[new -> with_name: shm_name + capacity al]
+
+    B --> C[CString oluştur, total_size = header_aligned + cap * slot_size]
+    C --> D[shm_open: /dev/shm nesnesini aç veya oluştur]
+    D --> E{fd < 0?}
+    E -- Evet --> F[panic: shm_open başarısız]
+    E -- Hayır --> G[File::from_raw_fd, metadata ile existing boyutu oku]
+    G --> H{is_fresh = existing == 0?}
+    H -- Evet --> I[ftruncate(total_size) ile boyutlandır]
+    H -- Hayır --> J[map_len = existing]
+    I --> J
+    J --> K[mmap: paylaşımlı hafızayı eşle]
+    K --> L[header = mmap ptr, magic kontrolü]
+    L --> M{magic == RING_MAGIC?}
+    M -- Hayır --> N[ftruncate + yeniden mmap, magic/head/tail/capacity sıfırla, slotları sıfırla]
+    N --> O[GenerationalRingBuffer döndür]
+    M -- Evet --> O
+    O --> P([push: veri yaz])
+
+    P --> Q[head.load -> seq, index = seq % capacity]
+    Q --> R{data.len > 702?}
+    R -- Evet --> S[len = 702]
+    R -- Hayır --> T[len = data.len]
+    S --> U[slot'a len ve veri yaz, Release fence, seq yaz]
+    T --> U
+    U --> V[head.store(seq + 1, Release)]
+    V --> W([get_head: head.load(Acquire)])
+
+    W --> X([read_slot: seq ile okuma])
+    X --> Y[index = seq % capacity, slot = *ptr]
+    Y --> Z{slot.seq == seq?}
+    Z -- Evet --> AA{çift kontrol: tekrar oku seq eşit mi?}
+    AA -- Evet --> AB[Some(slot) döndür]
+    AA -- Hayır --> AC[None döndür - üretici slotu ezdi]
+    Z -- Hayır --> AC
+    AC --> AD([Bitiş])
+    AB --> AD

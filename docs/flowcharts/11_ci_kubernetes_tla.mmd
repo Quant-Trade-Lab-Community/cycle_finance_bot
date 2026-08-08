@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph CI[".github/workflows/test-suite.yml — Sertifika Testleri"]
+        J1["Job 1: audit-and-coverage<br/>cargo-deny advisories · tarpaulin %95"]
+        J2["Job 2: unit-integration<br/>cargo test --release<br/>wire roundtrip · ring generational<br/>proptest tick · actor e2e"]
+        J3["Job 3: performance-wcet<br/>cargo bench → MAX TICK 750µs<br/>(tick_benchmark)"]
+        J4["Job 4: chaos-mesh-staging<br/>Chaos Mesh 20 senaryo"]
+        TR["Triggers: master PR + nightly cron"]
+    end
+
+    subgraph K8S["Kubernetes (k8s/)"]
+        DEP["deployment.yaml<br/>1 replika · 4CPU/4Gi<br/>cgroupv2 · SYS_NICE caps"]
+        P1["Chaos: network_partition<br/>redis-cluster · 10sn · @5m"]
+        P2["Chaos: dns_failure<br/>api.binance + stream.binance @30m"]
+        P3["Chaos: ntp_drift<br/>+10sn TimeChaos @15m"]
+    end
+
+    subgraph FORMAL["Formal Verification (TLA+)"]
+        TLA["DemirYumruk.tla<br/>queue = tracked dispatch <br/>Produce/Consume"]
+        SAFE["Safety: ticks_out ≤ ticks_in"]
+        LIVE["Liveness: ticks_in = n → ticks_out = n<br/>WF_vars(Consume)"]
+        CFG["DemirYumruk.cfg<br/>SPEC + INVARIANT + PROPERTY"]
+    end
+
+    J1 --> J2 --> J3 --> J4
+    TR1 --> J1
+    FORMAL --> J2
+    OS_UTIL["os-utils: RT thread priority<br/>(SCHED_FIFO 99)"] -.-> DEP

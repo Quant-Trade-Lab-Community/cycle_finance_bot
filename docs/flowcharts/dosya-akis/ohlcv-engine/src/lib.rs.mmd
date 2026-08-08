@@ -1,0 +1,7 @@
+graph TD
+    A([Başlangıç]) --> B[lib.rs modül bildirimleri yüklenir]
+
+    B --> C[pub mod client -> client.rs modülünü dahil et]
+    C --> D[Kline struct tanımlanır: OHLCV + hacim ve trade alanları]
+
+    D --> Z([Bitiş])

@@ -1,0 +1,19 @@
+graph TD
+    A([Başlangıç]) --> B[TscTimer::new]
+    B --> C[tsc_hz = 3 GHz varsay, start_tsc = read_tsc]
+
+    C --> D[read_tsc()]
+    D --> E{x86_64 mimarisi mi?}
+    E -- Evet --> F[unsafe _rdtsc() döndür]
+    E -- Hayır --> G[SystemTime epoch nanos döndür]
+
+    C --> H[elapsed_ns()]
+    H --> I[current = read_tsc]
+    I --> J{current > start_tsc?}
+    J -- Evet --> K[diff = current - start_tsc]
+    K --> L[(diff / tsc_hz) * 1e9 -> nanos döndür]
+    J -- Hayır --> M[0 döndür]
+    F --> Z([Bitiş])
+    G --> Z
+    L --> Z
+    M --> Z

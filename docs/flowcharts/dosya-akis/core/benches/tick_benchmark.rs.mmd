@@ -1,0 +1,15 @@
+graph TD
+    A([Başlangıç]) --> B[criterion_group ile bench_tick_parsing ve bench_wire_roundtrip gruplanır]
+
+    B --> C[bench_tick_parsing: trade payload'ı hazırla]
+    C --> D[Her iterasyonda payload kopyala, EventParser::parse çalıştır, black_box ile sonucu sakla]
+
+    D --> E[bench_wire_roundtrip: BTCUSDT trade event'i oluştur]
+    E --> F[wire_encode_trade: wire::encode çağrısını ölç]
+    F --> G[wire_decode_trade: encode edilen frameleri wire::decode ile ölç]
+
+    G --> H[Depth20 emir defteri oluştur]
+    H --> I[wire_encode_depth20 ve wire_decode_depth20 ölçümlerini çalıştır]
+
+    I --> J[criterion_main ile tüm benchmarkları başlat, süre ve raporları yazdır]
+    J --> Z([Bitiş])

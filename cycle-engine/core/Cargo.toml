@@ -1,0 +1,49 @@
+[package]
+name = "core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "proje_core"
+
+[features]
+default = ["binance_v5"]
+binance_v5 = []
+binance_v6 = []
+
+[dependencies]
+tokio = { workspace = true }
+flume = { workspace = true }
+parking_lot = { workspace = true }
+simd-json = { workspace = true }
+futures-util = { workspace = true }
+cold-storage = { path = "../../data-engine/cold-storage" }
+adapter = { path = "../adapter" }
+os-utils = { path = "../../additional-services/os-utils" }
+execution-engine = { path = "../../execution-engine" }
+contracts = { path = "../contracts" }
+transport = { path = "../transport" }
+risk-engine = { path = "../../risk-engine" }
+strategies-engine = { path = "../../strategies-engine" }
+sha3 = { workspace = true }
+rusqlite = { workspace = true }
+dotenvy = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+core_affinity = { workspace = true }
+hdrhistogram = { workspace = true }
+crossbeam-channel = { workspace = true }
+serde = { workspace = true }
+libc = { workspace = true }
+memmap2 = { workspace = true }
+rustyline = { workspace = true }
+chrono = { workspace = true }
+rust_decimal = { workspace = true }
+
+[dev-dependencies]
+criterion = "0.4"
+proptest = { workspace = true }
+
+[[bench]]
+name = "tick_benchmark"
+harness = false

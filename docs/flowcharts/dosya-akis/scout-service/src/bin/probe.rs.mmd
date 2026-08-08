@@ -1,0 +1,38 @@
+graph TD
+    A([Başlangıç]) --> B[GenerationalRingBuffer: /demir_yumruk_scout aç]
+    B --> C{--once argümanı var mı?}
+
+    C -- Evet --> D[head = ring.get_head, start = head - 64]
+    D --> E[seq start..head döngüsü]
+    E --> F{slot var mı?}
+    F -- Evet --> G[print_ev: veriyi yazdır]
+    F -- Hayır --> H[okuma sayacını artır]
+    G --> H
+    H --> E
+
+    E --> I[okunan slot sayısını yazdır]
+    I --> Z([Bitiş])
+
+    C -- Hayır --> J[last = ring.get_head]
+    J --> K[sonsuz döngü]
+    K --> L[head = ring.get_head]
+    L --> M{head > last mi?}
+    M -- Hayır --> N[200 ms uyu]
+    M -- Evet --> O[seq last..head döngüsü]
+    O --> P{slot var mı?}
+    P -- Evet --> Q[print_ev: veriyi yazdır]
+    P -- Hayır --> R[atla]
+    Q --> R
+    R --> O
+
+    O --> S[last = head]
+    S --> N
+    N --> K
+
+    A --> T[print_ev: decode et]
+    T --> U{decode başarılı mı?}
+    U -- Hayır --> V[return]
+    U -- Evet --> W{olay türü?}
+    W -- Opportunity --> X[OPP satırı yazdır]
+    W -- SymbolMetrics --> Y[MET satırı yazdır]
+    W -- Diger --> V

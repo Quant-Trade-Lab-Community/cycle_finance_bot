@@ -1,0 +1,15 @@
+graph TD
+    A([Başlangıç]) --> B[RiskCache yapısı: params = Arc RwLock RiskParameters]
+
+    B --> C[new: params = RwLock default RiskParameters]
+    C --> D{İşlem türü seç}
+
+    D --> E[read_params: params.read kilit al]
+    E --> F[RiskParameters kopyasını döndür core tick döngüsünü bloklamadan]
+
+    D --> G[update_params: params.write kilit al]
+    G --> H[*w = new_params yeni parametreler yaz]
+    H --> I[println: RiskCache Parameters updated]
+
+    F --> Z([Bitiş])
+    I --> Z([Bitiş])

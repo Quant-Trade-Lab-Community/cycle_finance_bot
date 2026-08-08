@@ -1,0 +1,26 @@
+graph TD
+    A([Başlangıç]) --> B[EventType enum tanımlanır: 8 varyant]
+    B --> C[OwnedEvent struct: symbol [u8;16] + payload EventType]
+
+    C --> D[pack_symbol: sym -> [u8;16], 16 karaktere kırp]
+    D --> E[new_trade: pack_symbol + EventType::Trade kur]
+
+    E --> F[new_orderbook: pack_symbol + Orderbook kur]
+    E --> G[new_liquidation: pack_symbol + Liquidation kur]
+    E --> H[new_funding_rate: pack_symbol + FundingRate kur]
+    E --> I[new_bookticker: pack_symbol + BookTicker kur]
+    E --> J[new_open_interest: pack_symbol + OpenInterest kur]
+    E --> K[new_opportunity: pack_symbol + Opportunity kur]
+    E --> L[new_symbol_metrics: pack_symbol + SymbolMetrics kur]
+
+    F --> M[OwnedEvent döndür]
+    G --> M
+    H --> M
+    I --> M
+    J --> M
+    K --> M
+    L --> M
+
+    C --> N[Debug impl: EventType ve OwnedEvent debug_struct ile formatlanır]
+    M --> Z([Bitiş])
+    N --> Z([Bitiş])

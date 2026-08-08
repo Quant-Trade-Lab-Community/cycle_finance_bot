@@ -1,0 +1,31 @@
+graph TD
+    A([Başlangıç]) --> B[new: CString /demir_yumruk_orders + capacity al]
+    B --> C[header_aligned + cap * slot_size = total_size]
+    C --> D[shm_open: /demir_yumruk_orders aç veya oluştur]
+    D --> E{fd < 0?}
+    E -- Evet --> F[panic: orders shm açılamadı]
+    E -- Hayır --> G[metadata ile existing boyutu oku]
+    G --> H{is_fresh = existing == 0?}
+    H -- Evet --> I[ftruncate(total_size)]
+    H -- Hayır --> J[map_len = existing]
+    I --> J
+    J --> K[mmap: order paylaşımlı hafızasını eşle]
+    K --> L{magic == ORDER_RING_MAGIC?}
+    L -- Hayır --> M[ftruncate + yeniden mmap, magic/head/tail/capacity sıfırla]
+    M --> N[OrderRingBuffer döndür]
+    L -- Evet --> N
+    N --> O([push: emir yaz])
+
+    O --> P[head.load -> seq, index = seq % capacity]
+    P --> Q[slot.seq/side/order_type/quantity/price yaz]
+    Q --> R[symbol 16 byte'a sığdır]
+    R --> S[head.store(seq + 1, Release)]
+    S --> T([get_head: head.load(Acquire)])
+
+    T --> U([read_slot: seq ile emir okuma])
+    U --> V[index = seq % capacity, slot = *ptr]
+    V --> W{slot.seq == seq?}
+    W -- Evet --> X[Some(slot) döndür]
+    W -- Hayır --> Y[None döndür - üretici slotu ezdi]
+    X --> Z([Bitiş])
+    Y --> Z

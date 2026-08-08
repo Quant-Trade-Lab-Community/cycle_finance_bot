@@ -1,0 +1,31 @@
+graph TD
+    A([Başlangıç: main]) --> B[Args::parse: symbol, interval, limit parametreleri alınır]
+    B --> C[Başlık ve parametreler yazdırılır]
+    C --> D[BinanceClient oluşturulur]
+    D --> E[fetch_klines(symbol, interval, limit) çağrılır]
+    E --> F{Veri çekme başarılı mı?}
+
+    F -- Hayır --> F1[Hata yazdırılır: Veri çekilirken hata oluştu]
+    F1 --> Z([Bitiş])
+    F -- Evet --> G[Veri sayısı ve güncel fiyat yazdırılır]
+
+    G --> H[1. swing_extrema(&klines, 5): Fractal/Swing seviyeleri]
+    H --> H1[print_levels ile seviyeler yazdırılır]
+
+    H1 --> I[2. kmeans_1d(&klines, 5): K-Means kümeleri]
+    I --> I1[print_levels ile seviyeler yazdırılır]
+
+    I1 --> J[3. volume_profile(&klines, 50): Hacim düğümleri]
+    J --> J1[print_levels ile seviyeler yazdırılır]
+
+    J1 --> K[4. kde_peaks(&klines): Kernel yoğunluk tahmini]
+    K --> K1[print_levels ile seviyeler yazdırılır]
+
+    K1 --> L[print_levels alt süreci]
+    L --> L1{levels boş mu?}
+    L1 -- Evet --> L2["Bulunamadı." yazdırılır]
+    L2 --> Z
+    L1 -- Hayır --> M[her seviye: fiyat üzerindeyse direnç, altındaysa destek listesine eklenir]
+    M --> N[dirençler büyükten küçüğe sıralanır, uzaklık yüzdesiyle yazdırılır]
+    N --> O[supportlar büyükten küçüğe sıralanır, uzaklık yüzdesiyle yazdırılır]
+    O --> Z([Bitiş])

@@ -1,0 +1,45 @@
+graph TD
+    A([Başlangıç: RedisAdapter::new]) --> B[REDIS_URL env oku, varsayılan redis://127.0.0.1:6379]
+    B --> C([with_url])
+    C --> D[redis::Client::open(url)]
+    D --> E{client açıldı mı?}
+    E -- Hayır --> F[eprintln: geçersiz URL, conn = None]
+    E -- Evet --> G[get_connection_with_timeout(5 sn)]
+    G --> H{bağlantı kuruldu mu?}
+    H -- Hayır --> I[eprintln: bağlantı hatası, conn = None]
+    H -- Evet --> J[conn = Some(Mutex::new(conn))]
+    I --> K([Bitiş - fail-closed mod])
+    J --> K
+
+    L([health]) --> M{conn var mı?}
+    M -- Hayır --> N[RedisHealth::Degraded]
+    M -- Evet --> O[PING komutu çalıştır]
+    O --> P{başarılı mı?}
+    P -- Evet --> Q[RedisHealth::Connected]
+    P -- Hayır --> N
+    N --> R([Bitiş])
+    Q --> R
+
+    S([set_idempotency_key]) --> T{conn var mı?}
+    T -- Hayır --> U[Err: Redis unavailable - fail-closed]
+    T -- Evet --> V[SET key 1 EX 3600 NX atomik komutu]
+    V --> W{sonuç?}
+    W -- Some --> X[Ok - idempotency anahtarı yazıldı]
+    W -- None --> Y[Err: duplicate - aynı anahtar zaten var]
+    W -- Hata --> Z[Err: Redis komut hatası]
+    U --> AA([Bitiş])
+    X --> AA
+    Y --> AA
+    Z --> AA
+
+    AB([generate_client_order_id]) --> AC[BOT_UUID + timestamp_nano birleştir]
+    AC --> AD([Bitiş])
+
+    AE([check_ack_status]) --> AF{conn var mı?}
+    AF -- Hayır --> AG[Pending döndür]
+    AF -- Evet --> AH[order_id GET sorgusu]
+    AH --> AI{anahtar var mı?}
+    AI -- Evet --> AJ[Confirmed döndür]
+    AI -- Hayır --> AG
+    AJ --> AK([Bitiş])
+    AG --> AK

@@ -1,0 +1,9 @@
+graph TD
+    A([Başlangıç]) --> B[BinanceSigner::new(api_key, secret_key)]
+    B --> C["sign(query_string)"]
+    C --> D["HmacSha256::new_from_slice(secret_key)"]
+    D --> E[mac.update(query_string)]
+    E --> F[mac.finalize -> code_bytes]
+    F --> G[hex::encode(code_bytes)]
+    G --> H[imzalı hex string döndür]
+    H --> Z([Bitiş])

@@ -1,0 +1,16 @@
+graph TD
+    A([Başlangıç]) --> B[AppState oluştur: BinanceClient::new]
+    B --> C[Router: GET /api/klines -> get_klines handler]
+    C --> D[TcpListener::bind 127.0.0.1:3000]
+    D --> E[axum::serve - istekleri dinle]
+
+    E --> F{Yeni HTTP isteği geldi mi?}
+    F -- Evet --> G[get_klines: Query<KlineParams> ayrıştır]
+    G --> H[limit = params.limit.unwrap_or(100)]
+    H --> I[fetch_klines(symbol, interval, limit)]
+    I --> J{Ok mu?}
+    J -- Evet --> K[Json: status=success + klines verisi]
+    J -- Hayır --> L[Json: status=error + hata mesajı]
+    K --> E
+    L --> E
+    F -- Hayır --> E

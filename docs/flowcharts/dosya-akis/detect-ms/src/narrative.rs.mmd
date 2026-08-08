@@ -1,0 +1,39 @@
+graph TD
+    A([Başlangıç]) --> B[generate_report: core, amp, acute klines al]
+    B --> C[current_price = core son kapanış]
+    C --> D[KATMAN 2: atr_14 hesapla]
+    D --> E[extract_pivots ile pivotları çıkar]
+    E --> F[detect_liquidity_zones ile likidite bölgelerini bul]
+
+    F --> G[KATMAN 3: 3 pencere için analyze_trend ayrı ayrı çalıştır]
+    G --> H[KATMAN 1: weighted_merge ile ATS skorunu hesapla]
+    H --> I[confluence_index ile çapraz zaman dilimi uyumunu hesapla]
+
+    I --> J[KATMAN 4: analyze_levels ile stratejik seviyeleri bul]
+    J --> K[KATMAN 5: analyze_liquidity ile likidite analizi yap]
+    K --> L[KATMAN 6: detect_fvg ile FVG'leri tespit et]
+    L --> M[Active Absorber olanları filtrele]
+
+    M --> N[KATMAN 7: find_vacuum_zone ile en yüksek manyetik alanı bul]
+    N --> O[find_vacuum_zone: her FVG'yi tara]
+
+    O --> P{Active Absorber mı?}
+    P -- Evet --> Q[delta_mult = 1.5]
+    P -- Hayır --> R[delta_mult = 0.5]
+    Q --> S[Bölgedeki en yüksek seviye savunma skorunu bul]
+    R --> S
+    S --> T[Bölgedeki hacim yoğunluğu skorunu topla]
+    T --> U[magnetic_score = (defense + vol) * delta_mult]
+    U --> V{magnetic_score > best_score?}
+    V -- Evet --> W[Vakum Bölgesi güncelle: label ve delta_confirmed ayarla]
+    V -- Hayır --> X[Sonraki FVG?]
+    W --> X
+    X -- Evet --> O
+    X -- Hayır --> Y[en iyi vakum bölgesini döndür]
+
+    Y --> Z0[Pivot Matrisi: ilk 20 seviye için LevelEntry oluştur]
+    Z0 --> Z1[Her seviyeye en yakın volume node'unun HVN oranını bul]
+    Z1 --> Z2[Her seviyeye en yakın FVG'nin delta uyumunu işaretle]
+    Z2 --> Z3[LevelEntry'lere Priority skor ekle]
+    Z3 --> Z4[MSMPReport yapısını oluştur ve döndür]
+    Z4 --> Z([Bitiş])

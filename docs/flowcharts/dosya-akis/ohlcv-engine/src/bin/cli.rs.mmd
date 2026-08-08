@@ -1,0 +1,20 @@
+graph TD
+    A([Başlangıç]) --> B[Args::parse -> symbol, interval, limit]
+    B --> C[Banner yazdır]
+    C --> D[BinanceClient::new oluştur]
+    D --> E[fetch_klines(symbol, interval, limit)]
+    E --> F{Sonuç Ok mu?}
+    F -- Evet --> G[for döngüsü: her kline]
+    G --> H[time_str = Local.timestamp_millis_opt(open_time)]
+    H --> I{close >= open mi?}
+    I -- Evet --> J[trend = BOGA]
+    I -- Hayır --> K[trend = AYI]
+    J --> L[delta ve delta_percent hesapla]
+    K --> L
+    L --> M[Satırı konsola yazdır]
+    M --> N{son kline mı?}
+    N -- Hayır --> G
+    N -- Evet --> O[Bitiş çizgisi + çekilen mum sayısı yazdır]
+    F -- Hayır --> P[Hata mesajı yazdır]
+    O --> Z([Bitiş])
+    P --> Z([Bitiş])

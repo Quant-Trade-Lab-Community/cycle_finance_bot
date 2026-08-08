@@ -1,0 +1,14 @@
+graph TD
+    A([Başlangıç]) --> B[Signal enum: None, BuyMarket, SellMarket, BuyLimit, SellLimit, CancelAll]
+    B --> C[FillReport struct: order_id, executed_qty, avg_price]
+    C --> D[Strategy trait tanımla]
+    D --> E[id() -> u32]
+    D --> F[on_market_data(frame_id, data) -> Signal]
+    D --> G[on_timer(frame_id, delta_ns) -> Signal]
+    D --> H[on_fill(report) -> Signal]
+    D --> I[reset()]
+    E --> Z([Bitiş])
+    F --> Z
+    G --> Z
+    H --> Z
+    I --> Z

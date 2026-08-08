@@ -1,0 +1,9 @@
+[package]
+name = "transport"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libc = { workspace = true }
+memmap2 = { workspace = true }
+rust_decimal = { workspace = true }

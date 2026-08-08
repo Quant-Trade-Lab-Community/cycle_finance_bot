@@ -1,0 +1,44 @@
+graph TD
+    A([Başlangıç]) --> B[EventParser::parse(bytes)]
+    B --> C[simd_json::to_borrowed_value(bytes) parse]
+    C --> D{parse başarılı mı?}
+    D -- Hayır --> E[None döndür]
+    D -- Evet --> F[stream ve data alanlarını çıkar]
+    F --> G{stream hangi tipte?}
+
+    G -- ends_with @trade --> H[s, p, q, T, m alanlarını çıkar]
+    H --> I[Decimal dönüşümleri]
+    I --> J[OwnedEvent::new_trade oluştur]
+
+    G -- contains @depth --> K[sembolü ayır, 20 bids + 20 asks dizisi]
+    K --> L{data.get bids/b alanı var mı?}
+    L -- Evet --> M[ilk 20 bid'i parse et]
+    L -- Hayır --> N[atla]
+    M --> N
+    N --> O{data.get asks/a alanı var mı?}
+    O -- Evet --> P[ilk 20 ask'i parse et]
+    O -- Hayır --> Q[atla]
+    P --> Q
+    Q --> R[OwnedEvent::new_orderbook oluştur]
+
+    G -- ends_with @forceOrder --> S[o -> s, S, p, q, T alanlarını çıkar]
+    S --> T[side: BUY -> 0, diğer -> 1]
+    T --> U[OwnedEvent::new_liquidation oluştur]
+
+    G -- contains @markPrice --> V[s, p, i, r, T alanlarını çıkar]
+    V --> W[index_price yoksa mark_price kullan, funding_rate default 0]
+    W --> X[OwnedEvent::new_funding_rate oluştur]
+
+    G -- ends_with @bookTicker --> Y[s, b, B, a, A alanlarını çıkar]
+    Y --> Z[OwnedEvent::new_bookticker oluştur]
+
+    G -- bilinmeyen --> AA[None döndür]
+
+    J --> AB[Some(OwnedEvent) döndür]
+    R --> AB
+    U --> AB
+    X --> AB
+    Z --> AB
+    E --> AC([Bitiş])
+    AA --> AC
+    AB --> AC

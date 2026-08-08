@@ -1,0 +1,11 @@
+graph TD
+    A([Başlangıç: track_rtt gecikme ölçümü]) --> B{rtt_ms > 1.0 mu?}
+    B -- Evet --> C[RTT spike tespit edildi]
+    C --> D[adjust_jaeger_sampling(1.0) ile %100 örnekleme]
+    B -- Hayır --> E[Normal gecikme]
+    E --> F[adjust_jaeger_sampling(0.01) ile %1 örnekleme]
+    D --> G([Bitiş])
+    F --> G
+
+    H([trigger_chaos_mesh_scenario]) --> I[Fault senaryosu enjekte et]
+    I --> J([Bitiş])

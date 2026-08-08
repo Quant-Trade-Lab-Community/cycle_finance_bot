@@ -1,0 +1,46 @@
+graph TD
+    A([Başlangıç]) --> B[SQLite bağlantısı aç: market_data.db]
+    B --> C[PRAGMA: WAL, synchronous=NORMAL, cache_size=-64000]
+    C --> D[Tablo oluştur: trades]
+    C --> E[Tablo oluştur: orderbooks]
+    C --> F[Tablo oluştur: liquidations]
+    C --> G[Tablo oluştur: funding_rates]
+    C --> H[Tablo oluştur: booktickers]
+    C --> I[Tablo oluştur: open_interests]
+    C --> J[Tablo oluştur: opportunities]
+    C --> K[Tablo oluştur: symbol_metrics]
+    D --> L[batch_count = 0, last_commit = now, limit = 10_000, commit_interval = 1 sn]
+    E --> L
+    F --> L
+    G --> L
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    L --> M[transaction başlat]
+
+    M --> N{while rx.recv() -> event}
+    N -- Evet --> O[sembolü null-terminated olarak temizle]
+    O --> P{event.payload tipi?}
+    P -- Trade --> Q[INSERT trades]
+    P -- Orderbook --> R[bids/asks string'e çevir, INSERT orderbooks]
+    P -- Liquidation --> S[INSERT liquidations]
+    P -- FundingRate --> T[INSERT funding_rates]
+    P -- BookTicker --> U[INSERT booktickers]
+    P -- OpenInterest --> V[INSERT open_interests]
+    P -- Opportunity --> W[INSERT opportunities]
+    P -- SymbolMetrics --> X[INSERT symbol_metrics]
+    Q --> Y[batch_count += 1]
+    R --> Y
+    S --> Y
+    T --> Y
+    U --> Y
+    V --> Y
+    W --> Y
+    X --> Y
+    Y --> Z{batch_count >= 10_000 veya 1 sn geçti mi?}
+    Z -- Evet --> AA[tx.commit, yeni transaction başlat, sayaçları sıfırla]
+    Z -- Hayır --> AB[atla]
+    AA --> AB
+    AB --> N
+    N -- Hayır --> AC([Bitiş])

@@ -1,0 +1,8 @@
+graph TD
+    A([Başlangıç: read_isolation_forest_anomaly_score]) --> B[Redis'ten skor oku (mock)]
+    B --> C[0.05 normal skor döndür]
+    C --> D([Bitiş])
+
+    E([read_llm_trend_tag]) --> F[Redis'ten sentiment etiketi oku (mock)]
+    F --> G[NEUTRAL döndür]
+    G --> H([Bitiş])

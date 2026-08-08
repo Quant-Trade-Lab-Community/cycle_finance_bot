@@ -1,0 +1,46 @@
+graph TD
+    A([Başlangıç: test_position_open_long_and_unrealized_pnl]) --> B["PositionManager::new()"]
+    B --> C["pm.apply_fill(BTCUSDT, +100, 50000, 10)"]
+    C --> D{quantity == 0?}
+    D -- Evet --> E["Yeni açılış: Long, qty=100, entry=50000"]
+    E --> F{realized == 0 ve closed == 0?}
+    F -- Evet --> G["pm.get(BTCUSDT) -> Long, qty=100"]
+    G --> H["pos.unrealized_pnl(51000) == 2 kontrol"]
+    H --> I["pos.liquidation_price(0.005) == 45250 kontrol"]
+
+    I --> J[test_position_close_realizes_pnl]
+    J --> K["apply_fill(+100) açılış, apply_fill(-100 @ 51000) kapanış"]
+    K --> L{aynı yön değil -> kapanış}
+    L -- Evet --> M["realized = 2, closed = 100"]
+    M --> N{quantity 0 oldu, pozisyon kaldırıldı}
+    N -- Evet --> O["pm.get(BTCUSDT).is_none() kontrol"]
+
+    O --> P[test_position_flip_short]
+    P --> Q["apply_fill(+200 @ 50000), apply_fill(-300 @ 49000)"]
+    Q --> R["200 kapanır: realized = -4, closed = 200"]
+    R --> S["Kalan -100 -> Short, entry = 49000 kontrol"]
+
+    S --> T[test_short_unrealized_pnl_sign]
+    T --> U["apply_fill(-100 @ 50000) -> Short"]
+    U --> V["unrealized_pnl(49000) == +2, unrealized_pnl(51000) == -2"]
+    V --> W["total_unrealized_pnl == 2 kontrol"]
+
+    W --> X[test_hedge_positions_coexist]
+    X --> Y["apply_fill_hedge(Long, +100) + apply_fill_hedge(Short, -50)"]
+    Y --> Z["İki taraf ayrı: Long 100, Short -50, total_abs = 150"]
+    Z --> AA["Short kapat @ 48000: realized = 2"]
+
+    AA --> AB[test_risk_min_position_rejection]
+    AB --> AC["check_order(5) Err, check_order(6) Ok"]
+    AC --> AD["check_order(-5) Err, check_order(-6) Ok (abs ile değerlendirilir)"]
+
+    AD --> AE[test_risk_leverage_margin_rejection]
+    AE --> AF["1000 USDT 20x -> Ok, 1000x -> Err, 6000 USDT 10x -> Err"]
+
+    AF --> AG[test_risk_drawdown_breach]
+    AG --> AH["on_mark_tick: equity 10000, drawdown %0 -> status Ok"]
+
+    AH --> AI[test_liquidation_trigger_on_long]
+    AI --> AJ["Long @50000 10x, likidasyon 45250; mark 45000"]
+    AJ --> AK["on_mark_tick -> liquidated = [BTCUSDT], status = Liquidation"]
+    AK --> AL([Bitiş: tüm risk testleri])

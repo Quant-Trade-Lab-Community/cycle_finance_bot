@@ -1,0 +1,9 @@
+graph TD
+    A([Başlangıç]) --> B[Cold Starter başlatma mesajı yazdır]
+    B --> C[CatchupRoutines oluştur]
+
+    C --> D[fetch_200_ema: ClickHouse'tan 200 EMA çek]
+    D --> E[replay_buffer_in_paper_mode: mmap buffer'ı Paper Mode'da oynat]
+    E --> F[transition_to_live: canlı moda geç]
+
+    F --> Z([Bitiş])

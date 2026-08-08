@@ -6,6 +6,7 @@ use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
 use serde::Serialize;
 
+use super::actor::MarginType;
 use super::domain_event::DomainEvent;
 use super::position::{PositionManager, PositionSide};
 use super::risk::RiskStatus;
@@ -23,6 +24,7 @@ pub struct PositionView {
     pub unrealized_pnl: Option<Decimal>,
     /// PnL yüzdesi (girişe göre)
     pub unrealized_pnl_pct: Option<Decimal>,
+    pub margin_type: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -44,6 +46,7 @@ pub struct PaperSnapshot {
     pub total_commission: Decimal,
     pub risk_status: String,
     pub last_price: Decimal,
+    pub position_mode: String,
     pub positions: Vec<PositionView>,
     pub open_orders: usize,
     pub recent_trades: Vec<TradeView>,
@@ -66,19 +69,24 @@ impl PaperSnapshot {
         open_orders: usize,
         recent_trades: Vec<TradeView>,
         mark_prices: &std::collections::HashMap<String, Decimal>,
+        position_mode: String,
+        margin_types: &std::collections::HashMap<String, MarginType>,
     ) -> Self {
         let positions = positions
             .all()
-            .iter()
-            .map(|(sym, pos)| {
-                let mark = mark_prices.get(sym).copied();
+            .into_iter()
+            .map(|pos| {
+                let mark = mark_prices.get(&pos.symbol).copied();
                 let unrealized = mark.map(|m| pos.unrealized_pnl(m));
                 let unrealized_pnl_pct = unrealized.map(|up| {
-                    let cost = (pos.avg_entry_price * pos.quantity.abs()).max(Decimal::ONE);
+                    let cost = pos.quantity.abs().max(Decimal::ONE);
                     (up / cost) * Decimal::ONE_HUNDRED
                 });
+                let margin_type = margin_types.get(&pos.symbol)
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| "CROSSED".to_string());
                 PositionView {
-                    symbol: sym.clone(),
+                    symbol: pos.symbol.clone(),
                     side: match pos.side {
                         PositionSide::Long => "LONG".to_string(),
                         PositionSide::Short => "SHORT".to_string(),
@@ -90,6 +98,7 @@ impl PaperSnapshot {
                     mark_price: mark,
                     unrealized_pnl: unrealized,
                     unrealized_pnl_pct,
+                    margin_type,
                 }
             })
             .collect();
@@ -101,6 +110,7 @@ impl PaperSnapshot {
             total_commission: commission,
             risk_status: risk_status.as_str().to_string(),
             last_price,
+            position_mode,
             positions,
             open_orders,
             recent_trades,

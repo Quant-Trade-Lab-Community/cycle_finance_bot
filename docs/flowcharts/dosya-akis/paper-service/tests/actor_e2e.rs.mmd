@@ -1,0 +1,23 @@
+graph TD
+    A([Başlangıç]) --> B[env değişkenleri: PAPER_INITIAL_USDT=10000, PAPER_DB_PATH]
+    B --> C[event_tx/event_rx unbounded kanal + PaperConfig::load_from_env]
+    C --> D[PaperEngineActor::new_with_events config + event_tx + boş replay]
+    D --> E[snapshot_handle al + actor.run(cmd_rx) spawn]
+    E --> F[MarkPriceUpdate send: BTCUSDT mark_price=50000]
+    F --> G[SubmitOrder send: Market Buy 50 LONG + oneshot response_tx]
+    G --> H[resp_rx.await emir yanıtı bekle]
+    H --> I{ack başarılı mı?}
+    I -- Err --> J[test panic: emir dolmalıydı]
+    I -- Ok --> K[assert executed_qty = 50]
+    K --> L[assert avg_price = 50000]
+    L --> M[sleep 50ms + snapshot.read clone]
+    M --> N{pozisyon sayısı 1 mi?}
+    N -- Hayır --> O[test panic]
+    N -- Evet --> P[assert BTCUSDT, side LONG, quantity 50]
+    P --> Q[event_rx.try_recv ile event akışını tara]
+    Q --> R{OrderCreated üretildi mi?}
+    R -- Hayır --> S[assert panic]
+    R -- Evet --> T{OrderFilled üretildi mi?}
+    T -- Hayır --> U[assert panic]
+    T -- Evet --> V[assert count >= 2 event]
+    V --> Z([Bitiş])

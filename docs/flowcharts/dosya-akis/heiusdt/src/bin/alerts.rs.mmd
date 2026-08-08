@@ -1,0 +1,53 @@
+graph TD
+    A([Başlangıç]) --> B[args = komut satırı argümanları, ilk argüman komut]
+    B --> C{komut nedir?}
+
+    C -- list --> D[cmd_list: alerts.toml içeriğini oku]
+    D --> D1[parse_blocks: satır satır blokları çöz]
+    D1 --> D2{[[alerts]] başlangıç satırı mı?}
+    D2 -- Evet --> D3[önceki bloğu kapat, yeni blok başlat]
+    D2 -- Hayır --> D4{blok içinde miyiz?}
+    D4 -- Evet --> D5[alanı ata: symbol/condition/price/tolerance/voice/cooldown]
+    D4 -- Hayır --> D6[header satırı olarak sakla]
+    D3 --> D7{satır kaldı mı?}
+    D5 --> D7
+    D6 --> D7
+    D7 -- Evet --> D2
+    D7 -- Hayır --> D8[son bloğu kaydet, header ve blokları döndür]
+    D8 --> E{blok listesi boş mu?}
+    E -- Evet --> F[Alarmsız mesajı yaz]
+    F --> Z([Bitiş])
+    E -- Hayır --> G[her alarmı numaralı satır olarak yaz]
+    G --> Z([Bitiş])
+
+    C -- add --> H[cmd_add: gerekli --symbol, --condition, --price argümanlarını al]
+    H --> I[parse_blocks ile mevcut yapıyı çöz]
+    I --> J[normalize edilmiş yeni AlertBlock ekle]
+    J --> K[write_config: header ve blokları alerts.toml'a yaz]
+    K --> L[Eklendi mesajı yaz]
+    L --> Z([Bitiş])
+
+    C -- update --> M[cmd_update: sembol, koşul ve eski fiyatı bul]
+    M --> N[parse_blocks ile blokları çöz, eski fiyatı normalize et]
+    N --> O{eşleşen blok var mı?}
+    O -- Evet --> P[istenen alanları güncelle: price/voice/cooldown/tolerance]
+    P --> Q[write_config ile kaydet]
+    Q --> R[Güncellendi mesajı yaz]
+    R --> Z([Bitiş])
+    O -- Hayır --> S[Alarm bulunamadı hatası yaz]
+    S --> SA[exit 1]
+    SA --> Z([Bitiş])
+
+    C -- remove --> T[cmd_remove: sembol, koşul ve fiyatı bul]
+    T --> U[parse_blocks ile eşleşen blokları ele]
+    U --> V{blok silindi mi?}
+    V -- Evet --> W[write_config ile kaydet]
+    W --> X[Silindi mesajı yaz]
+    X --> Z([Bitiş])
+    V -- Hayır --> Y[Alarm bulunamadı hatası yaz]
+    Y --> YA[exit 1]
+    YA --> Z([Bitiş])
+
+    C -- diğer --> CA[kullanım mesajı yaz]
+    CA --> CB[exit 1]
+    CB --> Z([Bitiş])

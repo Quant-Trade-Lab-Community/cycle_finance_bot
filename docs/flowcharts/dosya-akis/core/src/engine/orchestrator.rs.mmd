@@ -1,0 +1,43 @@
+graph TD
+    A([Başlangıç]) --> B[head = 0, TscTimer oluştur, last_timer_tick = elapsed_ns]
+    B --> C{sonsuz döngü}
+
+    C --> D[ring_buffer.get_head() -> current_seq]
+    D --> E{head < current_seq?}
+    E -- Evet --> F[slot = ring_buffer.read_slot(head)]
+    F --> G{slot var mı?}
+    G -- Evet --> H[frame_id = slot.seq]
+    H --> I[Her bir strateji shard'ı için]
+    I --> J{shard.state == Active?}
+    J -- Evet --> K[catch_unwind ile on_market_data çağır]
+    K --> L{Panik oluştu mu?}
+    L -- Evet --> M[shard.state = Poisoned]
+    L -- Hayır --> N[sig = dönüş değeri]
+    N --> O[risk_manager.process_signal(sig, shard.id())]
+    O --> P{Some(valid_sig) ve != Signal::None?}
+    P -- Evet --> Q[gateway_tx.send(valid_sig)]
+    P -- Hayır --> R[işlemi atla]
+    Q --> R
+    M --> R
+    R --> S[head += 1]
+    S --> E
+    G -- Hayır --> S
+    E -- Hayır --> T[current_time = timer.elapsed_ns()]
+    T --> U{current_time - last_timer_tick > 1_000_000?}
+    U -- Evet --> V[frame_id = current_time, delta = current_time - last_timer_tick]
+    V --> W[Her bir strateji shard'ı için]
+    W --> X{shard.state == Active?}
+    X -- Evet --> Y[catch_unwind ile on_timer çağır]
+    Y --> Z{Panik oluştu mu?}
+    Z -- Evet --> AA[shard.state = Poisoned]
+    Z -- Hayır --> AB[sig = dönüş değeri]
+    AB --> AC[risk_manager.process_signal(sig, shard.id())]
+    AC --> AD{Some(valid_sig) ve != Signal::None?}
+    AD -- Evet --> AE[gateway_tx.send(valid_sig)]
+    AD -- Hayır --> AF[işlemi atla]
+    AE --> AF
+    AA --> AF
+    AF --> AG[last_timer_tick = current_time]
+    AG --> AH[std::hint::spin_loop()]
+    AH --> C
+    U -- Hayır --> AH

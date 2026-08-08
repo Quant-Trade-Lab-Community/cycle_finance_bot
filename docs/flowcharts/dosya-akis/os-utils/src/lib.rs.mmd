@@ -1,0 +1,13 @@
+graph TD
+    A([Başlangıç]) --> B[lib.rs: pub mod config -> config.rs modülünü dahil et]
+    B --> C[set_rt_thread_priority(priority)]
+    C --> D{target_os = linux mi?}
+    D -- Hayır --> E[No-op uyarısı yazdır]
+    D -- Evet --> F[sched_param { sched_priority } oluştur]
+    F --> G[sched_setscheduler(0, SCHED_FIFO)]
+    G --> H{sonuç != 0 mi?}
+    H -- Evet --> I[CAP_SYS_NICE veya root gerekli hatası yazdır]
+    H -- Hayır --> J[SCHED_FIFO'ya yükseltildi mesajı yazdır]
+    E --> Z([Bitiş])
+    I --> Z([Bitiş])
+    J --> Z([Bitiş])

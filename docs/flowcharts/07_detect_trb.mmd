@@ -1,0 +1,52 @@
+flowchart TB
+    subgraph VERI["Veri Kaynakları"]
+        SQL["SQLite market_data.db<br/>trades · liquidations · funding · OI"]
+        RING["GenerationalRingBuffer (canlı)"]
+        LIVE["extra_live takviyesi"]
+    end
+
+    subgraph ING["Ingest + Grid"]
+        ING1["ingest.rs<br/>tick → bucket · VWAP"]
+        GRID9["PhaseSpace 64×16<br/>fiyat ln(P) · hız alanı · basınç"]
+    end
+
+    subgraph GR["NSSolver (core-pin · rayon · wide SIMD)"]
+        S1["Advection (upwind)"]
+        S2["Diffusion (Thomas implicit)"]
+        S3["Dış kuvvet: OI + funding"]
+        S4["Pressure Poisson (Jacobi 20)"]
+        S5["Hız düzeltme u −= Δt∇p"]
+        DIVT{"divergence > 1e6?"}
+        EXPL["DivergenceExplosion"]
+    end
+
+    subgraph CAV2["Kavitasyon"]
+        BUB["Bubble ODE (Rayleigh-Plesset)"]
+        BURST["BurstSignal · şok dalgası<br/>(Minnaert frekansı)"]
+    end
+
+    subgraph CAL2["Çıktı"]
+        CAL["Nelder-Mead kalibrasyon<br/>(ν · Cs Smagorinsky)"]
+        TWAP["TWAP emir eğrisi<br/>w_i = r^i · r=0.8"]
+        NARR2["Türkçe naratif"]
+        API["GET /api/trb + /api/trb/status :3006"]
+    end
+
+    SQL --> ING1
+    RING --> ING1
+    LIVE --> ING1
+    ING1 --> GRID9
+    GRID9 --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> DIVT
+    DIVT -->|evet| EXPL
+    DIVT -->|hayır| BUB
+    BUB --> BURST
+    BURST --> TWAP
+    S5 --> CAL
+    CAL --> NARR
+    TWAP --> NARR
+    NARR --> API

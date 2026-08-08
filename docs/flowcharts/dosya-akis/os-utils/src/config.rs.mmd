@@ -1,0 +1,18 @@
+graph TD
+    A([Başlangıç]) --> B[ConfigManager::new -> Atomic<GlobalConfig> oluştur]
+
+    B --> C[read_config(guard): epoch pinli okuma]
+    C --> D[current_config.load(Acquire)]
+    D --> E[ptr.as_ref -> GlobalConfig referansı döndür]
+
+    B --> F[swap_config(new_config)]
+    F --> G[epoch::pin() ile guard al]
+    G --> H[Owned::new -> yeni config pointer]
+    H --> I[current_config.swap(Release)]
+    I --> J{eski pointer null mu?}
+    J -- Hayır --> K[guard.defer_destroy ile eski config'i güvenle sil]
+    J -- Evet --> L
+    K --> L[Config değiştirildi mesajı yazdır]
+
+    E --> Z([Bitiş])
+    L --> Z([Bitiş])

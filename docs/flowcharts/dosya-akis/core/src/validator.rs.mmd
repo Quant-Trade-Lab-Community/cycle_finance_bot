@@ -1,0 +1,54 @@
+graph TD
+    A([Başlangıç]) --> B[DataValidator::new: circuit_breaker=false, bad_tick_count=0, max_latency_ms=200, last_reset_time=now]
+    B --> C[is_valid(event) çağrılır]
+
+    C --> D[now = geçerli epoch ms]
+    D --> E{now - last_reset_time > 1000?}
+    E -- Evet --> F[bad_tick_count = 0, last_reset_time = now]
+    F --> G{circuit_breaker aktif mi?}
+    G -- Evet --> H[şalteri kaldır: RECOVERED mesajı, circuit_breaker = false]
+    G -- Hayır --> I[atla]
+    H --> I
+    E -- Hayır --> I
+
+    I --> J{event.payload tipi?}
+    J -- Trade --> K{price <= 0 veya quantity <= 0?}
+    K -- Evet --> L[flag_invalid: Trade price/qty <= 0]
+    K -- Hayır --> M{now - timestamp > max_latency_ms?}
+    M -- Evet --> N[flag_invalid: Trade Stale Data]
+    M -- Hayır --> O{timestamp - now > 5000?}
+    O -- Evet --> P[flag_invalid: Future Timestamp NTP Drift]
+    O -- Hayır --> Q[geçerli]
+
+    J -- Orderbook --> R{bids/asks pozitif ve bid >= ask?}
+    R -- Evet --> S[flag_invalid: Crossed Orderbook]
+    R -- Hayır --> Q
+
+    J -- Liquidation --> T{price <= 0 veya quantity <= 0?}
+    T -- Evet --> U[flag_invalid: Liquidation price/qty <= 0]
+    T -- Hayır --> V{now - timestamp > max_latency_ms?}
+    V -- Evet --> W[flag_invalid: Liquidation Stale Data]
+    V -- Hayır --> Q
+
+    J -- BookTicker --> X{best_bid >= best_ask?}
+    X -- Evet --> Y[flag_invalid: Crossed BookTicker]
+    X -- Hayır --> Q
+
+    J -- diğer --> Q
+    Q --> Z[true döndür]
+
+    L --> AA[flag_invalid: bad_tick_count += 1]
+    N --> AA
+    P --> AA
+    S --> AA
+    U --> AA
+    W --> AA
+    Y --> AA
+    AA --> AB{count > 100?}
+    AB -- Evet --> AC{circuit_breaker zaten aktif mi?}
+    AC -- Hayır --> AD[CIRCUIT BREAKER TRIGGERED, circuit_breaker = true]
+    AC -- Evet --> AE[atla]
+    AD --> AE
+    AB -- Hayır --> AE
+    AE --> AF[false döndür]
+    AF --> Z

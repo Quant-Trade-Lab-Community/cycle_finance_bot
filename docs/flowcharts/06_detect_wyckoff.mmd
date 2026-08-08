@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph INP["Girdi"]
+        KLINE["Binance klines (REST)"]
+        CFG["AnalysisConfig (window 144)"]
+    end
+
+    subgraph PIPE["detect-wyckoff — analyze() pipeline (analyst.rs:150)"]
+        CONV["Kline → Bar (Tick i64 · 1e-6)"]
+        SCORER["ContextualScorer build<br/>EMA50 eğimi · ATR14"]
+        SM3["StateMachine ingest<br/>Spring · SOS · UpThrust · SellClimax"]
+        EVAL["ContextualScorer evaluate<br/>bias düzeltmesi · sigmoid"]
+        BAYE["skor > 0.82 → softmax Bayes"]
+        PHASE["PhaseWeights v4<br/>kural ağırlıkları + EWMA 0.85"]
+        SIGNAL["Signal: LONG/SHORT<br/>fake-spring sayacı"]
+        VOLPR["VolumeProfile<br/>lazy decay · POC"]
+        RISKX["AdaptiveRiskEngine<br/>200bp · HedgeAndReverse"]
+        PROB["probability_forecast"]
+        EXEC["ExecutionBroker<br/>TWAP 100×50ms"]
+        AUDIT["AuditLog (16 kayıt)"]
+    end
+
+    subgraph OUTW["Çıktı"]
+        HTTPW["GET /api/wyckoff :3005 · JSON"]
+        TESTS["tests/pipeline.rs<br/>3 fazlı sim"]
+    end
+
+    KLINE --> CONV
+    CFG --> CONV
+    CONV --> SCORER
+    SCORER --> SM3
+    SM3 --> EVAL
+    EVAL --> BAYE
+    BAYE --> PHASE
+    PHASE --> SIGNAL
+    SM3 --> VOLPR
+    SIGNAL --> RISKX
+    VOLPR --> RISKX
+    RISKX --> PROB
+    PROB --> EXEC
+    EXEC --> AUDIT
+    AUDIT --> HTTPW
+    TESTS -.-> HTTPW

@@ -1,0 +1,46 @@
+graph TD
+    A([Başlangıç]) --> B[analyze_levels: pivotlar ve klines al]
+
+    B --> C{klines boş mu?}
+    C -- Evet --> D[boş seviye listesi döndür]
+    C -- Hayır --> E[current_index = klines.len - 1 hesapla]
+    E --> F[apply_decay: her pivot için W(t) = e^(-0.015*t) hesapla]
+    F --> G[level_type = SH veya SL olarak işaretle, NewActive sınıfıyla başlat]
+    G --> H[count_defenses: her seviyeyi tara]
+
+    H --> I{Her mum seviyeye %0.1 toleransla dokundu mu?}
+    I -- Evet --> J{Kapanış seviyenin ötesine geçmedi mi?}
+    J -- Evet --> K[defense_count += 1]
+    J -- Hayır --> L[savunma sayılmaz]
+    I -- Hayır --> L
+    K --> M[Sonraki seviye?]
+    L --> M
+    M -- Evet --> H
+    M -- Hayır --> N[check_sweep_and_bo: her seviyeyi tara]
+
+    N --> O[Seviyenin oluştuğu mumdan sonrasını tara]
+    O --> P{Wick seviyeyi kırıp kapanış geri mi döndü?  Süpürülme}
+    P -- Evet --> Q[is_swept = true]
+    Q --> R{i+2 < len ve 2 ardışık kapanış seviyenin ötesinde mi?}
+    R -- Evet --> S[bo_confirmed = true]
+    R -- Hayır --> T[süpürme taramasını durdur, sonraki seviye]
+    S --> T
+    P -- Hayır --> T
+    T -- Evet --> N
+    T -- Hayır --> U[classify_levels: her seviyeyi sınıflandır]
+
+    U --> V{defense_count >= 2?}
+    V -- Evet --> W[Defended sınıfı, taban skor = 10]
+    V -- Hayır --> X{süpürüldü ve BO onaylandı mı?}
+    X -- Evet --> Y[SweptConfirmed sınıfı, taban skor = 9]
+    X -- Hayır --> Z0{süpürüldü ama BO onaylanmadı mı?}
+    Z0 -- Evet --> Z1[UnconfirmedOBFVG sınıfı, skor = 8 - (1 - decay)]
+    Z0 -- Hayır --> Z2[NewActive sınıfı, taban skor = 7]
+    W --> Z3[priority_score = base * decay * 10, 0-100 arasına sınırla]
+    Y --> Z3
+    Z1 --> Z3
+    Z2 --> Z3
+    Z3 --> Z4[Öncelik skoruna göre yüksekten düşüğe sırala]
+    Z4 --> Z5[sıralanmış seviye listesini döndür]
+    D --> Z5
+    Z5 --> Z([Bitiş])

@@ -1,0 +1,25 @@
+graph TD
+    A([Başlangıç]) --> B[main: MSMP 2.0 başlığını ve 7 katmanı yazdır]
+    B --> C[BinanceClient oluştur, AppState'e sar]
+    C --> D[Router: /api/ms rotasını get_ms handler'ına bağla]
+    D --> E[127.0.0.1:3002 adresine bağlan]
+    E --> F[axum::serve ile HTTP sunucusunu başlat]
+
+    F --> G{sonsuz istek döngüsü}
+
+    G --> H[get_ms: symbol, interval, limit parametrelerini al]
+    H --> I[core_limit = limit, amp_limit = limit*4 (max 1500), acute_limit = 96]
+    I --> J[core verisini Binance'den çek]
+    J --> K{core istek başarılı mı?}
+    K -- Hayır --> L[Core fetch hatası JSON'u döndür]
+    K -- Evet --> M[amp verisini Binance'den çek]
+    M --> N{amp istek başarılı mı?}
+    N -- Hayır --> O[Amp fetch hatası JSON'u döndür]
+    N -- Evet --> P[acute verisini Binance'den çek]
+    P --> Q{acute istek başarılı mı?}
+    Q -- Hayır --> R[Acute fetch hatası JSON'u döndür]
+    Q -- Evet --> S{core verisi boş mu?}
+    S -- Evet --> T[Veri bulunamadı hatası JSON'u döndür]
+    S -- Hayır --> U[generate_report ile 7 katmanlı rapor üret]
+    U --> V[Raporu JSON olarak döndür]
+    V --> G
