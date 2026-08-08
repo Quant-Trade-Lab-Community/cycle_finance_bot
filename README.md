@@ -92,6 +92,7 @@ PROJE/
 | **0 — Sözleşmeler** | `cycle-engine/contracts` | `events.rs`, `wire.rs` (tipli binary codec) |
 | **1 — Transport (IPC)** | `cycle-engine/transport` | `/dev/shm` GenerationalRingBuffer + OrderRingBuffer (torn-read korumalı) |
 | **2 — Çekirdek Motor** | `cycle-engine/core` | simdjson parser, validator, TitaniumOrchestrator (spin-loop), RiskEngine, LOB sim, TscTimer (RDTSC) |
+| **2 — Açılış Ekranı** | `cycle-engine/splash` | FIGlet ASCII animasyonu (CYCLE FINANCE, harf harf) |
 | **3 — Veri** | `data-engine` | SQLite yazımı, soğuk depolama, WAL |
 | **4 — Analiz** | `services-engine/detect-ms` | 7 katmanlı piyasa yapısı analizi |
 | **5 — Strateji** | `strategies-engine` | Kırılım sinyali üretimi |
@@ -227,6 +228,8 @@ cargo build --workspace
 ```bash
 cd PROJE && RUN_MODE=DATA ./target/debug/core
 ```
+
+> `core` başlatıldığında önce **CYCLE FINANCE** FIGlet açılış ekranı (harf harf animasyon) gösterilir. Açılış ekranı `cycle-engine/splash` crate'i ile sağlanır; hız `show_splash_with(text, ms)` ile özelleştirilebilir.
 
 ### 2. Servisleri ayrı ayrı başlat
 

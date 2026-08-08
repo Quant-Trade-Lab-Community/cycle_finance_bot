@@ -23,6 +23,7 @@ os-utils = { path = "../../additional-services/os-utils" }
 execution-engine = { path = "../../execution-engine" }
 contracts = { path = "../contracts" }
 transport = { path = "../transport" }
+cycle-splash = { path = "../splash" }
 risk-engine = { path = "../../risk-engine" }
 strategies-engine = { path = "../../strategies-engine" }
 sha3 = { workspace = true }

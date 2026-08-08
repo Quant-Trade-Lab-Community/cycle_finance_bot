@@ -4,6 +4,7 @@ members = [
     "cycle-engine/transport",
     "cycle-engine/core",
     "cycle-engine/adapter",
+    "cycle-engine/splash",
     "additional-services/os-utils",
     "data-engine/cold-storage",
     "data-engine/cold-starter",
@@ -26,6 +27,9 @@ rust_decimal = { version = "1.34", features = ["maths", "serde"] }
 ndarray      = { version = "0.15", features = ["rayon"] }
 rayon        = "1.8"
 wide         = "0.7"
+
+terminal_size = "0.4"
+figlet-rs     = "0.1"
 
 tokio        = { version = "1.0", features = ["full"] }
 tokio-tungstenite = { version = "0.20", features = ["rustls-tls-webpki-roots"] }
