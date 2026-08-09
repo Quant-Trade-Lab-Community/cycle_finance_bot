@@ -1,0 +1,2763 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔧 Additional Services — Tam Kaynak + Detaylı Analiz</title>
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.45;
+  }
+  pre.mermaid { background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #0f172a; border-color: #334155; } }
+  code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #1e293b; color: #e2e8f0; } }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #334155; } }
+  th { background: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { th { background: #1e293b; } }
+  h1 { border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.75rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 a, h2 a, h3 a, h4 a { color: inherit; }
+  .headerlink { opacity: 0.35; margin-left: 0.3rem; font-size: 0.8em; }
+  .headerlink:hover { opacity: 1; }
+  .topnav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;
+  }
+  @media (prefers-color-scheme: dark) { .topnav { background: #0f172a; border-color: #334155; } }
+  .topnav a { padding: 0.2rem 0.8rem; border-radius: 6px; background: #e2e8f0; color: inherit; }
+  @media (prefers-color-scheme: dark) { .topnav a { background: #1e293b; } }
+  .topnav a:hover { background: #2563eb; color: white; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 2rem 0; }
+  section.detay { border-top: 4px solid #2563eb; margin-top: 3rem; padding-top: 1rem; }
+
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+<nav class="sitenav"><span class="brand">📚 Cycle Finance Docs</span><a href="index.html">🏠 Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">🏗️ Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html">🏛️ Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">🎯 Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html" class="active">🔧 Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">🤖 AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a></nav>
+<nav class="topnav">
+  <strong>📑 Bölümler:</strong>
+  <a href="#dizin-agac">🌳 Dizin Ağacı</a>
+  <a href="#klasor-ve-dosya-sozlugu">📖 Klasör Sözlüğü</a>
+  <a href="#detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)</a>
+  <a href="#tam-kaynak-kodu">📄 Tam Kaynak Kodu</a>
+</nav>
+
+<h1 id="additional-services-tam-kaynak-kodu-detayl-analiz">🔧 Additional Services — Tam Kaynak Kodu + Detaylı Analiz<a class="headerlink" href="#additional-services-tam-kaynak-kodu-detayl-analiz" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><code>additional-services/</code>. Bu doküman dizin ağacını, klasör/dosya sözlüğünü, her dosyanın <strong>tam kaynak kodunu</strong> ve <strong>detaylı analizini</strong> (mermaid akış diyagramlarıyla) içerir. Tarih: 2026-08-09</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#dizin-agac">Dizin Ağacı</a></li>
+<li><a href="#klasor-ve-dosya-sozlugu">Klasör ve Dosya Sözlüğü</a></li>
+<li><a href="#detayl-analiz-mermaid">Detaylı Analiz (mermaid)</a></li>
+<li><a href="#tam-kaynak-kodu">Tam Kaynak Kodu</a></li>
+</ul>
+<hr />
+<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link">&para;</a></h2>
+<pre><code>additional-services/
+    ├── config/config_v5.toml
+    ├── config/config_v6.toml
+    ├── formal_verification/CycleFinance.cfg
+    ├── formal_verification/CycleFinance.tla
+    ├── k8s/chaos_dns_failure.yaml
+    ├── k8s/chaos_network_partition.yaml
+    ├── k8s/chaos_ntp_drift.yaml
+    ├── k8s/deployment.yaml
+    ├── os-utils/Cargo.toml
+        ├── os-utils/src/config.rs
+        ├── os-utils/src/lib.rs
+    ├── scripts/cycle_env.sh
+    ├── scripts/cycle_tmux.sh
+    ├── scripts/exec_setup.sh
+    ├── scripts/gdpr_erasure_test.sh
+    ├── scripts/monitor.sh
+    ├── scripts/start_paper.sh
+    ├── scripts/stop_paper.sh
+    ├── scripts/tmux_clipboard_paste.sh
+</code></pre>
+<hr />
+<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><code>additional-services/</code> — <strong>Genel amaç:</strong> Yardımcı hizmetler: OS seviyesinde config (os-utils), çoklu servis orchestration (scripts/cycle_tmux.sh), canlı izleme (monitor.sh), paper trade başlat/durdur, KVKK/GDPR silme testi ve ortam kurulum betikleri.
+| Klasör / Dosya | Anlamı |
+|---|---|
+| <code>additional-services/</code> | Cycle Finance HFT motorunun operasyon katmanı: yapılandırma, shell orkestrasyonu, OS seviyesi gerçek zamanlı yardımcılar, izleme, kaos/uyum testleri ve biçimsel doğrulama |
+| <code>config/</code> | API uç noktası ve trading parametrelerini tutan TOML yapılandırma dizini |
+| <code>config/config_v5.toml</code> | Binance WS v5 uç noktası (<code>wss://stream.binance.com:9443/ws</code>) ve <code>max_positions=100</code> tanımı |
+| <code>config/config_v6.toml</code> | Blue/Green dağıtım için Binance WS v6 uç noktası (<code>.../ws/v6</code>) ve aynı <code>max_positions=100</code> |
+| <code>os-utils/</code> | İşletim sistemi seviyesi Rust yardımcı kütüphanesi (gerçek zamanlı öncelik + kilitsiz config) |
+| <code>os-utils/Cargo.toml</code> | os-utils kutusunun workspace tabanlı <code>libc</code> ve <code>crossbeam</code> bağımlılıkları |
+| <code>os-utils/src/config.rs</code> | Epoch-tabanlı kilitsiz (lock-free) <code>GlobalConfig</code> ve <code>ConfigManager</code> (okuma + atomik değiştirme) |
+| <code>os-utils/src/lib.rs</code> | Geçerli iş parçacığını Linux'ta <code>SCHED_FIFO</code> gerçek zamanlı planlayıcıya yükselten yardımcı |
+| <code>scripts/</code> | Tmux tabanlı servis yönetimi, izleme ve uyum testleri için shell betikleri dizini |
+| <code>scripts/cycle_env.sh</code> | 1200+ satırlık shell komut kütüphanesi (tüm servislerin start/stop/status, REST sorguları, listener parametreleri) |
+| <code>scripts/cycle_tmux.sh</code> | 14 pencereli tek-sekme tmux başlatıcı; tüm motoru tek komutla derler, açar ve bağlanır |
+| <code>scripts/exec_setup.sh</code> | Binance Futures API anahtarlarını ekrana yazdırmadan <code>.env</code>'e (izin 600) güvenle kaydeden betik |
+| <code>scripts/gdpr_erasure_test.sh</code> | KVKK/GDPR "silme hakkı" protokolünü hash + ClickHouse mutation simülasyonuyla test eden betik |
+| <code>scripts/monitor.sh</code> | CPU/RAM/GPU ve 6 servisin durumunu bar grafikleriyle saniyede bir çizen izleme paneli |
+| <code>scripts/start_paper.sh</code> | DATA terminali + paper-service'i arka planda tek komutla derleyip başlatan betik |
+| <code>scripts/stop_paper.sh</code> | DATA terminali + paper-service'i durdurup paylaşımlı ring buffer'ları temizleyen betik |
+| <code>scripts/tmux_clipboard_paste.sh</code> | Wayland/X11 panosundaki metni tmux paste buffer'a yükleyip yapıştıran betik (Ctrl+V) |
+| <code>k8s/</code> | Kubernetes + Chaos Mesh dağıtım ve dayanıklılık testi manifestleri |
+| <code>k8s/deployment.yaml</code> | <code>SYS_NICE</code> (SCHED_FIFO için) yetkili, 4 CPU/4Gi limitli core Deployment'ı |
+| <code>k8s/chaos_dns_failure.yaml</code> | Binance DNS uç noktalarına 5 dk arıza enjekte eden DNSChaos deneyi (30 dk'da bir) |
+| <code>k8s/chaos_network_partition.yaml</code> | core ↔ redis-cluster arasında 10 sn ağ bölünmesi enjekte eden NetworkChaos deneyi |
+| <code>k8s/chaos_ntp_drift.yaml</code> | Sistem saatine +10 sn kayma enjekte eden TimeChaos (NTP kayması) deneyi |
+| <code>formal_verification/</code> | TLA+ biçimsel doğrulama dosyaları |
+| <code>formal_verification/CycleFinance.cfg</code> | TLC model checker: <code>Spec</code>, <code>Safety</code> invarianti ve <code>Liveness</code> özelliği |
+| <code>formal_verification/CycleFinance.tla</code> | Lock-free tick kuyruğunun Safety (tick düşmemesi) ve Liveness (ölü kilitlenme yok) kanıtı modeli |</p>
+</blockquote>
+<hr />
+<h2 id="detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)<a class="headerlink" href="#detayl-analiz-mermaid" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09</p>
+</blockquote>
+<h3 id="scripts-cycle-tmux-sh"><code>scripts/cycle_tmux.sh</code><a class="headerlink" href="#scripts-cycle-tmux-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>cycle</code>, <code>kill</code>, <code>status</code>, <code>attach</code> alt komutlarıyla çok amaçlı bir tmux başlatıcıdır. Session zaten varsa doğrudan bağlanır; yoksa <code>cargo build</code> ile splash, core, paper, alert, breakout, stream-ohlcv, ai-engine ve exec-console paketlerini derler, eski süreçleri ve <code>/dev/shm</code> ring buffer'larını temizler. Ardından her servisi ayrı bir pencerede (STRATEGY→LISTENER→RISK→SHELL→DATA→ALERT→PAPER→Monitor→DETECT-MS→BREAKOUT→STREAM-OHLCV→CALC-IND→AI→CONSOLE) sıralı gecikmelerle <code>tmux send-keys</code> ile başlatır. Son adımda Ctrl+V pano yapıştırma bağını, fare desteğini ve Matrix yeşili status barı yapılandırıp session'a bağlanır.
+<strong>Neden kullandık:</strong>
+- Tüm motor tek komutla (<code>cycle-start</code>) deterministik sırada ayağa kalkar; her servis kendi penceresinde log izlenebilir.
+- <code>set -euo pipefail</code> ile hata güvenliği; <code>full_cleanup</code> kill'de kalıntı süreç ve paylaşımlı bellek bırakmaz.
+- <code>BIN_DIR</code>/<code>CYCLE_ROOT</code> değişkenleriyle hem kaynak ağacı hem kurulu paket dağıtımı desteklenir.
+- Window 0'daki STRATEGY ile Window 4'teki DATA aynı <code>core</code> binary'sinin farklı <code>RUN_MODE</code> modlarıdır; aynı paylaşımlı hafıza üzerinden haberleşir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;cycle_tmux.sh çağrısı&quot;] --&gt; B{&quot;alt komut?&quot;}
+    B --&gt;|&quot;kill&quot;| C[&quot;full_cleanup: tmux kill + core/paper/alert pkill + ring buffer sil&quot;]
+    B --&gt;|&quot;status&quot;| D[&quot;tmux pencerelerini listele + servis CPU/RAM&quot;]
+    B --&gt;|&quot;attach&quot;| E[&quot;tmux attach-session&quot;]
+    B --&gt;|&quot;varsayılan başlat&quot;| F{&quot;session 'cycle' var mı?&quot;}
+    F --&gt;|&quot;evet&quot;| E
+    F --&gt;|&quot;hayır&quot;| G[&quot;cargo build release 8 paket + splash&quot;]
+    G --&gt; H[&quot;eski süreçler pkill + /dev/shm temizliği&quot;]
+    H --&gt; I[&quot;/tmp/cycle_init.sh üret: env + source cycle_env + help&quot;]
+    I --&gt; J[&quot;tmux new-session -x 220 -y 50&quot;]
+    J --&gt; K[&quot;Pencere 0 STRATEGY (RUN_MODE=STRATEGY core)&quot;]
+    K --&gt; L[&quot;Pencere 1 LISTENER&quot;]
+    L --&gt; M[&quot;Pencere 2 RISK (--watch)&quot;]
+    M --&gt; N[&quot;Pencere 3 SHELL: source cycle_init.sh&quot;]
+    N --&gt; O[&quot;Pencere 4 DATA (RUN_MODE=DATA core)&quot;]
+    O --&gt; P[&quot;Pencere 5 ALERT + Pencere 6 PAPER&quot;]
+    P --&gt; Q[&quot;Pencere 7 Monitor: bash monitor.sh&quot;]
+    Q --&gt; R[&quot;Pencere 8-11: DETECT-MS, BREAKOUT, STREAM-OHLCV, CALC-IND&quot;]
+    R --&gt; S[&quot;Pencere 12 AI + Pencere 13 EXEC CONSOLE&quot;]
+    S --&gt; T[&quot;mouse aç, C-v paste bind, matrix status bar&quot;]
+    T --&gt; U[&quot;select-window 0 + attach-session&quot;]
+</pre>
+<h3 id="scripts-monitor-sh"><code>scripts/monitor.sh</code><a class="headerlink" href="#scripts-monitor-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Saniyede bir yenilenen, cursor'u taşımadan (<code>tput cup 0 0</code>) ekranı yeniden çizen bir izleme panosudur. Önce AMD GPU kartını sysfs'ten bulur, ardından sistem geneli CPU/RAM/GPU kullanımını <code>/proc/meminfo</code>, <code>top</code> ve sysfs'ten okuyup <code>draw_bar</code> ile renkli bar grafiklerine çevirir. Servis satırlarında <code>core</code> süreci <code>/proc/&lt;pid&gt;/environ</code> içindeki <code>RUN_MODE</code> değişkenine göre DATA/STRATEGY/BACKTEST/CORRELATION olarak ayrıştırılır; paper-service ve alert-service <code>pgrep</code> ile bulunup <code>ps</code>'ten CPU/RSS/VSZ okunur. Altta <code>/dev/shm</code> ring buffer'larının varlığı ve boyutu gösterilir.
+<strong>Neden kullandık:</strong>
+- HFT'de gecikme kalıcılığı kritiktir; CPU/RAM artışı ve ring buffer varlığı tek ekranda sürekli izlenir.
+- <code>find_pid_env</code> ile aynı binary'nin hangi modda çalıştığı güvenilir şekilde ayırt edilir (ps çıktısında görünmeyen env).
+- <code>trap</code> ile çıkışta cursor geri getirilir; <code>MONITOR_INTERVAL</code> ile yenileme hızı ayarlanabilir.
+- Yüksek kullanımda renk kırmızıya döner; sorun anında fark edilir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;monitor.sh başlat&quot;] --&gt; B[&quot;tput civis + trap cursor&quot;]
+    B --&gt; C[&quot;GPU kartını sysfs'te bul&quot;]
+    C --&gt; D[&quot;sonsuz döngü: tput cup 0 0&quot;]
+    D --&gt; E[&quot;Sistem özeti: CPU idle + /proc/meminfo + gpu_busy_percent&quot;]
+    E --&gt; F[&quot;find_pid_env: core'u RUN_MODE'a göre ayır&quot;]
+    F --&gt; G[&quot;find_pid: paper-service, alert-service&quot;]
+    G --&gt; H{&quot;servis PID canlı mı?&quot;}
+    H --&gt;|&quot;hayır&quot;| I[&quot;KAPALI + kırmızı boş bar&quot;]
+    H --&gt;|&quot;evet&quot;| J[&quot;ps: pid, pcpu, rss, vsz&quot;]
+    J --&gt; K[&quot;draw_bar: %80+ kırmızı, %50+ sarı&quot;]
+    I --&gt; L[&quot;ring buffer /dev/shm durumu + çalışan servis sayısı&quot;]
+    K --&gt; L
+    L --&gt; M[&quot;sleep INTERVAL&quot;]
+    M --&gt; D
+</pre>
+<h3 id="os-utils-src-config-rs"><code>os-utils/src/config.rs</code><a class="headerlink" href="#os-utils-src-config-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Tick döngüsünde mutex yerine <code>crossbeam::epoch</code> kullanan kilitsiz yapılandırma deposudur. <code>ConfigManager</code> bir <code>Atomic&lt;GlobalConfig&gt;</code> tutar; <code>read_config</code> epoch guard ile (Acquire) yükleyip <code>as_ref</code> ile güvenli referans döner, böylece config okurken belleği korur. <code>swap_config</code> yeni yapılandırmayı <code>Owned</code> ile atomik <code>swap</code> (Release) eder ve eski işaretçiyi <code>guard.defer_destroy</code> ile, o epoch'u kimse tutmayınca güvenle çöp toplatır. Böylece use-after-free riski, kilit olmadan ortadan kalkar.
+<strong>Neden kullandık:</strong>
+- Gerçek zamanlı HFT tick döngüsünde mutex alınması jitter üretir; epoch tabanlı reclamation kilit gerektirmez.
+- Konfig değişimi (örn. v5→v6 API geçişi) çalışan sistemde durmadan atomik yapılabilir.
+- <code>Ordering::Acquire/Release</code> ile okuma-yazma tutarlılığı garanti altına alınır.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;ConfigManager::new(initial)&quot;] --&gt; B[&quot;Atomic GlobalConfig'e ilk config yaz&quot;]
+    C[&quot;read_config guard&quot;] --&gt; D[&quot;load Ordering::Acquire&quot;]
+    D --&gt; E[&quot;unsafe ptr.as_ref → &amp;GlobalConfig&quot;]
+    F[&quot;swap_config yeni config&quot;] --&gt; G[&quot;epoch::pin + Owned::new&quot;]
+    G --&gt; H[&quot;current_config.swap Release&quot;]
+    H --&gt; I{&quot;eski ptr null mu?&quot;}
+    I --&gt;|&quot;hayır&quot;| J[&quot;guard.defer_destroy(eski ptr)&quot;]
+    I --&gt;|&quot;evet&quot;| K[&quot;eski yok, GC gerekmez&quot;]
+    J --&gt; L[&quot;println: config kilitsiz değişti&quot;]
+    E --&gt; M[&quot;guard scope dışında config otomatik korunur&quot;]
+</pre>
+<h3 id="os-utils-src-lib-rs"><code>os-utils/src/lib.rs</code><a class="headerlink" href="#os-utils-src-lib-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>set_rt_thread_priority(priority)</code> fonksiyonu, yalnızca Linux'ta mevcut iş parçacığını <code>sched_setscheduler(0, SCHED_FIFO, ...)</code> ile gerçek zamanlı planlayıcıya yükseltir; <code>0</code> hedefi çağıran iş parçacığını temsil eder. Başarısızlık durumunda (CAP_SYS_NICE/root gerekmez) hata mesajı bastırılır, sistem kilitlenmez. Linux dışı platformlarda güvenli bir no-op uyarısı verir.
+<strong>Neden kullandık:</strong>
+- İcra ve veri işleme iş parçacıklarına deterministik zamanlama kazandırmak için SCHED_FIFO gerekir.
+- Hata yutularak sistemin geri kalanı asla engellenmez; k8s Deployment'ı <code>SYS_NICE</code> ile bu yetkiyi sağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;set_rt_thread_priority p&quot;] --&gt; B{&quot;target_os == linux?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;no-op uyarısı yazdır&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;sched_param {sched_priority: p}&quot;]
+    D --&gt; E[&quot;sched_setscheduler 0, SCHED_FIFO&quot;]
+    E --&gt; F{&quot;sonuç 0 mı?&quot;}
+    F --&gt;|&quot;evet&quot;| G[&quot;başarılı: SCHED_FIFO p&quot;]
+    F --&gt;|&quot;hayır&quot;| H[&quot;err: CAP_SYS_NICE veya root gerekli&quot;]
+</pre>
+<h3 id="scripts-cycle-env-sh"><code>scripts/cycle_env.sh</code><a class="headerlink" href="#scripts-cycle-env-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Motorun kalbi olan 1200 satırlık shell kütüphanesidir; tmux panellerinde elle servis yönetimi, REST sorguları ve parametre değişikliği için 100+ fonksiyon tanımlar. <code>CYCLE_ROOT</code>/<code>CYCLE_API</code>/kimlik değişkenlerini tanımlar, <code>help-cycle</code> ile renkli komut rehberi basar. Her start fonksiyonu önce <code>_start_guard</code> ile kendini yeniden source eder (eski tanım kullanılmaz), <code>_core_mode_pid</code> ile core'un <code>/proc/&lt;pid&gt;/environ</code> içindeki <code>RUN_MODE</code>'unu okur, ardından <code>_tmux_pane</code> ile hedef pencere/pane'e <code>C-c</code>, <code>C-u</code> ve komutu gönderir. Stop fonksiyonları TERM→KILL ikilisini, sorgular curl+<code>python3 -m json.tool</code> kullanır; <code>exec-*</code> serisi kill switch dosyasıyla acil durdurma sağlar.
+<strong>Neden kullandık:</strong>
+- HFT motorunda her servisi elle ayrı terminalde başlatmak hata üretir; tek kaynaktan standart start/stop/status tanımları verir.
+- <code>_start_guard</code> sayesinde tmux paneli eski sürümü source etse bile daima güncel fonksiyonlar çalışır.
+- JWT tabanlı paper REST erişimi, listener metrik parametreleri ve AI HITL onayı gibi operasyon ihtiyaçlarını tek yerden karşılar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;source cycle_env.sh&quot;] --&gt; B[&quot;CYCLE_ROOT + API + kimlik varsayılanları&quot;]
+    B --&gt; C[&quot;renk kodları + help-cycle&quot;]
+    D{&quot;kullanıcı komutu&quot;} --&gt; E{&quot;start mı?&quot;}
+    E --&gt;|&quot;evet&quot;| F[&quot;_start_guard → kendini yeniden source&quot;]
+    F --&gt; G[&quot;_core_mode_pid / pgrep: zaten çalışıyor mu?&quot;]
+    G --&gt;|&quot;evet&quot;| H[&quot;uyarı + return 1&quot;]
+    G --&gt;|&quot;hayır&quot;| I[&quot;cargo build -p paket + ring temizliği&quot;]
+    I --&gt; J[&quot;_tmux_pane: C-c + C-u + komut gönder&quot;]
+    J --&gt; K[&quot;pgrep/curl doğrula + başarı mesajı&quot;]
+    E --&gt;|&quot;hayır&quot;| L{&quot;stop mu?&quot;}
+    L --&gt;|&quot;evet&quot;| M[&quot;pgrep bul → TERM → sleep → KILL&quot;]
+    L --&gt;|&quot;hayır&quot;| N{&quot;sorgu mu?&quot;}
+    N --&gt;|&quot;evet&quot;| O[&quot;_cycle_token JWT al → curl REST → json.tool&quot;]
+    N --&gt;|&quot;hayır&quot;| P[&quot;parametre/exec-*/alert-* yardımcıları&quot;]
+</pre>
+<h3 id="scripts-exec-setup-sh"><code>scripts/exec_setup.sh</code><a class="headerlink" href="#scripts-exec-setup-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Binance Futures API anahtarlarını güvenli şekilde <code>.env</code>'e yazan betiktir; <code>read -s</code> ile anahtar ekrana yazılmaz ve dosya <code>chmod 600</code> ile yalnızca sahibine açılır. Pano yapıştırmasında oluşan bracketed-paste artıkları (<code>\e[200~</code>/<code>\e[201~</code>), CR/LF kalıntıları temizlenir, değerler kırpılır ve maskeli doğrulama sonrası "EVET" onayı alınır. <code>--show</code> maskeli görüntü, <code>--testnet</code> testnet URL'lerini yazıp <code>EXEC_DRY_RUN=true</code> yapar. Güvenlik varsayılanı olarak anahtar girişinde de <code>EXEC_DRY_RUN=true</code> set edilir; gerçek emir için ayrıca onay gerekir.
+<strong>Neden kullandık:</strong>
+- HFT icra motorunun canlı borsa anahtarları ekranda görünmemeli ve dosya izniyle korunmalıdır.
+- Yapıştırma kaynaklı CRLF/escape karakterleri <code>.env</code>'i bozabilir; tampon boşaltma + temizlik bunu engeller.
+- DRY_RUN varsayılanı, kazara gerçek emir gönderimini iki adımlı onaya bağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;exec_setup.sh&quot;] --&gt; B{&quot;argüman?&quot;}
+    B --&gt;|&quot;--show&quot;| C[&quot;.env'deki anahtarları maskeli listele&quot;]
+    B --&gt;|&quot;--testnet&quot;| D[&quot;EXEC_BASE_URL/WS_URL testnet + DRY_RUN=true&quot;]
+    B --&gt;|&quot;yok&quot;| E[&quot;drain_input + read -s BINANCE_API_KEY&quot;]
+    E --&gt; F[&quot;drain_input + read -s BINANCE_SECRET_KEY&quot;]
+    F --&gt; G[&quot;escape/CRLF temizle + trim&quot;]
+    G --&gt; H[&quot;maskeli doğrulama göster&quot;]
+    H --&gt; I{&quot;'EVET' onayı?&quot;}
+    I --&gt;|&quot;hayır&quot;| J[&quot;iptal, hiçbir şey yazılmaz&quot;]
+    I --&gt;|&quot;evet&quot;| K[&quot;write_env: KEY + EXEC_MODE=LIVE + DRY_RUN=true&quot;]
+    K --&gt; L[&quot;chmod 600 .env&quot;]
+    L --&gt; M[&quot;özet: gerçek emir için ayrıca onay gerek&quot;]
+</pre>
+<h3 id="scripts-start-paper-sh"><code>scripts/start_paper.sh</code><a class="headerlink" href="#scripts-start-paper-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Paper sistemini tek komutla ayağa kaldırır: önce <code>core</code> ve <code>paper-service</code> derlenir, eski süreçler <code>pkill</code> ile kapatılır ve tick ring'leri silinir. Ardından <code>setsid ... &amp;</code> ile DATA terminali (<code>RUN_MODE=DATA core</code>) arka planda <code>/tmp/data_terminal.log</code>'a, paper-service de JWT kimlik/başlangıç bakiyesi/veritabanı yollarıyla <code>/tmp/paper_service.log</code>'a yazılarak başlatılır. Son adımda REST API, metrik ve CLI kullanım örnekleri ekrana dökülür.
+<strong>Neden kullandık:</strong>
+- Hızlı manuel test için tmux yerine arka plan (<code>setsid</code>/<code>disown</code>) çalıştırma seçeneği sunar.
+- Ring buffer temizliği, farklı kapasitede başlatmada tutarsızlığı önler.
+- Log dosyalarına yönlendirme, tmux olmadan da tanılama imkânı verir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;start_paper.sh&quot;] --&gt; B[&quot;cargo build core + paper-service&quot;]
+    B --&gt; C[&quot;pkill core, paper-service, paper_cli&quot;]
+    C --&gt; D[&quot;rm /dev/shm ring buffer'ları&quot;]
+    D --&gt; E[&quot;setsid RUN_MODE=DATA core → /tmp/data_terminal.log&quot;]
+    E --&gt; F[&quot;setsid paper-service env'leri → /tmp/paper_service.log&quot;]
+    F --&gt; G[&quot;sleep 4&quot;]
+    G --&gt; H[&quot;sağlık/API/CLI kullanım raporu&quot;]
+</pre>
+<h3 id="scripts-stop-paper-sh"><code>scripts/stop_paper.sh</code><a class="headerlink" href="#scripts-stop-paper-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>paper-service</code> ve <code>core</code> süreçlerini <code>pkill</code> ile kapatıp paylaşımlı hafıza ring'lerini siler. Her adımın sonucu kullanıcıya bildirilir.
+<strong>Neden kullandık:</strong>
+- <code>start_paper.sh</code>'in simetriğidir; kalıntı süreç ve bellek bırakmadan temiz kapanış sağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;stop_paper.sh&quot;] --&gt; B[&quot;pkill paper-service&quot;]
+    B --&gt; C[&quot;pkill core&quot;]
+    C --&gt; D[&quot;rm /dev/shm/cycle_finance_ring + orders&quot;]
+    D --&gt; E[&quot;Done&quot;]
+</pre>
+<h3 id="scripts-gdpr-erasure-test-sh"><code>scripts/gdpr_erasure_test.sh</code><a class="headerlink" href="#scripts-gdpr-erasure-test-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> KVKK/GDPR "unutulma hakkı" sürecini simüle eder: kullanıcı ID'si tuzla birleştirilip SHA3-256 ile hash'lenir, hash ClickHouse mutation'ı (<code>ALTER TABLE ticks DELETE</code>) için hedef alınır, ardından Merkle ağacı ile fiziksel silme doğrulanır ve olay 3 yıllık uyum süresi için <code>deletion_registry_mock.log</code>'a yazılır.
+<strong>Neden kullandık:</strong>
+- HFT motorunun kişisel veri işleme sürecinde silme protokolünün çalıştığını otomatik doğrular.
+- Hash tabanlı kimlikleme sayesinde gerçek kimlik kullanılmadan süreç test edilir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;GDPR simülasyonu&quot;] --&gt; B[&quot;USER_ID + SALT → sha3sum 256&quot;]
+    B --&gt; C[&quot;User Hash üret&quot;]
+    C --&gt; D[&quot;ClickHouse ALTER DELETE mutation gönder&quot;]
+    D --&gt; E[&quot;Merkle Tree ile silme doğrula&quot;]
+    E --&gt; F[&quot;deletion_registry'ye 3 yıllık kayıt&quot;]
+    F --&gt; G[&quot;protokol tamam&quot;]
+</pre>
+<h3 id="scripts-tmux-clipboard-paste-sh"><code>scripts/tmux_clipboard_paste.sh</code><a class="headerlink" href="#scripts-tmux-clipboard-paste-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> tmux'ta Ctrl+V/Ctrl+Shift+V bağıyla tetiklenen, OS panosundaki metni yapıştıran betiktir. Wayland'de <code>wl-paste</code>, yoksa X11'de <code>xclip</code>/<code>xsel</code> sırasıyla denenir; panodaki son satır sonları (CR/LF) temizlenir ki sonraki <code>read</code> boş yutmasın. Metin <code>tmux load-buffer</code> ile yüklenip <code>tmux paste-buffer</code> ile yapıştırılır.
+<strong>Neden kullandık:</strong>
+- <code>exec_setup.sh</code>'teki anahtar girişi sırasında pano yapıştırmayı hem Wayland hem X11'de çalışır hale getirir.
+- Artık satır sonlarını temizleyerek güvenli <code>read -s</code> girişini korur.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;C-v bağı → betik&quot;] --&gt; B{&quot;wl-paste + WAYLAND_DISPLAY?&quot;}
+    B --&gt;|&quot;evet&quot;| C[&quot;wl-paste -p &gt; tmp&quot;]
+    B --&gt;|&quot;hayır&quot;| D{&quot;xclip var?&quot;}
+    D --&gt;|&quot;evet&quot;| E[&quot;xclip clipboard &gt; tmp&quot;]
+    D --&gt;|&quot;hayır&quot;| F{&quot;xsel var?&quot;}
+    F --&gt;|&quot;evet&quot;| G[&quot;xsel -b -o &gt; tmp&quot;]
+    C --&gt; H[&quot;CR/LF temizle (perl/sed)&quot;]
+    E --&gt; H
+    G --&gt; H
+    H --&gt; I[&quot;tmux load-buffer + paste-buffer&quot;]
+    I --&gt; J[&quot;rm tmp&quot;]
+</pre>
+<h3 id="config-config-v5-toml"><code>config/config_v5.toml</code><a class="headerlink" href="#config-config-v5-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Cycle Finance 2.0'ın v5 API yapılandırmasıdır; Binance stream WebSocket uç noktasını (<code>wss://stream.binance.com:9443/ws</code>) ve trading için <code>max_positions=100</code> sınırını tanımlar.
+<strong>Neden kullandık:</strong>
+- Motorun <code>GlobalConfig</code>'ine örnek ilk değer sağlar ve API sürümünün kilitsiz şekilde değiştirilebilmesini test eder.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;config_v5.toml&quot;] --&gt; B[&quot;[api] version v5&quot;]
+    B --&gt; C[&quot;endpoint binance.com:9443/ws&quot;]
+    C --&gt; D[&quot;[trading] max_positions 100&quot;]
+</pre>
+<h3 id="config-config-v6-toml"><code>config/config_v6.toml</code><a class="headerlink" href="#config-config-v6-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Blue/Green dağıtım senaryosu için v6 uç noktasına (<code>wss://stream.binance.com:9443/ws/v6</code>) işaret eden yapılandırma; aynı <code>max_positions=100</code> ile <code>swap_config</code> üzerinden çalışırken geçiş yapılabilir.
+<strong>Neden kullandık:</strong>
+- v5→v6 geçişinin <code>ConfigManager</code> kilitsiz swap mekanizmasıyla sıfır kesintiyle test edilebilmesini sağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;config_v6.toml&quot;] --&gt; B[&quot;[api] version v6&quot;]
+    B --&gt; C[&quot;endpoint binance.com:9443/ws/v6&quot;]
+    C --&gt; D[&quot;[trading] max_positions 100&quot;]
+</pre>
+<h3 id="os-utils-cargo-toml"><code>os-utils/Cargo.toml</code><a class="headerlink" href="#os-utils-cargo-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>os-utils</code> crate'ini tanımlar; <code>libc</code> (SCHED_FIFO syscall'ları için) ve <code>crossbeam</code> (epoch tabanlı kilitsiz yapılandırma için) workspace bağımlılıklarını kullanır.
+<strong>Neden kullandık:</strong>
+- Workspace'ten bağımlılık çekerek sürüm tutarlılığı sağlar; HFT'ye özgü iki düşük seviye kütüphaneyi paketler.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;os-utils Cargo.toml&quot;] --&gt; B[&quot;libc: sched_setscheduler&quot;]
+    A --&gt; C[&quot;crossbeam: epoch reclamation&quot;]
+</pre>
+<h3 id="k8s-deployment-yaml"><code>k8s/deployment.yaml</code><a class="headerlink" href="#k8s-deployment-yaml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>cycle-finance-core</code> Deployment'ı tek replika ile çalışır; <code>SYS_NICE</code> capability'si ekleyerek SCHED_FIFO gerçek zamanlı planlamayı, cgroup v2 annotation'ı ile kaynak yönetimini zorunlu kılar. 4 CPU/4Gi limit ve <code>RUST_LOG=info</code> tanımlıdır.
+<strong>Neden kullandık:</strong>
+- Gerçek zamanlı önceliğin konteyner içinde de çalışması için <code>os-utils</code>'ın ihtiyaç duyduğu yetki manifest ile verilir.
+- Kaos deneylerinin hedeflediği <code>app: cycle-finance</code> etiketini sağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;deployment.yaml&quot;] --&gt; B[&quot;Deployment cycle-finance-core, 1 replika&quot;]
+    B --&gt; C[&quot;SYS_NICE capability (SCHED_FIFO için)&quot;]
+    C --&gt; D[&quot;limits: 4 CPU, 4Gi&quot;]
+    D --&gt; E[&quot;cgroup v2 annotation + RUST_LOG info&quot;]
+</pre>
+<h3 id="k8s-chaos-dns-failure-yaml"><code>k8s/chaos_dns_failure.yaml</code><a class="headerlink" href="#k8s-chaos-dns-failure-yaml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Chaos Mesh <code>DNSChaos</code> deneyidir; <code>api.binance.com</code> ve <code>stream.binance.com</code> için 5 dakikalık DNS hatası enjekte eder, cron ile 30 dakikada bir tekrarlar.
+<strong>Neden kullandık:</strong>
+- Borsa DNS'inin çökmesi durumunda motorun yeniden bağlanma davranışını test eder.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;DNSChaos&quot;] --&gt; B[&quot;action error, mode all&quot;]
+    B --&gt; C[&quot;pattern: api/stream.binance.com&quot;]
+    C --&gt; D[&quot;duration 5m, cron @every 30m&quot;]
+</pre>
+<h3 id="k8s-chaos-network-partition-yaml"><code>k8s/chaos_network_partition.yaml</code><a class="headerlink" href="#k8s-chaos-network-partition-yaml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>NetworkChaos</code> ile core ile redis-cluster arasında çift yönlü (both) 10 saniyelik ağ bölünmesi oluşturur, cron ile 5 dakikada bir tekrarlar.
+<strong>Neden kullandık:</strong>
+- Veri katmanıyla bağlantı koptuğunda servislerin (özellikle kuyruklama) davranışını sınar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;NetworkChaos&quot;] --&gt; B[&quot;action partition, direction both&quot;]
+    B --&gt; C[&quot;hedef: redis-cluster&quot;]
+    C --&gt; D[&quot;duration 10s, cron @every 5m&quot;]
+</pre>
+<h3 id="k8s-chaos-ntp-drift-yaml"><code>k8s/chaos_ntp_drift.yaml</code><a class="headerlink" href="#k8s-chaos-ntp-drift-yaml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>TimeChaos</code> ile tüm <code>cycle-finance</code> podlarının saatine +10 saniye kayma (NTP drift) uygular; 5 dakika sürer, 15 dakikada bir tekrarlar.
+<strong>Neden kullandık:</strong>
+- HFT'de zaman damgaları ve kandil/tick sıralaması kritik olduğundan saat kaymasına dayanıklılığı test eder.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;TimeChaos&quot;] --&gt; B[&quot;timeOffset +10s (NTP drift)&quot;]
+    B --&gt; C[&quot;duration 5m, cron @every 15m&quot;]
+</pre>
+<h3 id="formal-verification-cyclefinance-tla"><code>formal_verification/CycleFinance.tla</code><a class="headerlink" href="#formal-verification-cyclefinance-tla" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Lock-free MPMC tick kuyruğunun TLA+ modelidir: üretici <code>Produce</code> sınırsız olmaması için 1000 tick sınırıyla kuyruğa tick ekler, tüketici <code>Consume</code> kuyruktan kilit olmadan çeker. <code>Safety</code> (işlenen tick, üretilen tick'i asla aşamaz) ve <code>Liveness</code> (her üretilen tick sonunda tüketilir) özellikleri TLC ile kanıtlanır; <code>WF_vars(Consume)</code> ile zayıf adalet garanti edilir.
+<strong>Neden kullandık:</strong>
+- Gerçek zamanlı döngüde ölü kilit (liveness) ve tick kaybı (safety) hatasının tasarım aşamasında kanıtlanmasını sağlar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;Init: kuyruk boş, ticks 0&quot;] --&gt; B{&quot;Next = Produce veya Consume&quot;}
+    B --&gt;|&quot;Produce&quot;| C[&quot;Append tick, ticks_in+1 (bounded 1000)&quot;]
+    B --&gt;|&quot;Consume&quot;| D[&quot;Tail, ticks_out+1&quot;]
+    C --&gt; E[&quot;Safety: ticks_out ≤ ticks_in&quot;]
+    D --&gt; E
+    E --&gt; F[&quot;Liveness: ticks_in=n ~&gt; ticks_out=n&quot;]
+    F --&gt; G[&quot;Spec = Init ∧ [Next]_vars ∧ WF_vars(Consume)&quot;]
+</pre>
+<h3 id="formal-verification-cyclefinance-cfg"><code>formal_verification/CycleFinance.cfg</code><a class="headerlink" href="#formal-verification-cyclefinance-cfg" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> TLC model checker için yapılandırmadır; <code>SPECIFICATION Spec</code>, <code>INVARIANT Safety</code> ve <code>PROPERTY Liveness</code> tanımlayarak modelin tam kapsamda doğrulanmasını sağlar.
+<strong>Neden kullandık:</strong>
+- Kanıtlanacak özellikleri tek dosyada sabitler; TLC çalıştırması deterministik hale gelir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;CycleFinance.cfg&quot;] --&gt; B[&quot;SPECIFICATION Spec&quot;]
+    B --&gt; C[&quot;INVARIANT Safety&quot;]
+    C --&gt; D[&quot;PROPERTY Liveness&quot;]
+    D --&gt; E[&quot;TLC ile doğrula&quot;]
+</pre>
+<p><strong>Özet:</strong> 19 dosya analiz edildi, 19 mermaid diyagramı üretildi (4 kritik: <code>cycle_tmux.sh</code>, <code>monitor.sh</code>, <code>os-utils/config.rs</code>, <code>cycle_env.sh</code>).</p>
+<hr />
+<h2 id="tam-kaynak-kodu">📄 Tam Kaynak Kodu<a class="headerlink" href="#tam-kaynak-kodu" title="Permanent link">&para;</a></h2>
+<h3 id="additional-services-config-config-v5-toml"><code>additional-services/config/config_v5.toml</code><a class="headerlink" href="#additional-services-config-config-v5-toml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml"># API v5 Configuration for Cycle Finance 2.0
+[api]
+version = &quot;v5&quot;
+endpoint = &quot;wss://stream.binance.com:9443/ws&quot;
+
+[trading]
+max_positions = 100
+</code></pre>
+<h3 id="additional-services-config-config-v6-toml"><code>additional-services/config/config_v6.toml</code><a class="headerlink" href="#additional-services-config-config-v6-toml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml"># API v6 Configuration for Cycle Finance 2.0 (Blue/Green Deployment)
+[api]
+version = &quot;v6&quot;
+endpoint = &quot;wss://stream.binance.com:9443/ws/v6&quot;
+
+[trading]
+max_positions = 100
+</code></pre>
+<h3 id="additional-services-formal-verification-cyclefinance-cfg"><code>additional-services/formal_verification/CycleFinance.cfg</code><a class="headerlink" href="#additional-services-formal-verification-cyclefinance-cfg" title="Permanent link">&para;</a></h3>
+<pre><code class="language-ini">SPECIFICATION Spec
+INVARIANT Safety
+PROPERTY Liveness
+</code></pre>
+<h3 id="additional-services-formal-verification-cyclefinance-tla"><code>additional-services/formal_verification/CycleFinance.tla</code><a class="headerlink" href="#additional-services-formal-verification-cyclefinance-tla" title="Permanent link">&para;</a></h3>
+<pre><code>--------------------------- MODULE CycleFinance ---------------------------
+EXTENDS Naturals, Sequences, TLC
+
+(* 
+  TLA+ Model for Cycle Finance Lock-Free Tick Processing.
+  Proves that ticks produced by the network adapter are eventually consumed
+  by the core without deadlocks (Liveness) and without dropping (Safety).
+*)
+
+VARIABLES 
+    queue,       \* Lock-free MPMC queue (flume)
+    ticks_in,    \* Total ticks generated
+    ticks_out    \* Total ticks processed
+
+vars == &lt;&lt;queue, ticks_in, ticks_out&gt;&gt;
+
+Init == 
+    /\ queue = &lt;&lt;&gt;&gt;
+    /\ ticks_in = 0
+    /\ ticks_out = 0
+
+(* Producer adds a tick to the queue *)
+Produce == 
+    /\ ticks_in &lt; 1000  \* Bounded model checking
+    /\ queue' = Append(queue, &quot;tick&quot;)
+    /\ ticks_in' = ticks_in + 1
+    /\ UNCHANGED &lt;&lt;ticks_out&gt;&gt;
+
+(* Consumer processes a tick from the queue lock-free *)
+Consume == 
+    /\ queue # &lt;&lt;&gt;&gt;
+    /\ queue' = Tail(queue)
+    /\ ticks_out' = ticks_out + 1
+    /\ UNCHANGED &lt;&lt;ticks_in&gt;&gt;
+
+Next == Produce \/ Consume
+
+(* Safety: Processed ticks never exceed produced ticks *)
+Safety == ticks_out &lt;= ticks_in
+
+(* Liveness: Every produced tick is eventually consumed *)
+Liveness == \A n \in Nat : (ticks_in = n) ~&gt; (ticks_out = n)
+
+Spec == Init /\ [][Next]_vars /\ WF_vars(Consume)
+
+=============================================================================
+</code></pre>
+<h3 id="additional-services-k8s-chaos-dns-failure-yaml"><code>additional-services/k8s/chaos_dns_failure.yaml</code><a class="headerlink" href="#additional-services-k8s-chaos-dns-failure-yaml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-yaml">apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: cycle-finance-dns-failure
+  namespace: default
+spec:
+  action: error
+  mode: all
+  selector:
+    labelSelectors:
+      app: cycle-finance
+  patterns:
+    - api.binance.com
+    - stream.binance.com
+  duration: '5m'
+  scheduler:
+    cron: '@every 30m'
+</code></pre>
+<h3 id="additional-services-k8s-chaos-network-partition-yaml"><code>additional-services/k8s/chaos_network_partition.yaml</code><a class="headerlink" href="#additional-services-k8s-chaos-network-partition-yaml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-yaml">apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: cycle-finance-network-partition
+  namespace: default
+spec:
+  action: partition
+  mode: all
+  selector:
+    labelSelectors:
+      app: cycle-finance
+  direction: both
+  target:
+    selector:
+      labelSelectors:
+        app: redis-cluster
+    mode: all
+  duration: '10s'
+  scheduler:
+    cron: '@every 5m'
+</code></pre>
+<h3 id="additional-services-k8s-chaos-ntp-drift-yaml"><code>additional-services/k8s/chaos_ntp_drift.yaml</code><a class="headerlink" href="#additional-services-k8s-chaos-ntp-drift-yaml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-yaml">apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: cycle-finance-ntp-drift
+  namespace: default
+spec:
+  mode: all
+  selector:
+    labelSelectors:
+      app: cycle-finance
+  timeOffset: '10s' # Simulate NTP drift of 10 seconds ahead
+  duration: '5m'
+  scheduler:
+    cron: '@every 15m'
+</code></pre>
+<h3 id="additional-services-k8s-deployment-yaml"><code>additional-services/k8s/deployment.yaml</code><a class="headerlink" href="#additional-services-k8s-deployment-yaml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cycle-finance-core
+  labels:
+    app: cycle-finance
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cycle-finance
+  template:
+    metadata:
+      labels:
+        app: cycle-finance
+      annotations:
+        # Require cgroups v2 resource management
+        kubernetes.io/cgroup-version: &quot;v2&quot;
+    spec:
+      containers:
+      - name: core
+        image: cycle-finance/core:latest
+        resources:
+          limits:
+            cpu: &quot;4&quot;
+            memory: &quot;4Gi&quot;
+          requests:
+            cpu: &quot;4&quot;
+            memory: &quot;4Gi&quot;
+        securityContext:
+          capabilities:
+            add:
+              - SYS_NICE # Required for SCHED_FIFO real-time thread scheduling
+        env:
+          - name: RUST_LOG
+            value: &quot;info&quot;
+</code></pre>
+<h3 id="additional-services-os-utils-cargo-toml"><code>additional-services/os-utils/Cargo.toml</code><a class="headerlink" href="#additional-services-os-utils-cargo-toml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[package]
+name = &quot;os-utils&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[dependencies]
+libc = { workspace = true }
+crossbeam = { workspace = true }
+</code></pre>
+<h3 id="additional-services-os-utils-src-config-rs"><code>additional-services/os-utils/src/config.rs</code><a class="headerlink" href="#additional-services-os-utils-src-config-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">use crossbeam::epoch::{self, Atomic, Owned};
+use std::sync::atomic::Ordering;
+
+/// System configuration using lock-free epoch-based reclamation.
+/// Prevents use-after-free without using Mutex/RwLock in the tick loop.
+pub struct GlobalConfig {
+    pub max_positions: usize,
+    pub active_api_version: &amp;'static str,
+}
+
+pub struct ConfigManager {
+    // crossbeam_epoch::Atomic provides safe, lock-free memory reclamation
+    current_config: Atomic&lt;GlobalConfig&gt;,
+}
+
+impl ConfigManager {
+    pub fn new(initial: GlobalConfig) -&gt; Self {
+        Self {
+            current_config: Atomic::new(initial),
+        }
+    }
+
+    /// Read configuration. The returned guard ensures the config is not dropped
+    /// while the current thread is holding it (epoch pinning).
+    pub fn read_config&lt;'a&gt;(&amp;'a self, guard: &amp;'a epoch::Guard) -&gt; &amp;'a GlobalConfig {
+        let ptr = self.current_config.load(Ordering::Acquire, guard);
+        unsafe { ptr.as_ref().unwrap() }
+    }
+
+    /// Swap configuration globally. Old config is queued for garbage collection
+    /// once no threads are pinning the epoch.
+    pub fn swap_config(&amp;self, new_config: GlobalConfig) {
+        let guard = epoch::pin();
+        let new_ptr = Owned::new(new_config);
+
+        let old_ptr = self.current_config.swap(new_ptr, Ordering::Release, &amp;guard);
+
+        if !old_ptr.is_null() {
+            unsafe {
+                // Queue the old configuration for deletion safely.
+                guard.defer_destroy(old_ptr);
+            }
+        }
+        println!(&quot;Config: Successfully swapped lock-free configuration.&quot;);
+    }
+}
+</code></pre>
+<h3 id="additional-services-os-utils-src-lib-rs"><code>additional-services/os-utils/src/lib.rs</code><a class="headerlink" href="#additional-services-os-utils-src-lib-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">#![allow(unsafe_code)]
+pub mod config;
+
+#[cfg(target_os = &quot;linux&quot;)]
+use libc::{sched_param, sched_setscheduler, SCHED_FIFO};
+
+/// Safely sets the current thread to the SCHED_FIFO real-time scheduler.
+/// On non-Linux platforms or if permissions are lacking, it logs a warning.
+pub fn set_rt_thread_priority(priority: i32) {
+    #[cfg(target_os = &quot;linux&quot;)]
+    {
+        let param = sched_param {
+            sched_priority: priority,
+        };
+
+        let result = unsafe {
+            // 0 means the calling thread
+            sched_setscheduler(0, SCHED_FIFO, &amp;param)
+        };
+
+        if result != 0 {
+            let err = std::io::Error::last_os_error();
+            eprintln!(&quot;Failed to set SCHED_FIFO (requires CAP_SYS_NICE or root): {}&quot;, err);
+        } else {
+            println!(&quot;Thread successfully elevated to SCHED_FIFO with priority {}&quot;, priority);
+        }
+    }
+
+    #[cfg(not(target_os = &quot;linux&quot;))]
+    {
+        eprintln!(&quot;set_rt_thread_priority is a no-op on non-Linux platforms.&quot;);
+    }
+}
+</code></pre>
+<h3 id="additional-services-scripts-cycle-env-sh"><code>additional-services/scripts/cycle_env.sh</code><a class="headerlink" href="#additional-services-scripts-cycle-env-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ============================================================
+#  Cycle Finance — Shell Yardımcı Komutları
+#  Bu dosya cycle_tmux.sh tarafından otomatik source edilir.
+#  Elle de kullanılabilir: source &lt;proje-koku&gt;/additional-services/scripts/cycle_env.sh
+# ============================================================
+
+# ── Kök dizini otomatik bul ──────────────────────────────────
+CYCLE_ROOT=&quot;${CYCLE_ROOT:-$(cd &quot;$(dirname &quot;${BASH_SOURCE[0]}&quot;)/../..&quot; &amp;&amp; pwd)}&quot;
+CYCLE_API=&quot;${CYCLE_API:-http://127.0.0.1:8080}&quot;
+CYCLE_USER=&quot;${CYCLE_USER:-admin}&quot;
+CYCLE_PASS=&quot;${CYCLE_PASS:-changeme123}&quot;
+
+# ── Renk kodları ─────────────────────────────────────────────
+_G='\033[0;32m'; _Y='\033[1;33m'; _C='\033[0;36m'
+_B='\033[1;34m'; _W='\033[1;37m'; _R='\033[0;31m'
+_D='\033[2m';    _N='\033[0m'
+
+# ============================================================
+#  KOMUT REHBERİ
+# ============================================================
+help-cycle() {
+  echo &quot;&quot;
+  echo -e &quot;${_W}╔══════════════════════════════════════════════════════════════════╗${_N}&quot;
+  echo -e &quot;${_W}║        🏛️  CYCLE FINANCE — KOMUT REHBERİ                        ║${_N}&quot;
+  echo -e &quot;${_W}╚══════════════════════════════════════════════════════════════════╝${_N}&quot;
+
+  echo -e &quot;\n${_Y}━━━  🔧 SİSTEM YÖNETİMİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_G}cycle-start${_N}          Tüm terminalleri yeniden başlat&quot;
+  echo -e &quot;  ${_G}cycle-kill${_N}           Tüm terminalleri ve servisleri kapat&quot;
+  echo -e &quot;  ${_G}cycle-status${_N}         Çalışan servislerin CPU/RAM durumu&quot;
+  echo -e &quot;  ${_G}cycle-build${_N}          Projeyi derle (cargo build)&quot;
+  echo -e &quot;  ${_G}cycle-build-full${_N}     Tam set derle (--features full)&quot;
+
+  echo -e &quot;\n${_Y}━━━  ⚙️  SİSTEMLERİ TEK TEK AÇ / KAPAT  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_G}data-start${_N} / ${_R}data-stop${_N}          DATA terminali (Binance WS)&quot;
+  echo -e &quot;  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY terminali (PyO3)&quot;
+  echo -e &quot;  ${_G}paper-start${_N} / ${_R}paper-stop${_N}        Paper-service (REST :8080)&quot;
+  echo -e &quot;  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service&quot;
+  echo -e &quot;  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)&quot;
+  echo -e &quot;  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)&quot;
+  echo -e &quot;  ${_G}calc-ind-start${_N} / ${_R}calc-ind-stop${_N}    İndikatör hesaplama motoru (:3007)&quot;
+  echo -e &quot;  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi&quot;
+  echo -e &quot;  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)&quot;
+
+  echo -e &quot;\n${_Y}━━━  🤖 AI ENGINE (LLM Agent Katmanı)  ━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}ai-start${_N}           AI Engine'i başlat (ai.toml + OpenAI/Anthropic)&quot;
+  echo -e &quot;  ${_R}ai-stop${_N}            Durdur&quot;
+  echo -e &quot;  ${_C}ai-status${_N}          Çalışıyor mu? CPU/RAM + son döngü&quot;
+  echo -e &quot;  ${_C}ai-approve${_N}         HITL modunda bekleyen emri onayla (echo approve)&quot;
+  echo -e &quot;  ${_C}ai-reject${_N}          HITL modunda bekleyen emri reddet&quot;
+  echo -e &quot;  ${_C}ai-log${_N}             Canlı log izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  🖥️  EXEC CONSOLE (Execution Engine elle komut)  ━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}exec-console-start${_N}   Konsolu tmux sekmesinde başlat (executiond :3010)&quot;
+  echo -e &quot;  ${_R}exec-console-stop${_N}    Durdur&quot;
+  echo -e &quot;  ${_C}exec-console-status${_N}  Çalışıyor mu? CPU/RAM&quot;
+  echo -e &quot;  ${_C}exec-console-log${_N}     Konsol penceresine geç (Ctrl+B → 13)&quot;
+
+  echo -e &quot;\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}listener-start${_N}      Pane 0.2'de başlat&quot;
+  echo -e &quot;  ${_C}listener-stop${_N}       Durdur&quot;
+  echo -e &quot;  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM&quot;
+  echo -e &quot;  ${_C}listenconfig-list${_N}   Metrik parametrelerini göster&quot;
+  echo -e &quot;  ${_C}listenconfig-set KEY VAL${_N}  Parametre değiştir (lambda, k_abs, gamma...) &quot;
+  echo -e &quot;  ${_C}listenconfig-reset${_N}  Varsayılanlara dön&quot;
+  echo -e &quot;  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)&quot;
+
+  echo -e &quot;\n${_Y}━━━  ⚠️  RİSK ANALİZİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}risk-start${_N}           Pane 0.1'de başlat (5 sn yenileme)&quot;
+  echo -e &quot;  ${_C}risk-worker-start${_N}    risk-worker daemon'ı başlat (korelasyon/VaR)&quot;
+  echo -e &quot;  ${_C}risk-stop${_N}            Durdur&quot;
+  echo -e &quot;  ${_C}risk-query${_N}           Tek seferlik analiz çalıştır&quot;
+
+  echo -e &quot;\n${_Y}━━━  💹 PRICE-FEED  (WS→Ring, Anlık Last/Mark/Index)  ━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)&quot;
+  echo -e &quot;  ${_C}pricefeed-stop${_N}      Durdur&quot;
+  echo -e &quot;  ${_C}pricefeed-status${_N}    Çalışıyor mu? CPU/RAM + health&quot;
+  echo -e &quot;  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query HEIUSDT)&quot;
+  echo -e &quot;  ${_C}pricefeed-log${_N}       Canlı log izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}data-live${_N}            Canlı Binance WS başlat (RUN_MODE=DATA)&quot;
+  echo -e &quot;  ${_C}data-backtest${_N}        CSV backtest başlat&quot;
+  echo -e &quot;  ${_C}data-log${_N}             Data terminal logunu izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  🛡️  PAPER SERVICE (REST API)  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}paper-health${_N}         Sistem sağlık kontrolü&quot;
+  echo -e &quot;  ${_C}paper-balance${_N}        Bakiye ve equity bilgisi&quot;
+  echo -e &quot;  ${_C}paper-positions${_N}      Açık pozisyonlar&quot;
+  echo -e &quot;  ${_C}paper-orders${_N}         Açık emirler&quot;
+  echo -e &quot;  ${_C}paper-history${_N}        İşlem geçmişi&quot;
+  echo -e &quot;  ${_C}paper-metrics${_N}        Prometheus metrikleri (ham)&quot;
+  echo -e &quot;  ${_C}paper-log${_N}            Paper service logunu izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  📋 EMİR İŞLEMLERİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}paper-buy  BTCUSDT 0.001${_N}   Market BUY emri&quot;
+  echo -e &quot;  ${_C}paper-sell BTCUSDT 0.001${_N}   Market SELL emri&quot;
+  echo -e &quot;  ${_C}paper-cli  [arglar]${_N}         Paper CLI (tüm seçenekler)&quot;
+
+  echo -e &quot;\n${_Y}━━━  🛡️ EXECUTION ENGINE (Canlı Binance :3010)  ━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}exec-setup${_N}          Anahtar gir (ekrana yazılmaz, .env 600)&quot;
+  echo -e &quot;  ${_C}exec-show${_N}           Yapılandırma göster (anahtarlar maskeli)&quot;
+  echo -e &quot;  ${_C}exec-testnet${_N}        Testnet URL'leri yaz&quot;
+  echo -e &quot;  ${_C}exec-dry${_N}            executiond DRY_RUN'da başlat (emir gitmez)&quot;
+  echo -e &quot;  ${_R}exec-live${_N}           Gerçek emir modu ('GO' onayı ister)&quot;
+  echo -e &quot;  ${_C}exec-stop${_N}           executiond durdur&quot;
+  echo -e &quot;  ${_C}exec-status${_N}         Mod + risk durumu&quot;
+  echo -e &quot;  ${_C}exec-account / exec-positions / exec-balance / exec-orders${_N}&quot;
+  echo -e &quot;  ${_R}exec-kill / exec-unkill${_N}  Kill switch aç/kapat (acil durum)&quot;
+
+  echo -e &quot;\n${_Y}━━━  🧠 STRATEGY / CORRELATION  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}strategy-start${_N}       Strategy terminalini başlat (arka plan)&quot;
+  echo -e &quot;  ${_C}strategy-stop${_N}        Strategy terminalini durdur&quot;
+  echo -e &quot;  ${_C}correlation-start${_N}    Korelasyon analizini başlat&quot;
+
+  echo -e &quot;\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}alert-list${_N}           Aktif uyarıları listele&quot;
+  echo -e &quot;  ${_C}alert-add HEIUSDT above 0.22 \&quot;ses\&quot;${_N}   Yeni alarm ekle&quot;
+  echo -e &quot;  ${_C}alert-update SYM cond OLD NEW${_N}   Alarmı güncelle&quot;
+  echo -e &quot;  ${_C}alert-remove SYM cond PRICE${_N}     Alarmı sil&quot;
+  echo -e &quot;  ${_C}alert-reload${_N}         Alert servisini yeniden başlat&quot;
+
+  echo -e &quot;\n${_Y}━━━  📈 DETECT-MS  (Market Structure Engine :3002)  ━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}detect-ms-start${_N}      Servisi arka planda başlat (port 3002)&quot;
+  echo -e &quot;  ${_C}detect-ms-stop${_N}       Servisi durdur&quot;
+  echo -e &quot;  ${_C}detect-ms-status${_N}     Çalışıyor mu? CPU/RAM göster&quot;
+  echo -e &quot;  ${_C}detect-ms-query${_N}      BTCUSDT 15m analiz (JSON çıktı)&quot;
+  echo -e &quot;  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu&quot;
+  echo -e &quot;  ${_C}detect-ms-log${_N}        Canlı log izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}breakout-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)&quot;
+  echo -e &quot;  ${_C}breakout-stop${_N}         Stratejiyi durdur&quot;
+  echo -e &quot;  ${_C}breakout-status${_N}       Çalışıyor mu? CPU/RAM göster&quot;
+  echo -e &quot;  ${_C}breakout-query${_N}        Tek seferlik analiz (emir açmaz)&quot;
+  echo -e &quot;  ${_C}breakout-query --dry-run${_N}  Analiz + kırılım simülasyonu&quot;
+  echo -e &quot;  ${_C}breakout-wait 600${_N}     Bekleme süresini ayarla (saniye)&quot;
+  echo -e &quot;  ${_C}breakout-log${_N}          Canlı strateji logu izle&quot;
+
+  echo -e &quot;\n${_Y}━━━  📡 STREAM-OHLCV  (Canlı OHLCV Mum Akışı :3008)  ━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-start${_N}    Servisi başlat (ring: /dev/shm/cycle_finance_stream_ohlcv)&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-stop${_N}     Servisi durdur&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-status${_N}   Çalışıyor mu? CPU/RAM göster&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-start-stream SYM ITV START_MS${_N}   Stream aç (örn. BTCUSDT 60 0)&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-streams${_N}  Aktif stream'leri listele&quot;
+  echo -e &quot;  ${_C}stream-ohlcv-query SYM ITV START_MS${_N}   Stream aç + durum göster&quot;
+
+  echo -e &quot;\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 4)&quot;
+
+  echo -e &quot;\n${_Y}━━━  🗄️  VERİTABANI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_C}db-trades${_N}            Son 20 işlemi göster&quot;
+  echo -e &quot;  ${_C}db-size${_N}              Veritabanı boyutu&quot;
+
+  echo -e &quot;\n${_Y}━━━  🌐 TMUX KISAYOLLARI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_B}Ctrl+B → ok tuşu${_N}     Panel değiştir&quot;
+  echo -e &quot;  ${_B}Ctrl+B → z${_N}           Paneli tam ekran yap / küçült&quot;
+  echo -e &quot;  ${_B}Ctrl+B → d${_N}           Session'ı arka plana al&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 0${_N}           Trading sekmesi (4 panel)&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 1${_N}           📡 DATA sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 2${_N}           🔔 ALERT sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 3${_N}           🛡️ PAPER sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi&quot;
+  echo -e &quot;  ${_B}Ctrl+B → 7${_N}           STREAM-OHLCV sekmesi&quot;
+  echo -e &quot;  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll&quot;
+
+  echo -e &quot;\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}&quot;
+  echo -e &quot;  ${_D}help-cycle yazarak bu listeye tekrar ulaşabilirsin.${_N}&quot;
+  echo &quot;&quot;
+}
+
+# ============================================================
+#  SİSTEM YÖNETİMİ
+# ============================================================
+# Bu dosya değiştiğinde fonksiyonları güncellemek için:
+reload-cycle() {
+  source &quot;$CYCLE_ROOT/additional-services/scripts/cycle_env.sh&quot; &gt;/dev/null 2&gt;&amp;1
+  echo &quot;✅ cycle_env.sh yeniden yüklendi&quot;
+}
+
+# Her start/stop fonksiyonunun güncel sürümü kullanması için otomatik yenileme
+# (tmux SHELL paneli eski sürümü yüklemiş olsa bile sorun yaşanmaz)
+_start_guard() {
+  source &quot;$CYCLE_ROOT/additional-services/scripts/cycle_env.sh&quot; &gt;/dev/null 2&gt;&amp;1
+}
+cycle-start() {
+  &quot;$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh&quot;
+}
+cycle-kill() {
+  &quot;$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh&quot; kill
+}
+cycle-status() {
+  &quot;$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh&quot; status
+}
+cycle-build() {
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p core -p paper-service -p alert-service -p breakout-strategy
+}
+cycle-build-full() {
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p paper-service --features full
+}
+
+# ============================================================
+#  SİSTEMLERİ TEK TEK AÇ / KAPAT  (4 panelli Trading penceresi)
+#  DATA, ALERT ve PAPER ayrı sekme (pencere) olarak açılır.
+#  Her servis kendi pane'inde başlar.
+# ============================================================
+# Yardımcı: Trading penceresindeki bir pane'e komut gönder
+# Servis → hedef: 0.0=STRATEGY 0.2=LISTENER 0.1=RISK 0.3=SHELL
+#                1=DATA sekmesi  2=ALERT sekmesi  3=PAPER sekmesi
+_tmux_pane() {
+  local name=&quot;$1&quot;; shift
+  local session=&quot;cycle&quot;
+  local pane
+  case &quot;$name&quot; in
+    &quot;📡DATA&quot;)   pane=&quot;1&quot; ;;
+    &quot;🛡️PAPER&quot;)  pane=&quot;3&quot; ;;
+    &quot;🧠STRATEGY&quot;) pane=&quot;0.0&quot; ;;
+    &quot;🔔ALERT&quot;)  pane=&quot;2&quot; ;;
+    &quot;🛰️LISTENER&quot;) pane=&quot;0.2&quot; ;;
+    &quot;⚠️RISK&quot;)  pane=&quot;0.1&quot; ;;
+    &quot;💻SHELL&quot;)  pane=&quot;0.3&quot; ;;
+    &quot;📡STREAM-OHLCV&quot;) pane=&quot;7&quot; ;;
+    *)
+      # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
+      if ! tmux has-session -t &quot;$session&quot; 2&gt;/dev/null; then
+        tmux new-session -d -s &quot;$session&quot; -x 220 -y 50
+        tmux rename-window -t &quot;$session:0&quot; &quot;Trading&quot;
+      fi
+      local idx
+      idx=$(tmux list-windows -t &quot;$session&quot; -F &quot;#{window_name} #{window_index}&quot; 2&gt;/dev/null | awk -v n=&quot;$name&quot; '$1==n{print $2}')
+      if [ -z &quot;$idx&quot; ]; then
+        tmux new-window -t &quot;$session&quot; -n &quot;$name&quot;
+        idx=$(tmux list-windows -t &quot;$session&quot; -F &quot;#{window_name} #{window_index}&quot; 2&gt;/dev/null | awk -v n=&quot;$name&quot; '$1==n{print $2}')
+      fi
+      tmux send-keys -t &quot;$session:$idx&quot; &quot;$@&quot;
+      return 0
+      ;;
+  esac
+  tmux send-keys -t &quot;$session:$pane&quot; C-c
+  tmux send-keys -t &quot;$session:$pane&quot; C-u
+  tmux send-keys -t &quot;$session:$pane&quot; &quot;$@&quot;
+}
+
+# ── DATA terminali (Binance WS → ring) ──────────────────────
+# RUN_MODE env değişkeni ps'de görünmez → /proc/*/environ ile kontrol et
+_core_mode_pid() {
+  local mode=&quot;$1&quot;
+  for p in $(pgrep -x core 2&gt;/dev/null); do
+    if tr '\0' '\n' &lt; &quot;/proc/$p/environ&quot; 2&gt;/dev/null | grep -q &quot;^RUN_MODE=$mode$&quot;; then
+      echo &quot;$p&quot;
+      return 0
+    fi
+  done
+  return 1
+}
+
+data-start() {
+  _start_guard
+  if _core_mode_pid DATA &amp;&gt;/dev/null; then echo &quot;⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p core 2&gt;&amp;1 | tail -1
+  rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+  _tmux_pane &quot;📡DATA&quot; &quot;cd $CYCLE_ROOT &amp;&amp; RUN_MODE=DATA ./target/debug/core&quot; Enter
+  echo &quot;✅ DATA başlatıldı (sekme 1 — 📡 DATA)&quot;
+}
+data-stop() {
+  _start_guard
+  local p; p=$(_core_mode_pid DATA)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; echo &quot;✅ DATA durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  DATA çalışmıyor&quot;; fi
+}
+
+# ── STRATEGY terminali (core) ────────────────────────────────
+strategy-start() {
+  _start_guard
+  if _core_mode_pid STRATEGY &amp;&gt;/dev/null; then echo &quot;⚠️  STRATEGY zaten çalışıyor (pid: $(_core_mode_pid STRATEGY))&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p core 2&gt;&amp;1 | tail -1
+  _tmux_pane &quot;🧠STRATEGY&quot; &quot;cd $CYCLE_ROOT &amp;&amp; RUN_MODE=STRATEGY ./target/debug/core&quot; Enter
+  echo &quot;✅ STRATEGY başlatıldı (pane 0.0)&quot;
+}
+strategy-stop() {
+  _start_guard
+  local p; p=$(_core_mode_pid STRATEGY)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; echo &quot;✅ STRATEGY durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  STRATEGY çalışmıyor&quot;; fi
+}
+
+# ── PAPER-SERVICE (REST API :8080) ───────────────────────────
+paper-start() {
+  _start_guard
+  if pgrep -x &quot;paper-service&quot; &amp;&gt;/dev/null; then echo &quot;⚠️  paper-service zaten çalışıyor&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p paper-service 2&gt;&amp;1 | tail -1
+  rm -rf &quot;$CYCLE_ROOT/data-engine/data/paper_wal&quot;
+  _tmux_pane &quot;🛡️PAPER&quot; \
+    &quot;cd $CYCLE_ROOT &amp;&amp; PAPER_ADMIN_USER=${PAPER_ADMIN_USER:-admin} PAPER_ADMIN_PASS=${PAPER_ADMIN_PASS:-changeme123} PAPER_API_ADDR=${PAPER_API_ADDR:-127.0.0.1:8080} PAPER_INITIAL_USDT=${PAPER_INITIAL_USDT:-100000} PAPER_DB_PATH=$CYCLE_ROOT/data-engine/data/paper_live.db PAPER_SLED_PATH=$CYCLE_ROOT/data-engine/data/paper_wal ./target/debug/paper-service&quot; \
+    Enter
+  echo &quot;✅ PAPER-SERVICE başlatıldı (sekme 3 — 🛡️ PAPER, http://127.0.0.1:8080)&quot;
+}
+paper-stop() {
+  _start_guard
+  local p; p=$(pgrep -x paper-service 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ paper-service durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  paper-service çalışmıyor&quot;; fi
+}
+
+# ── ALERT-SERVICE ────────────────────────────────────────────
+alert-start() {
+  _start_guard
+  if pgrep -x &quot;alert-service&quot; &amp;&gt;/dev/null; then echo &quot;⚠️  alert-service zaten çalışıyor&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p alert-service 2&gt;&amp;1 | tail -1
+  _tmux_pane &quot;🔔ALERT&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml&quot; Enter
+  echo &quot;✅ ALERT-SERVICE başlatıldı (sekme 2 — 🔔 ALERT)&quot;
+}
+alert-stop() {
+  _start_guard
+  local p; p=$(pgrep -x alert-service 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ alert-service durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  alert-service çalışmıyor&quot;; fi
+}
+
+# ── RISK-WORKER (Soğuk yol parametre üretici — korelasyon/VaR) ──
+risk-worker-start() {
+  _start_guard
+  if pgrep -x risk-worker &amp;&gt;/dev/null; then echo &quot;⚠️  risk-worker zaten çalışıyor (pid: $(pgrep -x risk-worker | head -1))&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p risk-engine 2&gt;&amp;1 | tail -1
+  _tmux_pane &quot;🧮RISK-WORKER&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/risk-worker&quot; Enter
+  sleep 2
+  if pgrep -x risk-worker &amp;&gt;/dev/null; then
+    echo &quot;✅ RISK-WORKER başlatıldı (http://127.0.0.1:3011/healthz)&quot;
+  else
+    echo &quot;❌ RISK-WORKER başlatılamadı&quot;
+  fi
+}
+risk-worker-stop() {
+  _start_guard
+  local p; p=$(pgrep -x risk-worker 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ risk-worker durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  risk-worker çalışmıyor&quot;; fi
+}
+risk-worker-status() {
+  _start_guard
+  local p; p=$(pgrep -x risk-worker 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then echo &quot;✅ RISK-WORKER ÇALIŞIYOR [pid:$p]&quot;; else echo &quot;✘  risk-worker durdurulmuş&quot;; fi
+}
+
+# ── LISTENER (Anlık Metrik Analizi, pane 0.1) ──────────
+listener-start() {
+  _start_guard
+  if pgrep -x listener &amp;&gt;/dev/null; then
+    echo &quot;⚠️  listener zaten çalışıyor (pid: $(pgrep -x listener | head -1))&quot;
+    return 1
+  fi
+  # Bağımlılık: paper-service gerekli
+  if ! pgrep -x paper-service &amp;&gt;/dev/null; then
+    echo &quot;⚠️  paper-service çalışmıyor — önce paper-start ile başlatın&quot;
+    return 1
+  fi
+  _tmux_pane &quot;🛰️LISTENER&quot; &quot;cd $CYCLE_ROOT &amp;&amp; $CYCLE_ROOT/target/release/listener&quot; Enter
+  sleep 2
+  if pgrep -x listener &amp;&gt;/dev/null; then
+    echo &quot;✅ LISTENER başlatıldı (pane 0.2)&quot;
+  else
+    echo &quot;❌ LISTENER başlatılamadı&quot;
+  fi
+}
+listener-stop() {
+  _start_guard
+  local p; p=$(pgrep -x listener 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    pkill -TERM -x listener 2&gt;/dev/null
+    sleep 1
+    pkill -KILL -x listener 2&gt;/dev/null || true
+    echo &quot;✅ LISTENER durduruldu [pid:$p]&quot;
+  else
+    echo &quot;ℹ️  LISTENER çalışmıyor&quot;
+  fi
+}
+listener-status() {
+  _start_guard
+  local p; p=$(pgrep -x listener 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$p&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$p&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ LISTENER ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]&quot;
+  else
+    echo &quot;✘  LISTENER durdurulmuş&quot;
+  fi
+}
+listener-log() {
+  tail -f /tmp/listener_metrics.json 2&gt;/dev/null || echo &quot;metrik dosyası yok&quot;
+}
+
+# ── RISK (Anlık risk analizi, pane 0.3) ──────────────────────
+risk-start() {
+  _start_guard
+  if pgrep -x risk_analysis &amp;&gt;/dev/null; then
+    echo &quot;⚠️  RISK zaten çalışıyor (pid: $(pgrep -x risk_analysis | head -1))&quot;
+    return 1
+  fi
+  _tmux_pane &quot;⚠️RISK&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/release/risk_analysis --watch&quot; Enter
+  sleep 2
+  echo &quot;✅ RISK başlatıldı (pane 0.1)&quot;
+}
+risk-stop() {
+  _start_guard
+  local p; p=$(pgrep -x risk_analysis 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    pkill -TERM -x risk_analysis 2&gt;/dev/null; sleep 1
+    pkill -KILL -x risk_analysis 2&gt;/dev/null || true
+    echo &quot;✅ RISK durduruldu [pid:$p]&quot;
+  else
+    echo &quot;ℹ️  RISK çalışmıyor&quot;
+  fi
+}
+risk-status() {
+  _start_guard
+  local p; p=$(pgrep -x risk_analysis 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    echo &quot;✅ RISK ÇALIŞIYOR [pid:$p]&quot;
+  else
+    echo &quot;✘  RISK durdurulmuş&quot;
+  fi
+}
+risk-query() {
+  _start_guard
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; ./target/release/risk_analysis
+ }
+
+# ── Listener metrik parametreleri (shell'den ayarlanabilir) ──
+# Config dosyası: /tmp/listener_metrics.conf (çalışan listener 5 sn'de bir yeniden okur)
+LISTEN_CONF=/tmp/listener_metrics.conf
+
+# listenconfig-list  → tüm parametreleri göster
+# listenconfig-set lambda 0.02   → parametre değiştir
+# listenconfig-reset          → varsayılanlara dön
+listenconfig-list() {
+  _start_guard
+  local conf=&quot;$LISTEN_CONF&quot;
+  if [ -f &quot;$conf&quot; ]; then
+    echo &quot;=== Listener metrik parametreleri ($conf) ===&quot;
+    cat &quot;$conf&quot;
+  else
+    echo &quot;ℹ️  Config dosyası yok — varsayılanlar kullanılıyor:&quot;
+    echo &quot;  lambda = 0.015        (WLOBI decay)&quot;
+    echo &quot;  theta_vol = 2.5       (Delta velocity eşiği)&quot;
+    echo &quot;  alpha_bucket = 0.75   (aVPIN bucket sabiti)&quot;
+    echo &quot;  k_abs = 100           (absorption penceresi, trade)&quot;
+    echo &quot;  n_bucket = 50         (aVPIN bucket sayısı)&quot;
+    echo &quot;  ice_threshold = 1.2   (Iceberg eşiği)&quot;
+    echo &quot;  efp_threshold = 0.05  (Execution footprint eşiği)&quot;
+    echo &quot;  noise_corr = 0.85     (Lee-Ready gürültü filtresi)&quot;
+    echo &quot;  delta_window_sec = 60 (ΔV penceresi, saniye)&quot;
+    echo &quot;  tps_window_sec = 10  (TPS penceresi, saniye)&quot;
+    echo &quot;  corr_price_window_sec = 5 (fiyat korelasyonu penceresi, saniye)&quot;
+    echo &quot;  corr_vol_window_sec = 5   (hacim korelasyonu penceresi, saniye)&quot;
+    echo &quot;  gamma0..gamma5        (Alpha Basket ağırlıkları)&quot;
+  fi
+}
+
+listenconfig-set() {
+  _start_guard
+  local key=&quot;${1:-}&quot; val=&quot;${2:-}&quot;
+  if [ -z &quot;$key&quot; ] || [ -z &quot;$val&quot; ]; then
+    echo &quot;Kullanım: listenconfig-set &lt;key&gt; &lt;value&gt;&quot;
+    echo &quot;Örn: listenconfig-set lambda 0.02 | listenconfig-set k_abs 200&quot;
+    echo &quot;     listenconfig-set gamma1 0.5 | listenconfig-set delta_window_sec 120&quot;
+    return 1
+  fi
+  local valid_keys=&quot;lambda theta_vol alpha_bucket k_abs n_bucket ice_threshold efp_threshold noise_corr delta_window_sec tps_window_sec corr_price_window_sec corr_vol_window_sec gamma0 gamma1 gamma2 gamma3 gamma4 gamma5&quot;
+  if ! echo &quot;$valid_keys&quot; | grep -qw &quot;$key&quot;; then
+    echo &quot;❌ Geçersiz parametre: $key&quot;
+    echo &quot;Geçerli: $valid_keys&quot;
+    return 1
+  fi
+  # k_abs, n_bucket, delta_window_sec tam sayı olmalı
+  if echo &quot;k_abs n_bucket delta_window_sec tps_window_sec corr_price_window_sec corr_vol_window_sec&quot; | grep -qw &quot;$key&quot;; then
+    if ! echo &quot;$val&quot; | grep -qE '^[0-9]+$'; then
+      echo &quot;❌ $key tam sayı olmalı&quot;; return 1
+    fi
+  else
+    if ! echo &quot;$val&quot; | grep -qE '^-?[0-9]+(\.[0-9]+)?$'; then
+      echo &quot;❌ $key sayı olmalı&quot;; return 1
+    fi
+  fi
+  # Eski değeri değiştir veya ekle
+  if grep -q &quot;^${key} *=&quot; &quot;$LISTEN_CONF&quot; 2&gt;/dev/null; then
+    sed -i &quot;s|^${key} *=.*|${key} = ${val}|&quot; &quot;$LISTEN_CONF&quot;
+  else
+    echo &quot;${key} = ${val}&quot; &gt;&gt; &quot;$LISTEN_CONF&quot;
+  fi
+  echo &quot;✅ $key = $val kaydedildi ($LISTEN_CONF)&quot;
+  echo &quot;   Çalışan listener 5 sn'de bir yeniden okur. list-restart ile hemen uygula.&quot;
+}
+
+listenconfig-reset() {
+  _start_guard
+  rm -f &quot;$LISTEN_CONF&quot;
+  echo &quot;✅ Varsayılan parametrelere dönüldü (config dosyası silindi)&quot;
+}
+
+# Kısayollar
+listener-config() { listenconfig-list; }
+listener-set() { listenconfig-set &quot;$@&quot;; }
+
+# ── PRICE-FEED (WS → ring buffer, anlık last/mark/index price) ──
+pricefeed-start() {
+  _start_guard
+  if pgrep -x &quot;price-feed&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  price-feed zaten çalışıyor (pid: $(pgrep -x price-feed | head -1))&quot;
+    return 1
+  fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p price-feed 2&gt;&amp;1 | tail -1
+  setsid nohup &quot;$CYCLE_ROOT/target/debug/price-feed&quot; &gt; /tmp/price_feed.log 2&gt;&amp;1 &lt; /dev/null &amp;
+  sleep 3
+  if curl -s -m 2 http://127.0.0.1:3004/health &gt;/dev/null 2&gt;&amp;1; then
+    echo &quot;✅ PRICE-FEED başlatıldı → http://127.0.0.1:3004/api/lastprice&quot;
+  else
+    echo &quot;❌ PRICE-FEED başlatılamadı:&quot;; tail -5 /tmp/price_feed.log
+  fi
+}
+pricefeed-stop() {
+  _start_guard
+  local p; p=$(pgrep -x &quot;price-feed&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ price-feed durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  price-feed çalışmıyor&quot;; fi
+}
+pricefeed-status() {
+  _start_guard
+  local p; p=$(pgrep -x &quot;price-feed&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$p&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$p&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ PRICE-FEED ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]&quot;
+    curl -s -m 2 http://127.0.0.1:3004/health
+    echo
+  else
+    echo &quot;✘  PRICE-FEED durdurulmuş&quot;
+  fi
+}
+pricefeed-query() {
+  _start_guard
+  local sym=&quot;${1:-BTCUSDT}&quot;
+  curl -s -m 3 &quot;http://127.0.0.1:3004/api/lastprice/$sym&quot; | python3 -m json.tool 2&gt;/dev/null \
+    || echo &quot;❌ Servis yanıt vermiyor — pricefeed-start ile başlat.&quot;
+}
+pricefeed-log() {
+  tail -f /tmp/price_feed.log
+}
+
+# ============================================================
+#  DATA TERMİNALİ
+# ============================================================
+data-live() {
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; RUN_MODE=DATA ./target/debug/core
+}
+data-backtest() {
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; RUN_MODE=BACKTEST CSV_PATH=&quot;./test_data.csv&quot; ./target/debug/core
+}
+data-log() {
+  tail -f /tmp/data_terminal.log
+}
+
+# ============================================================
+#  PAPER SERVICE — JWT otomatik alınır
+# ============================================================
+_cycle_token() {
+  curl -s -X POST &quot;$CYCLE_API/api/v1/auth/login&quot; \
+    -H 'Content-Type: application/json' \
+    -d &quot;{\&quot;username\&quot;:\&quot;$CYCLE_USER\&quot;,\&quot;password\&quot;:\&quot;$CYCLE_PASS\&quot;}&quot; \
+    2&gt;/dev/null | python3 -c &quot;import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))&quot; 2&gt;/dev/null
+}
+
+paper-health() {
+  curl -s &quot;$CYCLE_API/api/v1/system/health&quot; | python3 -m json.tool
+}
+paper-balance() {
+  local tok; tok=$(_cycle_token)
+  curl -s -H &quot;Authorization: Bearer $tok&quot; &quot;$CYCLE_API/api/v1/account/balance&quot; | python3 -m json.tool
+}
+paper-positions() {
+  local tok; tok=$(_cycle_token)
+  curl -s -H &quot;Authorization: Bearer $tok&quot; &quot;$CYCLE_API/api/v1/account/positions&quot; | python3 -m json.tool
+}
+paper-orders() {
+  local tok; tok=$(_cycle_token)
+  curl -s -H &quot;Authorization: Bearer $tok&quot; &quot;$CYCLE_API/api/v1/orders&quot; | python3 -m json.tool
+}
+paper-history() {
+  local tok; tok=$(_cycle_token)
+  curl -s -H &quot;Authorization: Bearer $tok&quot; &quot;$CYCLE_API/api/v1/account/trade-history&quot; | python3 -m json.tool
+}
+paper-metrics() {
+  curl -s &quot;$CYCLE_API/metrics&quot;
+}
+paper-log() {
+  tail -f /tmp/paper_service.log
+}
+
+paper-buy() {
+  local sym=&quot;${1:-BTCUSDT}&quot; qty=&quot;${2:-0.001}&quot;
+  local tok; tok=$(_cycle_token)
+  local oid=&quot;cli-$(date +%s)&quot;
+  curl -s -X POST \
+    -H &quot;Authorization: Bearer $tok&quot; \
+    -H 'Content-Type: application/json' \
+    -d &quot;{\&quot;symbol\&quot;:\&quot;$sym\&quot;,\&quot;side\&quot;:\&quot;BUY\&quot;,\&quot;order_type\&quot;:\&quot;MARKET\&quot;,\&quot;quantity\&quot;:$qty,\&quot;client_order_id\&quot;:\&quot;$oid\&quot;}&quot; \
+    &quot;$CYCLE_API/api/v1/order&quot; | python3 -m json.tool
+}
+paper-sell() {
+  local sym=&quot;${1:-BTCUSDT}&quot; qty=&quot;${2:-0.001}&quot;
+  local tok; tok=$(_cycle_token)
+  local oid=&quot;cli-$(date +%s)&quot;
+  curl -s -X POST \
+    -H &quot;Authorization: Bearer $tok&quot; \
+    -H 'Content-Type: application/json' \
+    -d &quot;{\&quot;symbol\&quot;:\&quot;$sym\&quot;,\&quot;side\&quot;:\&quot;SELL\&quot;,\&quot;order_type\&quot;:\&quot;MARKET\&quot;,\&quot;quantity\&quot;:$qty,\&quot;client_order_id\&quot;:\&quot;$oid\&quot;}&quot; \
+    &quot;$CYCLE_API/api/v1/order&quot; | python3 -m json.tool
+}
+paper-cli() {
+  &quot;$CYCLE_ROOT/target/debug/paper_cli&quot; \
+    --api &quot;$CYCLE_API&quot; --user &quot;$CYCLE_USER&quot; --password &quot;$CYCLE_PASS&quot; &quot;$@&quot;
+}
+
+# ============================================================
+#  STRATEGY / CORRELATION
+# ============================================================
+# Not: strategy-start/stop artık &quot;SİSTEMLERİ TEK TEK AÇ/KAPAT&quot; bölümünde
+# (arka planda, pid dosyalı). correlation-start foreground çalıştırır.
+correlation-start() {
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; RUN_MODE=CORRELATION ./target/debug/core
+}
+
+# ============================================================
+#  ALERT SERVİSİ
+# ============================================================
+alert-list() {
+  echo &quot;=== alerts.toml — aktif uyarılar ===&quot;
+  &quot;$CYCLE_ROOT/target/debug/alerts&quot; list
+  echo &quot;&quot;
+  echo &quot;Kullanım:&quot;
+  echo &quot;  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]&quot;
+  echo &quot;  alert-update HEIUSDT above 0.21628 0.22 [voice] [cooldown]&quot;
+  echo &quot;  alert-remove HEIUSDT above 0.21628&quot;
+}
+alert-reload() {
+  pkill -x alert-service 2&gt;/dev/null || true
+  sleep 1
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; nohup ./target/debug/alert-service --config ./alerts.toml &gt; /tmp/alert_service.log 2&gt;&amp;1 &amp;
+  echo &quot;✅ Alert servisi yeniden başlatıldı (pid: $!)&quot;
+}
+
+# ── Alarm yönetimi (shell'den) — değişiklik sonrası otomatik reload ──
+_alert_apply() {
+  local msg=&quot;$1&quot;
+  echo &quot;$msg&quot;
+  echo &quot;🔄 Alert servisi yeniden yükleniyor...&quot;
+  # Eski süreci durdur, tmux pane'inde yeniden başlat
+  pkill -x alert-service 2&gt;/dev/null || true
+  sleep 1
+  tmux send-keys -t &quot;cycle:5&quot; C-c 2&gt;/dev/null
+  tmux send-keys -t &quot;cycle:5&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml&quot; Enter 2&gt;/dev/null
+  sleep 1
+  echo &quot;✅ Tamamlandı. alert-list ile görüntüleyin.&quot;
+}
+
+# Yeni alarm ekle
+# Kullanım: alert-add &lt;SYMBOL&gt; &lt;above|below|cross|touch&gt; &lt;PRICE&gt; [voice] [cooldown]
+alert-add() {
+  _start_guard
+  local sym=&quot;${1:-}&quot; cond=&quot;${2:-}&quot; price=&quot;${3:-}&quot; voice=&quot;${4:-}&quot; cooldown=&quot;${5:-30}&quot;
+  if [ -z &quot;$sym&quot; ] || [ -z &quot;$cond&quot; ] || [ -z &quot;$price&quot; ]; then
+    echo &quot;Kullanım: alert-add &lt;SYMBOL&gt; &lt;above|below|cross|touch&gt; &lt;PRICE&gt; [voice metni] [cooldown]&quot;
+    return 1
+  fi
+  local voice_arg=()
+  [ -n &quot;$voice&quot; ] &amp;&amp; voice_arg=(--voice &quot;$voice&quot;)
+  _alert_apply &quot;$(&quot;$CYCLE_ROOT/target/debug/alerts&quot; add \
+    --symbol &quot;$sym&quot; --condition &quot;$cond&quot; --price &quot;$price&quot; \
+    &quot;${voice_arg[@]}&quot; --cooldown &quot;$cooldown&quot;)&quot;
+}
+
+# Mevcut alarmı güncelle (eski fiyata göre bulur)
+# Kullanım: alert-update &lt;SYMBOL&gt; &lt;cond&gt; &lt;OLD_PRICE&gt; &lt;NEW_PRICE&gt; [voice] [cooldown]
+alert-update() {
+  _start_guard
+  local sym=&quot;${1:-}&quot; cond=&quot;${2:-}&quot; old=&quot;${3:-}&quot; new=&quot;${4:-}&quot; voice=&quot;${5:-}&quot; cooldown=&quot;${6:-}&quot;
+  if [ -z &quot;$sym&quot; ] || [ -z &quot;$cond&quot; ] || [ -z &quot;$old&quot; ]; then
+    echo &quot;Kullanım: alert-update &lt;SYMBOL&gt; &lt;cond&gt; &lt;OLD_PRICE&gt; [NEW_PRICE] [voice] [cooldown]&quot;
+    return 1
+  fi
+  local args=(--symbol &quot;$sym&quot; --condition &quot;$cond&quot; --old-price &quot;$old&quot;)
+  [ -n &quot;$new&quot; ] &amp;&amp; args+=(--price &quot;$new&quot;)
+  [ -n &quot;$voice&quot; ] &amp;&amp; args+=(--voice &quot;$voice&quot;)
+  [ -n &quot;$cooldown&quot; ] &amp;&amp; args+=(--cooldown &quot;$cooldown&quot;)
+  _alert_apply &quot;$(&quot;$CYCLE_ROOT/target/debug/alerts&quot; update &quot;${args[@]}&quot;)&quot;
+}
+
+# Alarm sil
+# Kullanım: alert-remove &lt;SYMBOL&gt; &lt;cond&gt; &lt;PRICE&gt;
+alert-remove() {
+  _start_guard
+  local sym=&quot;${1:-}&quot; cond=&quot;${2:-}&quot; price=&quot;${3:-}&quot;
+  if [ -z &quot;$sym&quot; ] || [ -z &quot;$cond&quot; ] || [ -z &quot;$price&quot; ]; then
+    echo &quot;Kullanım: alert-remove &lt;SYMBOL&gt; &lt;cond&gt; &lt;PRICE&gt;&quot;
+    return 1
+  fi
+  _alert_apply &quot;$(&quot;$CYCLE_ROOT/target/debug/alerts&quot; remove \
+    --symbol &quot;$sym&quot; --condition &quot;$cond&quot; --price &quot;$price&quot;)&quot;
+}
+
+# ============================================================
+#  İZLEME
+# ============================================================
+monitor-start() {
+  if tmux has-session -t cycle 2&gt;/dev/null; then
+    tmux select-window -t cycle:7
+  else
+    &quot;$CYCLE_ROOT/additional-services/scripts/monitor.sh&quot;
+  fi
+}
+
+# ============================================================
+#  VERİTABANI
+# ============================================================
+db-trades() {
+  sqlite3 &quot;$CYCLE_ROOT/data-engine/data/market_data.db&quot; \
+    &quot;SELECT id,symbol,side,entry_price,exit_price,pnl FROM trades ORDER BY id DESC LIMIT 20;&quot; \
+    2&gt;/dev/null || echo &quot;DB boş veya bulunamadı.&quot;
+}
+db-size() {
+  du -sh &quot;$CYCLE_ROOT/data-engine/data/market_data.db&quot; 2&gt;/dev/null
+}
+
+# ============================================================
+#  DETECT-MS  —  Market Structure Multi-Protocol Engine
+#  REST API: http://127.0.0.1:3002/api/ms?symbol=BTCUSDT&amp;interval=15m
+# ============================================================
+DETECT_MS_ADDR=&quot;${DETECT_MS_ADDR:-127.0.0.1:3002}&quot;
+
+detect-ms-start() {
+  _start_guard
+  if pgrep -x &quot;detect-ms&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  detect-ms zaten çalışıyor (pid: $(pgrep -x detect-ms))&quot;
+    echo &quot;   → detect-ms-stop ile önce durdur&quot;
+    return 1
+  fi
+
+  # Derle (yoksa)
+  if [ ! -f &quot;$CYCLE_ROOT/target/debug/detect-ms&quot; ]; then
+    echo &quot;🔨 detect-ms derleniyor...&quot;
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p detect-ms 2&gt;&amp;1 | tail -5
+  fi
+
+  echo &quot;🚀 detect-ms başlatılıyor → http://$DETECT_MS_ADDR&quot;
+  _tmux_pane &quot;📈DETECT-MS&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/detect-ms&quot; Enter
+  sleep 1
+  if pgrep -x detect-ms &amp;&gt;/dev/null; then
+    echo &quot;✅ detect-ms başladı [pid: $(pgrep -x detect-ms)]&quot;
+    echo &quot;   API: http://$DETECT_MS_ADDR/api/ms?symbol=BTCUSDT&amp;interval=15m&quot;
+  else
+    echo &quot;❌ detect-ms başlatılamadı.&quot;
+  fi
+}
+
+detect-ms-stop() {
+  _start_guard
+  if pgrep -x &quot;detect-ms&quot; &amp;&gt;/dev/null; then
+    pkill -TERM -x &quot;detect-ms&quot; &amp;&amp; echo &quot;✅ detect-ms durduruldu&quot;
+  else
+    echo &quot;⚠️  detect-ms zaten çalışmıyor&quot;
+  fi
+}
+
+detect-ms-status() {
+  local pid
+  pid=$(pgrep -x &quot;detect-ms&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ detect-ms ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+    echo &quot;   API: http://$DETECT_MS_ADDR/api/ms?symbol=BTCUSDT&amp;interval=15m&quot;
+  else
+    echo &quot;✘  detect-ms durdurulmuş&quot;
+  fi
+}
+
+# ── calc-ind (İndikatör Hesaplama Motoru :3007) ─────────────
+calc-ind-start() {
+  _start_guard
+  if pgrep -x &quot;calc-ind&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  calc-ind zaten çalışıyor (pid: $(pgrep -x calc-ind))&quot;
+    echo &quot;   → calc-ind-stop ile önce durdur&quot;
+    return 1
+  fi
+
+  # Derle (yoksa)
+  if [ ! -f &quot;$CYCLE_ROOT/target/debug/calc-ind&quot; ]; then
+    echo &quot;🔨 calc-ind derleniyor...&quot;
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p calc-ind 2&gt;&amp;1 | tail -5
+  fi
+
+  echo &quot;🚀 calc-ind başlatılıyor → http://127.0.0.1:3007&quot;
+  _tmux_pane &quot;🧮CALC-IND&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/calc-ind&quot; Enter
+  sleep 1
+  if pgrep -x calc-ind &amp;&gt;/dev/null; then
+    echo &quot;✅ calc-ind başladı [pid: $(pgrep -x calc-ind)]&quot;
+    echo &quot;   API: http://127.0.0.1:3007/api/calc&quot;
+  else
+    echo &quot;❌ calc-ind başlatılamadı.&quot;
+  fi
+}
+
+calc-ind-stop() {
+  _start_guard
+  if pgrep -x &quot;calc-ind&quot; &amp;&gt;/dev/null; then
+    pkill -TERM -x &quot;calc-ind&quot; &amp;&amp; echo &quot;✅ calc-ind durduruldu&quot;
+  else
+    echo &quot;⚠️  calc-ind zaten çalışmıyor&quot;
+  fi
+}
+
+calc-ind-status() {
+  local pid
+  pid=$(pgrep -x &quot;calc-ind&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ calc-ind ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+    echo &quot;   API: http://127.0.0.1:3007/api/calc&quot;
+  else
+    echo &quot;✘  calc-ind durdurulmuş&quot;
+  fi
+}
+
+# ============================================================
+#  AI ENGINE (LLM Agent Katmanı — ai.toml + OpenAI/Anthropic)
+#  Bağımlılık: price-feed (:3004), detect-ms (:3002), calc-ind (:3007), paper (:8080)
+# ============================================================
+AI_ADDR=&quot;${AI_ADDR:-127.0.0.1:3110}&quot;
+
+ai-start() {
+  _start_guard
+  if pgrep -x &quot;ai-engine&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  ai-engine zaten çalışıyor (pid: $(pgrep -x ai-engine | head -1))&quot;
+    echo &quot;   → ai-stop ile önce durdur&quot;
+    return 1
+  fi
+  if [ ! -f &quot;$CYCLE_ROOT/target/debug/ai-engine&quot; ]; then
+    echo &quot;🔨 ai-engine derleniyor...&quot;
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p ai-engine 2&gt;&amp;1 | tail -5
+  fi
+  echo &quot;🚀 ai-engine başlatılıyor → http://$AI_ADDR&quot;
+  _tmux_pane &quot;🤖AI&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/ai-engine&quot; Enter
+  sleep 1
+  if pgrep -x ai-engine &amp;&gt;/dev/null; then
+    echo &quot;✅ ai-engine başladı [pid: $(pgrep -x ai-engine | head -1)]&quot;
+    echo &quot;   Status: http://$AI_ADDR/api/status&quot;
+  else
+    echo &quot;❌ ai-engine başlatılamadı. (OPENAI_API_KEY / ANTHROPIC_API_KEY gerekli olabilir)&quot;
+  fi
+}
+
+ai-stop() {
+  _start_guard
+  if pgrep -x &quot;ai-engine&quot; &amp;&gt;/dev/null; then
+    pkill -TERM -x &quot;ai-engine&quot; &amp;&amp; echo &quot;✅ ai-engine durduruldu&quot;
+  else
+    echo &quot;⚠️  ai-engine zaten çalışmıyor&quot;
+  fi
+}
+
+ai-status() {
+  local pid
+  pid=$(pgrep -x &quot;ai-engine&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ ai-engine ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+    curl -s -m 2 &quot;http://$AI_ADDR/api/status&quot; | python3 -m json.tool 2&gt;/dev/null \
+      || echo &quot;   (status API yanıt vermiyor)&quot;
+  else
+    echo &quot;✘  ai-engine durdurulmuş&quot;
+  fi
+}
+
+# HITL onayı — /tmp/ai_approve.txt üzerinden
+ai-approve() {
+  echo &quot;approve&quot; &gt; /tmp/ai_approve.txt
+  echo &quot;✅ Onay verildi — bekleyen emir icra edilecek.&quot;
+}
+
+ai-reject() {
+  echo &quot;reject&quot; &gt; /tmp/ai_approve.txt
+  echo &quot;❌ Onay reddedildi.&quot;
+}
+
+ai-log() {
+  # ai-engine tmux içinde çalıştığında log'u tmux penceresinden izlemek daha iyidir.
+  echo &quot;ℹ️  ai-engine tmux penceresinde çalışıyor; log için pencereye geçin:&quot;
+  echo &quot;   tmux select-window -t cycle:12   (veya Ctrl-b + 12)&quot;
+}
+
+# ============================================================
+#  EXEC CONSOLE (executiond :3010 elle komut konsolu)
+# ============================================================
+exec-console-start() {
+  _start_guard
+  if pgrep -x &quot;exec-console&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  exec-console zaten çalışıyor (pid: $(pgrep -x exec-console | head -1))&quot;
+    return 1
+  fi
+  if [ ! -f &quot;$CYCLE_ROOT/target/debug/exec-console&quot; ]; then
+    echo &quot;🔨 exec-console derleniyor...&quot;
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p exec-console 2&gt;&amp;1 | tail -5
+  fi
+  echo &quot;🚀 exec-console başlatılıyor (executiond :3010 bağlantılı)...&quot;
+  _tmux_pane &quot;🖥️CONSOLE&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/exec-console&quot; Enter
+  sleep 1
+  if pgrep -x exec-console &amp;&gt;/dev/null; then
+    echo &quot;✅ exec-console başladı [pid: $(pgrep -x exec-console | head -1)]&quot;
+    echo &quot;   Sekme: Ctrl+B → 13  |  Komutlar: help&quot;
+  else
+    echo &quot;❌ exec-console başlatılamadı. (executiond çalışıyor mu? EXEC_ADMIN_PASS doğru mu?)&quot;
+  fi
+}
+
+exec-console-stop() {
+  _start_guard
+  if pgrep -x &quot;exec-console&quot; &amp;&gt;/dev/null; then
+    pkill -TERM -x &quot;exec-console&quot; &amp;&amp; echo &quot;✅ exec-console durduruldu&quot;
+  else
+    echo &quot;⚠️  exec-console zaten çalışmıyor&quot;
+  fi
+}
+
+exec-console-status() {
+  local pid
+  pid=$(pgrep -x &quot;exec-console&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ exec-console ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+    echo &quot;   Sekme: Ctrl+B → 13&quot;
+  else
+    echo &quot;✘  exec-console durdurulmuş&quot;
+  fi
+}
+
+exec-console-log() {
+  echo &quot;ℹ️  Konsol tmux penceresinde çalışıyor; geçmek için:&quot;
+  echo &quot;   tmux select-window -t cycle:13   (veya Ctrl-b + 13)&quot;
+}
+
+# Sorgu kısayolları
+detect-ms-query() {
+  # Kullanım: detect-ms-query [SYMBOL] [INTERVAL] [LIMIT]
+  local sym=&quot;${1:-BTCUSDT}&quot; itv=&quot;${2:-15m}&quot; lim=&quot;${3:-200}&quot;
+  echo &quot;📡 Sorgu: $sym $itv (limit: $lim) → http://$DETECT_MS_ADDR&quot;
+  curl -s &quot;http://$DETECT_MS_ADDR/api/ms?symbol=${sym}&amp;interval=${itv}&amp;limit=${lim}&quot; \
+    | python3 -m json.tool 2&gt;/dev/null || echo &quot;❌ Servis yanıt vermiyor. detect-ms-start ile başlat.&quot;
+}
+
+detect-ms-log() {
+  tail -f /tmp/detect_ms.log
+}
+
+# ============================================================
+#  STREAM-OHLCV  (stream-ohlcv — canlı OHLCV mum akışı :3008)
+#  istek: {symbol, start_ms, interval_secs} → POST /api/stream
+#  mumlar binary olarak /dev/shm/cycle_finance_stream_ohlcv ring'ine yazılır.
+# ============================================================
+STREAM_OHLCV_ADDR=&quot;${STREAM_OHLCV_ADDR:-127.0.0.1:3008}&quot;
+
+stream-ohlcv-start() {
+  _start_guard
+  if pgrep -x stream-ohlcv &amp;&gt;/dev/null; then
+    echo &quot;⚠️  stream-ohlcv zaten çalışıyor (pid: $(pgrep -x stream-ohlcv | head -1))&quot;
+    return 1
+  fi
+  if [ ! -f &quot;$CYCLE_ROOT/target/debug/stream-ohlcv&quot; ]; then
+    echo &quot;🔨 stream-ohlcv derleniyor...&quot;
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p stream-ohlcv 2&gt;&amp;1 | tail -5
+  fi
+  echo &quot;🚀 stream-ohlcv başlatılıyor → http://$STREAM_OHLCV_ADDR&quot;
+  _tmux_pane &quot;📡STREAM-OHLCV&quot; &quot;cd $CYCLE_ROOT &amp;&amp; ./target/debug/stream-ohlcv&quot; Enter
+  sleep 1
+  if pgrep -x stream-ohlcv &amp;&gt;/dev/null; then
+    echo &quot;✅ stream-ohlcv başladı [pid: $(pgrep -x stream-ohlcv | head -1)]&quot;
+    echo &quot;   POST http://$STREAM_OHLCV_ADDR/api/stream  {symbol, start_ms, interval_secs}&quot;
+  else
+    echo &quot;❌ stream-ohlcv başlatılamadı.&quot;
+  fi
+}
+
+stream-ohlcv-stop() {
+  _start_guard
+  if pgrep -x stream-ohlcv &amp;&gt;/dev/null; then
+    pkill -TERM -x stream-ohlcv &amp;&amp; echo &quot;✅ stream-ohlcv durduruldu&quot;
+  else
+    echo &quot;⚠️  stream-ohlcv zaten çalışmıyor&quot;
+  fi
+}
+
+stream-ohlcv-status() {
+  local pid
+  pid=$(pgrep -x stream-ohlcv 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ stream-ohlcv ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+    echo &quot;   API: http://$STREAM_OHLCV_ADDR/api/health&quot;
+  else
+    echo &quot;✘  stream-ohlcv durdurulmuş&quot;
+  fi
+}
+
+# Kullanım: stream-ohlcv-start-stream [SYMBOL] [INTERVAL_SN] [START_MS]
+stream-ohlcv-start-stream() {
+  local sym=&quot;${1:-BTCUSDT}&quot; itv=&quot;${2:-60}&quot; start=&quot;${3:-0}&quot;
+  echo &quot;📡 Stream açılıyor: $sym interval=${itv}s start_ms=${start}&quot;
+  curl -s -X POST &quot;http://$STREAM_OHLCV_ADDR/api/stream&quot; \
+    -H &quot;Content-Type: application/json&quot; \
+    -d &quot;{\&quot;symbol\&quot;:\&quot;$sym\&quot;,\&quot;start_ms\&quot;:$start,\&quot;interval_secs\&quot;:$itv}&quot; \
+    | python3 -m json.tool 2&gt;/dev/null || echo &quot;❌ Servis yanıt vermiyor. stream-ohlcv-start ile başlat.&quot;
+}
+
+# Kullanım: stream-ohlcv-query [SYMBOL] [INTERVAL_SN] [START_MS]
+stream-ohlcv-query() {
+  local sym=&quot;${1:-BTCUSDT}&quot; itv=&quot;${2:-60}&quot; start=&quot;${3:-0}&quot;
+  echo &quot;📡 Sorgu: $sym ${itv}s → http://$STREAM_OHLCV_ADDR&quot;
+  curl -s -X POST &quot;http://$STREAM_OHLCV_ADDR/api/stream&quot; \
+    -H &quot;Content-Type: application/json&quot; \
+    -d &quot;{\&quot;symbol\&quot;:\&quot;$sym\&quot;,\&quot;start_ms\&quot;:$start,\&quot;interval_secs\&quot;:$itv}&quot; \
+    | python3 -m json.tool 2&gt;/dev/null || echo &quot;❌ Servis yanıt vermiyor.&quot;
+}
+
+# Kullanım: stream-ohlcv-streams
+stream-ohlcv-streams() {
+  echo &quot;📡 Aktif stream'ler: http://$STREAM_OHLCV_ADDR/api/streams&quot;
+  curl -s &quot;http://$STREAM_OHLCV_ADDR/api/streams&quot; \
+    | python3 -m json.tool 2&gt;/dev/null || echo &quot;❌ Servis yanıt vermiyor.&quot;
+}
+
+# ============================================================
+#  BREAKOUT STRATEJİSİ  (breakout-strategy)
+#  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
+#  her 20 pencerede bir analiz.
+# ============================================================
+breakout-start() {
+  _start_guard
+  if pgrep -x breakout-strategy &amp;&gt;/dev/null; then
+    echo &quot;⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -x breakout-strategy | head -1))&quot;
+    return 1
+  fi
+  # Bağımlılık kontrolü
+  if ! curl -s -o /dev/null -w &quot;%{http_code}&quot; &quot;http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&amp;interval=1m&amp;limit=5&quot; 2&gt;/dev/null | grep -q 200; then
+    echo &quot;⚠️  detect-ms yanıt vermiyor → breakout-start ile başlatın&quot;
+    return 1
+  fi
+  echo &quot;🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)...&quot;
+  _tmux_pane &quot;🎯BREAKOUT&quot; &quot;cd $CYCLE_ROOT &amp;&amp; $CYCLE_ROOT/target/debug/breakout-strategy&quot; Enter
+  sleep 2
+  if pgrep -x breakout-strategy &amp;&gt;/dev/null; then
+    echo &quot;✅ HEIUSDT stratejisi başladı [pid: $(pgrep -x breakout-strategy | head -1)]&quot;
+    echo &quot;   Pencere: cycle → 🎯BREAKOUT&quot;
+  else
+    echo &quot;❌ HEIUSDT stratejisi başlatılamadı.&quot;
+  fi
+}
+
+breakout-stop() {
+  _start_guard
+  local pid
+  pid=$(pgrep -x breakout-strategy 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    pkill -TERM -x breakout-strategy 2&gt;/dev/null
+    sleep 1
+    pkill -KILL -x breakout-strategy 2&gt;/dev/null || true
+    echo &quot;✅ HEIUSDT stratejisi durduruldu [pid:$pid]&quot;
+  else
+    echo &quot;⚠️  HEIUSDT stratejisi zaten çalışmıyor&quot;
+  fi
+}
+
+breakout-status() {
+  local pid
+  pid=$(pgrep -x breakout-strategy 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    local cpu mem
+    cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+    mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+    echo &quot;✅ HEIUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]&quot;
+  else
+    echo &quot;✘  HEIUSDT stratejisi durdurulmuş&quot;
+  fi
+}
+
+breakout-log() {
+  tail -f /tmp/breakout.log
+}
+
+# Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
+# Kullanım: breakout-wait 600   (10 dakika)  |  breakout-wait 1200  (20 dakika)
+breakout-wait() {
+  _start_guard
+  local sec=&quot;${1:-}&quot;
+  if [ -z &quot;$sec&quot; ]; then
+    local cur; cur=$(cat /tmp/breakout_wait_sec.txt 2&gt;/dev/null || echo &quot;1200&quot;)
+    echo &quot;ℹ️  Mevcut bekleme: $cur sn&quot;
+    echo &quot;Kullanım: breakout-wait &lt;saniye&gt;   (örn. breakout-wait 600 → 10dk)&quot;
+    return 0
+  fi
+  if ! echo &quot;$sec&quot; | grep -qE '^[0-9]+$' || [ &quot;$sec&quot; -lt 10 ]; then
+    echo &quot;❌ Saniye değeri geçerli değil (min 10): $sec&quot;
+    return 1
+  fi
+  echo &quot;$sec&quot; &gt; /tmp/breakout_wait_sec.txt
+  echo &quot;✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)&quot;
+  echo &quot;   Çalışan strateji bir sonraki döngüde bu değeri kullanır.&quot;
+  if pgrep -x breakout-strategy &gt;/dev/null 2&gt;&amp;1; then
+    echo &quot;   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak.&quot;
+  fi
+}
+
+breakout-query() {
+  # Kullanım: breakout-query [--dry-run]
+  if [ &quot;${1:-}&quot; = &quot;--dry-run&quot; ]; then
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; $CYCLE_ROOT/target/debug/breakout-strategy --once --dry-run
+  else
+    cd &quot;$CYCLE_ROOT&quot; &amp;&amp; $CYCLE_ROOT/target/debug/breakout-strategy --once
+  fi
+}
+
+# ============================================================
+#  EXECUTION ENGINE  (Canlı Binance Futures — executiond :3010)
+#  Anahtarları SHELL panelinden güvenli girmek için:
+#    exec-setup     → anahtar gir (ekrana yazılmaz, .env 600)
+#    exec-show      → mevcut yapılandırma (anahtarlar maskeli)
+# ============================================================
+exec-setup() {
+  _start_guard
+  &quot;$CYCLE_ROOT/additional-services/scripts/exec_setup.sh&quot;
+}
+exec-show() {
+  _start_guard
+  &quot;$CYCLE_ROOT/additional-services/scripts/exec_setup.sh&quot; --show
+}
+exec-testnet() {
+  _start_guard
+  &quot;$CYCLE_ROOT/additional-services/scripts/exec_setup.sh&quot; --testnet
+  echo &quot;✅ Testnet ayarlandı. exec-dry ile başlatın.&quot;
+}
+exec-dry() {
+  _start_guard
+  if pgrep -x executiond &amp;&gt;/dev/null; then echo &quot;⚠️  executiond zaten çalışıyor → exec-stop&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p execution-engine --bins 2&gt;&amp;1 | tail -1
+  _tmux_pane &quot;🛡️EXEC&quot; &quot;cd $CYCLE_ROOT &amp;&amp; EXEC_MODE=LIVE EXEC_DRY_RUN=true ./target/debug/executiond&quot; Enter
+  sleep 2
+  exec-status
+}
+exec-live() {
+  _start_guard
+  if pgrep -x executiond &amp;&gt;/dev/null; then echo &quot;⚠️  executiond zaten çalışıyor → exec-stop&quot;; return 1; fi
+  echo &quot;&quot;
+  echo -e &quot;${_R}⚠️  GERÇEK EMİR MODU (EXEC_DRY_RUN=false)${_N}&quot;
+  echo -e &quot;${_R}    Emirler gerçek Binance hesabına gidecek.${_N}&quot;
+  echo &quot;    Devam etmek için 'GO' yazın:&quot;
+  local onay
+  read -r onay
+  if [ &quot;$onay&quot; != &quot;GO&quot; ]; then echo &quot;İptal.&quot;; return 1; fi
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p execution-engine --bins 2&gt;&amp;1 | tail -1
+  _tmux_pane &quot;🛡️EXEC&quot; &quot;cd $CYCLE_ROOT &amp;&amp; EXEC_DRY_RUN=false ./target/debug/executiond&quot; Enter
+  sleep 2
+  exec-status
+}
+exec-stop() {
+  _start_guard
+  local p; p=$(pgrep -x executiond 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then
+    kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1
+    kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null
+    echo &quot;✅ executiond durduruldu [pid:$p]&quot;
+  else
+    echo &quot;ℹ️  executiond çalışmıyor&quot;
+  fi
+}
+exec-status() {
+  _start_guard
+  local pid; pid=$(pgrep -x executiond 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$pid&quot; ]; then
+    echo &quot;✅ executiond ÇALIŞIYOR [pid:$pid]&quot;
+    curl -s -m 2 http://127.0.0.1:3010/api/v1/mode  | python3 -m json.tool 2&gt;/dev/null
+    curl -s -m 2 http://127.0.0.1:3010/api/v1/risk   | python3 -m json.tool 2&gt;/dev/null
+  else
+    echo &quot;✘ executiond durdurulmuş&quot;
+  fi
+}
+exec-account()   { _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; account; }
+exec-positions() { _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; positions &quot;${1:-}&quot;; }
+exec-balance()   { _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; balance; }
+exec-orders()    { _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; orders &quot;${1:-}&quot;; }
+exec-order()     { _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; order &quot;$@&quot;; }
+exec-cancel-all(){ _start_guard; &quot;$CYCLE_ROOT/target/debug/exec-cli&quot; cancel-all &quot;${1:-}&quot;; }
+exec-kill()      { _start_guard; touch &quot;${EXEC_KILL_SWITCH_PATH:-/tmp/exec_kill_switch}&quot;; echo &quot;⚠️  Kill switch AÇIK — yeni emirler reddedilir&quot;; }
+exec-unkill()    { _start_guard; rm -f &quot;${EXEC_KILL_SWITCH_PATH:-/tmp/exec_kill_switch}&quot;; echo &quot;Kill switch kapatıldı.&quot;; }
+
+# ── Yüklendiğini bildir ──────────────────────────────────────
+echo -e &quot;${_D}[cycle_env] Yüklendi — ROOT: $CYCLE_ROOT | API: $CYCLE_API${_N}&quot;
+</code></pre>
+<h3 id="additional-services-scripts-cycle-tmux-sh"><code>additional-services/scripts/cycle_tmux.sh</code><a class="headerlink" href="#additional-services-scripts-cycle-tmux-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ============================================================
+#  Cycle Finance — tmux tek-sekme başlatıcı
+#  Kullanım: ./scripts/cycle_tmux.sh [attach|kill|status]
+#
+#  Her servis tek sekmede (window) çalışır:
+#  Pencere 0 — 🧠 STRATEGY
+#  Pencere 1 — 🛰️  LISTENER
+#  Pencere 2 — ⚠️  RISK
+#  Pencere 3 — 💻 SHELL
+#  Pencere 4 — 📡 DATA
+#  Pencere 5 — 🔔 ALERT
+#  Pencere 6 — 🛡️ PAPER
+#  Pencere 7 — Monitor  (CPU/RAM/GPU izleme)
+#  Pencere 8 — DETECT-MS (MSMP :3002)
+#  Pencere 9 — BREAKOUT (Kırılım stratejisi)
+#  Pencere 10 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
+#  Pencere 11 — CALC-IND (indikatör hesaplama motoru :3007)
+#  Pencere 12 — 🤖 AI (LLM agent katmanı, ai.toml + OpenAI/Anthropic)
+#  Pencere 13 — 🖥️ CONSOLE (executiond elle komut konsolu)
+# ============================================================
+set -euo pipefail
+
+SESSION=&quot;cycle&quot;
+# Kurulu pakette CYCLE_ROOT, kaynak ağacında varsayılan olarak betiğin konumundan bulunur.
+ROOT=&quot;${CYCLE_ROOT:-$(cd &quot;$(dirname &quot;$0&quot;)/../..&quot; &amp;&amp; pwd)}&quot;
+
+# ── Binary dizini: varsayılan release; debug için BIN_DIR=./target/debug ver ──
+BIN=&quot;${BIN_DIR:-$ROOT/target/release}&quot;
+BUILD_ARGS=&quot;&quot;
+case &quot;$BIN&quot; in
+  *release*) BUILD_ARGS=&quot;--release&quot; ;;
+esac
+
+# ── Kurulu paket dizinleri (kaynak ağacına göre varsayılan) ──
+CONFIG_DIR=&quot;${CYCLE_CONFIG_DIR:-$ROOT}&quot;
+SCRIPTS_DIR=&quot;${CYCLE_SCRIPTS_DIR:-$ROOT/additional-services/scripts}&quot;
+
+# ── Env varsayılanları ───────────────────────────────────────
+PAPER_API_ADDR=&quot;${PAPER_API_ADDR:-127.0.0.1:8080}&quot;
+PAPER_ADMIN_USER=&quot;${PAPER_ADMIN_USER:-admin}&quot;
+PAPER_ADMIN_PASS=&quot;${PAPER_ADMIN_PASS:-changeme123}&quot;
+PAPER_INITIAL_USDT=&quot;${PAPER_INITIAL_USDT:-100000}&quot;
+ALERT_CONFIG=&quot;${ALERT_CONFIG:-$CONFIG_DIR/alerts.toml}&quot;
+
+# ── Tam temizlik fonksiyonu ──────────────────────────────────
+full_cleanup() {
+  echo &quot;🧹 Temizleniyor...&quot;
+  tmux kill-session -t &quot;$SESSION&quot; 2&gt;/dev/null &amp;&amp; echo &quot;  ✔ tmux session kapatıldı&quot; || echo &quot;  - tmux session yoktu&quot;
+  for proc in core paper-service alert-service; do
+    if pgrep -x &quot;$proc&quot; &amp;&gt;/dev/null; then
+      pkill -TERM -x &quot;$proc&quot; 2&gt;/dev/null || true
+      sleep 0.5
+      pkill -KILL -x &quot;$proc&quot; 2&gt;/dev/null || true
+      echo &quot;  ✔ $proc durduruldu&quot;
+    fi
+  done
+  for f in /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders; do
+    [ -f &quot;$f&quot; ] &amp;&amp; rm -f &quot;$f&quot; &amp;&amp; echo &quot;  ✔ $f silindi&quot; || true
+  done
+  echo &quot;✅ Temizlik tamamlandı.&quot;
+}
+
+# ── Alt komutlar ─────────────────────────────────────────────
+case &quot;${1:-}&quot; in
+  kill)
+    full_cleanup
+    exit 0
+    ;;
+  status)
+    echo &quot;=== tmux Pencereleri ===&quot;
+    tmux list-windows -t &quot;$SESSION&quot; -F &quot;  #{window_index}: #{window_name}&quot; 2&gt;/dev/null \
+      || echo &quot;  ⚠️  '$SESSION' session'ı çalışmıyor.&quot;
+    echo &quot;&quot;
+    echo &quot;=== Çalışan Servisler ===&quot;
+for proc in core paper-service alert-service; do
+      pid=$(pgrep -x &quot;$proc&quot; 2&gt;/dev/null | head -1 || true)
+      if [ -n &quot;$pid&quot; ]; then
+        mem=$(ps -p &quot;$pid&quot; -o rss= 2&gt;/dev/null | awk '{printf &quot;%.0fM&quot;, $1/1024}')
+        cpu=$(ps -p &quot;$pid&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
+        echo &quot;  ✔ $proc  [pid:$pid]  CPU:${cpu}%  RAM:${mem}&quot;
+      else
+        echo &quot;  ✘ $proc  (durdurulmuş)&quot;
+      fi
+    done
+    exit 0
+    ;;
+  attach)
+    tmux attach-session -t &quot;$SESSION&quot; 2&gt;/dev/null || { echo &quot;⚠️  Session yok.&quot;; exit 1; }
+    exit 0
+    ;;
+esac
+
+# ── Zaten çalışıyorsa bağlan ─────────────────────────────────
+if tmux has-session -t &quot;$SESSION&quot; 2&gt;/dev/null; then
+  echo &quot;⚡ '$SESSION' zaten çalışıyor. Bağlanılıyor...&quot;
+  tmux attach-session -t &quot;$SESSION&quot;
+  exit 0
+fi
+
+# ── Derleme (yalnızca kaynak ağacında) ────────────────────────
+if [ -f &quot;$ROOT/Cargo.toml&quot; ]; then
+  echo &quot;🔨 Derleniyor...&quot;
+  cd &quot;$ROOT&quot;
+  cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p ai-engine -p exec-console 2&gt;&amp;1 | tail -5
+else
+  echo &quot;ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)&quot;
+fi
+
+# ── Eski süreçleri ve ring buffer'ları temizle ───────────────
+echo &quot;🧹 Eski süreçler temizleniyor...&quot;
+for proc in core paper-service alert-service; do
+  if pgrep -x &quot;$proc&quot; &amp;&gt;/dev/null; then
+    pkill -TERM -x &quot;$proc&quot; 2&gt;/dev/null || true
+    sleep 0.3
+    pkill -KILL -x &quot;$proc&quot; 2&gt;/dev/null || true
+    echo &quot;  ✔ $proc durduruldu&quot;
+  fi
+done
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+echo &quot;  ✔ Ring buffer'lar temizlendi&quot;
+sleep 1
+
+# ── Açılış ekranı (tek terminal) ─────────────────────────────
+echo &quot;🎬 Açılış ekranı...&quot;
+cd &quot;$ROOT&quot;
+&quot;$BIN/cycle-splash&quot; 2&gt;/dev/null || &quot;$ROOT/target/debug/cycle-splash&quot; 2&gt;/dev/null || echo &quot;  (cycle-splash bulunamadı)&quot;
+
+# ── Shell init dosyasını oluştur ────────────────────────────
+cat &gt; /tmp/cycle_init.sh &lt;&lt; INITEOF
+#!/usr/bin/env bash
+export CYCLE_ROOT='$ROOT'
+export CYCLE_API='http://$PAPER_API_ADDR'
+export CYCLE_USER='$PAPER_ADMIN_USER'
+export CYCLE_PASS='$PAPER_ADMIN_PASS'
+source '$SCRIPTS_DIR/cycle_env.sh'
+help-cycle
+INITEOF
+chmod +x /tmp/cycle_init.sh
+
+# ── Session oluştur ──────────────────────────────────────────
+tmux new-session -d -s &quot;$SESSION&quot; -x 220 -y 50
+tmux rename-window -t &quot;$SESSION:0&quot; &quot;🧠 STRATEGY&quot;
+
+# ── Pencere 0: STRATEGY ─────────────────────────────────────
+tmux send-keys -t &quot;$SESSION:0&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🧠  STRATEGY TERMİNALİ  (PyO3)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $ROOT &amp;&amp; RUN_MODE=STRATEGY $BIN/core
+&quot; Enter
+
+# ── Pencere 1: LISTENER ─────────────────────────────────────
+tmux new-window -t &quot;$SESSION:1&quot; -n &quot;🛰️  LISTENER&quot;
+tmux send-keys -t &quot;$SESSION:1&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT &amp;&amp; $BIN/listener
+&quot; Enter
+
+# ── Pencere 2: RISK ─────────────────────────────────────────
+tmux new-window -t &quot;$SESSION:2&quot; -n &quot;⚠️  RISK&quot;
+tmux send-keys -t &quot;$SESSION:2&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '⚠️   RİSK ANALİZİ  (market_data.db)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT &amp;&amp; $BIN/risk_analysis --watch
+&quot; Enter
+
+# ── Pencere 3: SHELL ────────────────────────────────────────
+tmux new-window -t &quot;$SESSION:3&quot; -n &quot;💻 SHELL&quot;
+tmux send-keys -t &quot;$SESSION:3&quot; &quot;source /tmp/cycle_init.sh&quot; Enter
+
+# ── Pencere 4: DATA ─────────────────────────────────────────
+tmux new-window -t &quot;$SESSION:4&quot; -n &quot;📡 DATA&quot;
+tmux send-keys -t &quot;$SESSION:4&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📡  DATA TERMİNALİ  (Binance WS)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT &amp;&amp; RUN_MODE=DATA $BIN/core
+&quot; Enter
+
+# ── Pencere 5: ALERT ────────────────────────────────────────
+tmux new-window -t &quot;$SESSION:5&quot; -n &quot;🔔 ALERT&quot;
+tmux send-keys -t &quot;$SESSION:5&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT &amp;&amp; $BIN/alert-service --config $ALERT_CONFIG
+&quot; Enter
+
+# ── Pencere 6: PAPER ────────────────────────────────────────
+tmux new-window -t &quot;$SESSION:6&quot; -n &quot;🛡️ PAPER&quot;
+tmux send-keys -t &quot;$SESSION:6&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛡️   PAPER SERVICE  (REST API :8080)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT &amp;&amp; \
+  PAPER_ADMIN_USER=$PAPER_ADMIN_USER \
+  PAPER_ADMIN_PASS=$PAPER_ADMIN_PASS \
+  PAPER_API_ADDR=$PAPER_API_ADDR \
+  PAPER_INITIAL_USDT=$PAPER_INITIAL_USDT \
+  PAPER_SLED_PATH=./data-engine/data/paper_wal \
+  PAPER_DB_PATH=./data-engine/data/paper_live.db \
+  $BIN/paper-service
+&quot; Enter
+
+# ── Pencere 7: MONITOR ──────────────────────────────────────
+tmux new-window -t &quot;$SESSION:7&quot; -n &quot;Monitor&quot;
+tmux send-keys -t &quot;$SESSION:7&quot; &quot;bash '$SCRIPTS_DIR/monitor.sh'&quot; Enter
+
+# ── Pencere 8: DETECT-MS ────────────────────────────────────
+tmux new-window -t &quot;$SESSION:8&quot; -n &quot;DETECT-MS&quot;
+tmux send-keys -t &quot;$SESSION:8&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT &amp;&amp; $BIN/detect-ms
+&quot; Enter
+
+# ── Pencere 9: BREAKOUT STRATEJİ ────────────────────────────
+tmux new-window -t &quot;$SESSION:9&quot; -n &quot;BREAKOUT&quot;
+tmux send-keys -t &quot;$SESSION:9&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🎯  BREAKOUT  (Kırılım Stratejisi)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT &amp;&amp; $BIN/breakout-strategy
+&quot; Enter
+
+# ── Pencere 10: STREAM-OHLCV ────────────────────────────────
+tmux new-window -t &quot;$SESSION:10&quot; -n &quot;STREAM-OHLCV&quot;
+tmux send-keys -t &quot;$SESSION:10&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📡  STREAM-OHLCV  (Canlı OHLCV :3008)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT &amp;&amp; $BIN/stream-ohlcv
+&quot; Enter
+
+# ── Pencere 11: CALC-IND ────────────────────────────────────
+tmux new-window -t &quot;$SESSION:11&quot; -n &quot;CALC-IND&quot;
+tmux send-keys -t &quot;$SESSION:11&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT &amp;&amp; $BIN/calc-ind
+&quot; Enter
+
+# ── Pencere 12: AI ENGINE ───────────────────────────────────
+tmux new-window -t &quot;$SESSION:12&quot; -n &quot;🤖 AI&quot;
+tmux send-keys -t &quot;$SESSION:12&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🤖  AI ENGINE  (LLM Agent Katmanı)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $CONFIG_DIR &amp;&amp; $BIN/ai-engine
+&quot; Enter
+
+# ── Pencere 13: EXEC CONSOLE ────────────────────────────────
+tmux new-window -t &quot;$SESSION:13&quot; -n &quot;🖥️ CONSOLE&quot;
+tmux send-keys -t &quot;$SESSION:13&quot; &quot;
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🖥️  EXEC CONSOLE  (executiond :3010)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $ROOT &amp;&amp; $BIN/exec-console
+&quot; Enter
+
+# ── Görsel ayarlar (global) ──────────────────────────────────
+tmux set-option -t &quot;$SESSION&quot; mouse on
+tmux set-option -t &quot;$SESSION&quot; status-interval 1
+
+# ── Pano yapıştırma: Ctrl+V / Ctrl+Shift+V → OS panosunu yapıştır ──
+tmux bind -n C-v run-shell &quot;$SCRIPTS_DIR/tmux_clipboard_paste.sh&quot; 2&gt;/dev/null || true
+tmux bind -n C-S-v run-shell &quot;$SCRIPTS_DIR/tmux_clipboard_paste.sh&quot; 2&gt;/dev/null || true
+tmux set-option -g set-clipboard on 2&gt;/dev/null || true
+
+# Status bar — Matrix yeşili / siyah
+tmux set-option -t &quot;$SESSION&quot; status-style          &quot;bg=#000000,fg=#00ff41&quot;
+tmux set-option -t &quot;$SESSION&quot; status-left           &quot;#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] &quot;
+tmux set-option -t &quot;$SESSION&quot; status-left-length    30
+tmux set-option -t &quot;$SESSION&quot; status-right          &quot;#[fg=#00ff41]0#[fg=#00cc33]:STRAT #[fg=#00ff41]1#[fg=#00cc33]:LISTEN #[fg=#00ff41]2#[fg=#00cc33]:RISK #[fg=#00ff41]4#[fg=#00cc33]:DATA #[fg=#00ff41]5#[fg=#00cc33]:ALERT #[fg=#00ff41]6#[fg=#00cc33]:PAPER #[fg=#00ff41]7#[fg=#00cc33]:Mon #[fg=#00ff41]10#[fg=#00cc33]:STREAM #[fg=#00ff41]11#[fg=#00cc33]:CALC #[fg=#00ff41]12#[fg=#00cc33]:AI #[fg=#00ff41]13#[fg=#00cc33]:CONSOLE #[fg=#00ff41]%H:%M:%S&quot;
+tmux set-option -t &quot;$SESSION&quot; status-right-length   80
+
+# Window sekme renkleri — matrix
+tmux set-option -t &quot;$SESSION&quot; window-status-format          &quot;#[fg=#008a2e] #{window_index}:#{window_name} &quot;
+tmux set-option -t &quot;$SESSION&quot; window-status-current-format  &quot;#[bg=#003300,fg=#00ff41,bold] #{window_index}:#{window_name} &quot;
+
+# ── Terminal penceresine dön ve bağlan ───────────────────────
+tmux select-window -t &quot;$SESSION:0&quot;
+tmux attach-session -t &quot;$SESSION&quot;
+</code></pre>
+<h3 id="additional-services-scripts-exec-setup-sh"><code>additional-services/scripts/exec_setup.sh</code><a class="headerlink" href="#additional-services-scripts-exec-setup-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Binance Futures API anahtarlarını güvenli şekilde gir (shell üzerinden).
+#
+# - Anahtar girilirken ekrana YAZILMAZ (read -s).
+# - .env dosyası 600 (yalnızca sahip) iznine alınır.
+# - Varsayılan EXEC_DRY_RUN=true (güvenlik): gerçek emir için ayrıca
+#   `EXEC_DRY_RUN=false` onayı gerekir.
+#
+# Kullanım:
+#   ./additional-services/scripts/exec_setup.sh          # anahtar gir
+#   ./additional-services/scripts/exec_setup.sh --show   # hangi değişkenler set?
+#   ./additional-services/scripts/exec_setup.sh --testnet # testnet URL'leri yaz
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+ENV_FILE=&quot;${EXEC_ENV_FILE:-$(cd &quot;$(dirname &quot;$0&quot;)/../..&quot; &amp;&amp; pwd)/.env}&quot;
+TESTNET_BASE=&quot;https://testnet.binancefuture.com&quot;
+TESTNET_WS=&quot;wss://stream.binancefuture.com&quot;
+
+# Önceki yapıştırmadan artık satır başı kalıntılarını terminal tamponundan atar.
+# CRLF pano yapıştırınca ilk read '\r'de biter, kalan '\n' bir sonraki read'i
+# boş yutardı — bu yüzden her okumadan önce tamponu temizle.
+drain_input() {
+    local ch
+    while read -r -t 0 -s -n 1 ch 2&gt;/dev/null; do :; done
+}
+
+trim() {
+    local v=&quot;$1&quot;
+    v=&quot;${v#&quot;${v%%[![:space:]]*}&quot;}&quot;   # öndeki boşlukları kırp
+    v=&quot;${v%&quot;${v##*[![:space:]]}&quot;}&quot;   # arkadaki boşlukları kırp
+    printf '%s' &quot;$v&quot;
+}
+
+prompt_key() {
+    local label=&quot;$1&quot;
+    local value
+    # İpuçları stderr'e gider; sadece girilen değer stdout'a döner ($( ) yakalamasın).
+    echo &quot;  İpucu: yapıştırmak için Ctrl+Shift+V (Linux) veya Ctrl+V (tmux bağı).&quot; &gt;&amp;2
+    echo &quot;  Girdiğiniz karakterler EKRANA YAZILMAZ (güvenlik) — yapıştırın, Enter.&quot; &gt;&amp;2
+    while :; do
+        drain_input
+        read -rsp &quot;$label: &quot; value
+        echo &gt;&amp;2
+        # Bracketed-paste artıkları + satır sonlarını temizle (pano yapıştırınca)
+        value=&quot;${value//$'\e[200~'/}&quot;
+        value=&quot;${value//$'\e[201~'/}&quot;
+        value=&quot;${value//$'\r'/}&quot;
+        value=&quot;${value//$'\n'/}&quot;
+        value=&quot;$(trim &quot;$value&quot;)&quot;
+        if [[ -n &quot;$value&quot; ]]; then
+            break
+        fi
+        echo &quot;  Boş olamaz, tekrar dene.&quot; &gt;&amp;2
+    done
+    printf '%s' &quot;$value&quot;
+}
+
+write_env() {
+    local key=&quot;$1&quot; val=&quot;$2&quot;
+    local tmp=&quot;${ENV_FILE}.tmp&quot;
+    if grep -qE &quot;^${key}=&quot; &quot;$ENV_FILE&quot; 2&gt;/dev/null; then
+        # awk ile sadece ilgili satırı değiştir; dosyadaki \r kalıntılarını da temizle.
+        awk -v k=&quot;$key&quot; -v v=&quot;$val&quot; '
+            { gsub(/\r$/, &quot;&quot;); }
+            $0 ~ &quot;^&quot;k&quot;=&quot; { print k &quot;=&quot; v; found=1; next }
+            { print }
+            END{ if (!found) print k &quot;=&quot; v }
+        ' &quot;$ENV_FILE&quot; &gt; &quot;$tmp&quot; &amp;&amp; mv &quot;$tmp&quot; &quot;$ENV_FILE&quot;
+    else
+        # Satır sonu kalıntılarını temizle, sonra ekle.
+        sed -i 's/\r$//' &quot;$ENV_FILE&quot; 2&gt;/dev/null || true
+        printf '%s=%s\n' &quot;$key&quot; &quot;$val&quot; &gt;&gt; &quot;$ENV_FILE&quot;
+    fi
+}
+
+case &quot;${1:-}&quot; in
+    --show)
+        echo &quot;ENV_FILE: $ENV_FILE&quot;
+        for v in BINANCE_API_KEY BINANCE_SECRET_KEY EXEC_MODE EXEC_DRY_RUN EXEC_BASE_URL EXEC_WS_URL; do
+            if grep -qE &quot;^${v}=&quot; &quot;$ENV_FILE&quot; 2&gt;/dev/null; then
+                val=$(grep -E &quot;^${v}=&quot; &quot;$ENV_FILE&quot; | head -1 | cut -d= -f2-)
+                if [[ &quot;$v&quot; == *KEY* ]]; then
+                    masked=&quot;${val:0:6}****${val: -4}&quot;
+                    [[ -z &quot;$val&quot; ]] &amp;&amp; masked=&quot;(boş)&quot;
+                    echo &quot;  $v = $masked&quot;
+                else
+                    echo &quot;  $v = ${val:-}&quot;
+                fi
+            else
+                echo &quot;  $v = (tanımsız)&quot;
+            fi
+        done
+        ;;
+    --testnet)
+        write_env EXEC_BASE_URL &quot;$TESTNET_BASE&quot;
+        write_env EXEC_WS_URL &quot;$TESTNET_WS&quot;
+        write_env EXEC_DRY_RUN &quot;true&quot;
+        echo &quot;Testnet yapılandırması yazıldı:&quot;
+        echo &quot;  EXEC_BASE_URL=$TESTNET_BASE&quot;
+        echo &quot;  EXEC_WS_URL=$TESTNET_WS&quot;
+        ;;
+    *)
+        if [[ ! -f &quot;$ENV_FILE&quot; ]]; then
+            echo &quot;  .env yok — oluşturuluyor: $ENV_FILE&quot;
+            : &gt; &quot;$ENV_FILE&quot;
+        fi
+
+        echo &quot;Binance Futures API anahtarları — ekrana yazılmaz.&quot;
+        api_key=$(prompt_key &quot;BINANCE_API_KEY&quot;)
+        secret=$(prompt_key &quot;BINANCE_SECRET_KEY&quot;)
+
+        if [[ -z &quot;$api_key&quot; || -z &quot;$secret&quot; ]]; then
+            echo &quot;  ✘ Anahtar(lar) boş — hiçbir şey kaydedilmedi. Tekrar dene.&quot; &gt;&amp;2
+            exit 1
+        fi
+
+        # Maskeli doğrulama — yanlış yapıştırma burada yakalanır.
+        mask() { local v=&quot;$1&quot;; [[ -z &quot;$v&quot; ]] &amp;&amp; echo &quot;(boş)&quot; || echo &quot;${v:0:4}****${v: -4}&quot;; }
+        echo
+        echo &quot;  Girilen anahtarlar:&quot;
+        echo &quot;    BINANCE_API_KEY    = $(mask &quot;$api_key&quot;)  (uzunluk: ${#api_key})&quot;
+        echo &quot;    BINANCE_SECRET_KEY = $(mask &quot;$secret&quot;)  (uzunluk: ${#secret})&quot;
+        drain_input
+        read -rsp &quot;  Kaydetmek için 'EVET' yazın, iptal için Enter: &quot; onay
+        echo
+        if [[ &quot;$onay&quot; != &quot;EVET&quot; ]]; then
+            echo &quot;İptal edildi — hiçbir şey yazılmadı.&quot;
+            exit 0
+        fi
+
+        write_env &quot;BINANCE_API_KEY&quot; &quot;$api_key&quot;
+        write_env &quot;BINANCE_SECRET_KEY&quot; &quot;$secret&quot;
+        write_env &quot;EXEC_MODE&quot; &quot;LIVE&quot;
+        # Güvenlik: DRY_RUN varsayılan açık. Gerçek emir için kullanıcı ayrıca
+        # `EXEC_DRY_RUN=false` ayarlamalıdır.
+        write_env &quot;EXEC_DRY_RUN&quot; &quot;true&quot;
+
+        chmod 600 &quot;$ENV_FILE&quot;
+        echo
+        echo &quot;Anahtarlar kaydedildi: $ENV_FILE (izin 600)&quot;
+        echo &quot;  EXEC_DRY_RUN=true  → emirler gönderilmez.&quot;
+        echo &quot;  Gerçek emir için:  EXEC_DRY_RUN=false ./target/debug/executiond&quot;
+        echo &quot;  Testnet için:      $0 --testnet&quot;
+        ;;
+esac
+</code></pre>
+<h3 id="additional-services-scripts-gdpr-erasure-test-sh"><code>additional-services/scripts/gdpr_erasure_test.sh</code><a class="headerlink" href="#additional-services-scripts-gdpr-erasure-test-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/bin/bash
+
+# GDPR/KVKK Right to Erasure Simulation Script for Cycle Finance 2.0
+# Simulates physically wiping a user's data from ClickHouse.
+
+set -e
+
+USER_ID=&quot;client_9942&quot;
+SALT=&quot;sUp3rS3cr3tS4lt&quot;
+
+echo &quot;==========================================&quot;
+echo &quot; Starting GDPR Erasure Protocol Simulation&quot;
+echo &quot;==========================================&quot;
+
+# 1. Masking the User ID to create the hash
+USER_HASH=$(echo -n &quot;${USER_ID}${SALT}&quot; | sha3sum -a 256 | awk '{print $1}' || echo &quot;mocked_sha3_hash_8a2b3c&quot;)
+echo &quot;[+] Target User Hash: $USER_HASH&quot;
+
+# 2. Simulate ClickHouse Mutation
+echo &quot;[+] Triggering ALTER TABLE ticks DELETE WHERE symbol_hash = '$USER_HASH'...&quot;
+sleep 1
+echo &quot;[+] ClickHouse mutation submitted.&quot;
+
+# 3. Simulate verifying the physical erasure
+echo &quot;[+] Verifying erasure via Merkle Tree...&quot;
+sleep 1
+echo &quot;[+] Data physically scrubbed from disks and EC-12/4 replicas.&quot;
+
+# 4. Log to Deletion Registry
+echo &quot;[+] Appending event to deletion_registry for 3-year compliance hold...&quot;
+echo &quot;$(date -u +%Y-%m-%dT%H:%M:%SZ) | $USER_HASH | GDPR Erasure Processed&quot; &gt;&gt; deletion_registry_mock.log
+
+echo &quot;==========================================&quot;
+echo &quot; Erasure Protocol Complete.&quot;
+echo &quot;==========================================&quot;
+</code></pre>
+<h3 id="additional-services-scripts-monitor-sh"><code>additional-services/scripts/monitor.sh</code><a class="headerlink" href="#additional-services-scripts-monitor-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ============================================================
+#  Cycle Finance — Servis İzleme Paneli
+#  Her saniye güncellenir. Ctrl+C ile çıkılır.
+#
+#  İzlenen servisler:
+#    core (DATA / STRATEGY / BACKTEST / CORRELATION)
+#    paper-service
+#    alert-service
+# ============================================================
+
+# ── Renkler ──────────────────────────────────────────────────
+R='\033[0;31m'    # kırmızı
+G='\033[0;32m'    # yeşil
+Y='\033[1;33m'    # sarı
+C='\033[0;36m'    # camgöbeği
+B='\033[1;34m'    # mavi
+M='\033[0;35m'    # mor
+W='\033[1;37m'    # beyaz kalın
+DIM='\033[2m'     # soluk
+N='\033[0m'       # reset
+BG='\033[40m'     # siyah arka plan
+
+# ── GPU sysfs yolu (AMD RX 5500) ─────────────────────────────
+GPU_CARD=&quot;&quot;
+for card in /sys/class/drm/card*/device/gpu_busy_percent; do
+    if [ -r &quot;$card&quot; ]; then
+        GPU_CARD=&quot;$(dirname &quot;$card&quot;)&quot;
+        break
+    fi
+done
+
+# ── Bar çizici ───────────────────────────────────────────────
+# Kullanım: draw_bar &lt;yüzde(0-100)&gt; &lt;genişlik&gt; &lt;renk&gt;
+draw_bar() {
+    local pct=&quot;${1:-0}&quot;
+    local width=&quot;${2:-20}&quot;
+    local color=&quot;${3:-$G}&quot;
+    # Yüzde'yi tam sayıya dönüştür
+    pct=$(echo &quot;$pct&quot; | awk '{printf &quot;%d&quot;, $1}')
+    [ &quot;$pct&quot; -gt 100 ] 2&gt;/dev/null &amp;&amp; pct=100
+    [ &quot;$pct&quot; -lt 0 ]   2&gt;/dev/null &amp;&amp; pct=0
+    local filled=$(( pct * width / 100 ))
+    local empty=$(( width - filled ))
+    # Yüksek kullanımda renk değiştir
+    if [ &quot;$pct&quot; -ge 80 ]; then color=&quot;$R&quot;
+    elif [ &quot;$pct&quot; -ge 50 ]; then color=&quot;$Y&quot;
+    fi
+    local bar=&quot;&quot;
+    for ((i=0; i&lt;filled; i++)); do bar+=&quot;█&quot;; done
+    for ((i=0; i&lt;empty;  i++)); do bar+=&quot;░&quot;; done
+    echo -ne &quot;${color}${bar}${N}&quot;
+}
+
+# ── RAM okunabilir format ─────────────────────────────────────
+human_mb() {
+    local kb=&quot;${1:-0}&quot;
+    local mb=$(( kb / 1024 ))
+    if [ &quot;$mb&quot; -ge 1024 ]; then
+        echo &quot;$(awk &quot;BEGIN{printf \&quot;%.1f\&quot;, $mb/1024}&quot;)G&quot;
+    else
+        echo &quot;${mb}M&quot;
+    fi
+}
+
+# ── Servis satırı çiz ─────────────────────────────────────────
+# Kullanım: print_service &lt;etiket&gt; &lt;pid&gt; &lt;renk&gt;
+print_service() {
+    local label=&quot;$1&quot;
+    local pid=&quot;$2&quot;
+    local color=&quot;${3:-$C}&quot;
+    local bar_width=18
+
+    if [ -z &quot;$pid&quot; ] || ! kill -0 &quot;$pid&quot; 2&gt;/dev/null; then
+        printf &quot;${color}%-22s${N} ${DIM}%-8s${N} ${R}%-6s${N}   %-${bar_width}s   ${R}%-8s${N}   %-${bar_width}s\n&quot; \
+            &quot;$label&quot; &quot;-&quot; &quot;KAPALI&quot; &quot;$(draw_bar 0 $bar_width $R)&quot; &quot;-&quot; &quot;$(draw_bar 0 $bar_width $R)&quot;
+        return
+    fi
+
+    # CPU ve bellek bilgisi
+    local stat
+    stat=$(ps -p &quot;$pid&quot; -o pid,pcpu,rss,vsz --no-headers 2&gt;/dev/null | head -1)
+    [ -z &quot;$stat&quot; ] &amp;&amp; return
+
+    local cpu  rss vsz
+    cpu=$(echo &quot;$stat&quot; | awk '{printf &quot;%.1f&quot;, $2}')
+    rss=$(echo &quot;$stat&quot; | awk '{print $3}')   # KB
+    vsz=$(echo &quot;$stat&quot; | awk '{print $4}')   # KB (sanal)
+
+    local rss_str vsz_str cpu_int
+    rss_str=$(human_mb &quot;$rss&quot;)
+    vsz_str=$(human_mb &quot;$vsz&quot;)
+    cpu_int=$(echo &quot;$cpu&quot; | awk '{printf &quot;%d&quot;, $1}')
+
+    # Çok çekirdekli sistemlerde CPU &gt; 100 olabilir, bar için sıkıştır
+    local cpu_bar_pct=$(( cpu_int &gt; 100 ? 100 : cpu_int ))
+
+    printf &quot;${color}%-22s${N} ${W}%-8s${N} ${Y}%5s%%${N}  %s  ${C}%-8s${N}  %s\n&quot; \
+        &quot;$label&quot; &quot;[$pid]&quot; &quot;$cpu&quot; \
+        &quot;$(draw_bar &quot;$cpu_bar_pct&quot; &quot;$bar_width&quot;)&quot; \
+        &quot;$rss_str&quot; \
+        &quot;$(draw_bar &quot;$(( rss / 1024 &gt; 100 ? 100 : rss / 1024 ))&quot; &quot;$bar_width&quot;)&quot;
+}
+
+# ── Sistem toplamı ───────────────────────────────────────────
+system_summary() {
+    # CPU toplam kullanımı
+    local cpu_idle cpu_use
+    cpu_idle=$(top -bn1 | grep &quot;Cpu(s)&quot; | awk '{print $8}' | tr -d '%' | tr ',' '.')
+    [ -z &quot;$cpu_idle&quot; ] &amp;&amp; cpu_idle=$(vmstat 1 1 | tail -1 | awk '{print $15}')
+    cpu_use=$(awk &quot;BEGIN{printf \&quot;%.1f\&quot;, 100 - ${cpu_idle:-0}}&quot;)
+
+    # RAM
+    local mem_total mem_avail mem_used mem_pct
+    mem_total=$(awk '/MemTotal/{print $2}' /proc/meminfo)
+    mem_avail=$(awk '/MemAvailable/{print $2}' /proc/meminfo)
+    mem_used=$(( mem_total - mem_avail ))
+    mem_pct=$(awk &quot;BEGIN{printf \&quot;%d\&quot;, $mem_used * 100 / $mem_total}&quot;)
+
+    # GPU (AMD sysfs)
+    local gpu_use=&quot;N/A&quot; gpu_vram_pct=0 gpu_vram_str=&quot;N/A&quot;
+    if [ -n &quot;$GPU_CARD&quot; ]; then
+        gpu_use=$(cat &quot;${GPU_CARD}/gpu_busy_percent&quot; 2&gt;/dev/null || echo &quot;0&quot;)
+        local vram_used vram_total
+        vram_used=$(cat &quot;${GPU_CARD}/mem_info_vram_used&quot;  2&gt;/dev/null || echo &quot;0&quot;)
+        vram_total=$(cat &quot;${GPU_CARD}/mem_info_vram_total&quot; 2&gt;/dev/null || echo &quot;1&quot;)
+        gpu_vram_pct=$(awk &quot;BEGIN{printf \&quot;%d\&quot;, $vram_used * 100 / $vram_total}&quot;)
+        local vram_used_mb=$(( vram_used / 1024 / 1024 ))
+        local vram_total_mb=$(( vram_total / 1024 / 1024 ))
+        gpu_vram_str=&quot;${vram_used_mb}M / ${vram_total_mb}M&quot;
+    fi
+
+    local cpu_int=${cpu_use%.*}
+    printf &quot;${DIM}Sistem Geneli:${N}\n&quot;
+    printf &quot;  ${W}CPU  ${N}%5s%%  %s\n&quot; &quot;$cpu_use&quot;  &quot;$(draw_bar &quot;$cpu_int&quot; 30)&quot;
+    printf &quot;  ${W}RAM  ${N}%5s%%  %s  ${DIM}(%s / %s)${N}\n&quot; \
+        &quot;$mem_pct&quot; &quot;$(draw_bar &quot;$mem_pct&quot; 30)&quot; \
+        &quot;$(human_mb &quot;$mem_used&quot;)&quot; &quot;$(human_mb &quot;$mem_total&quot;)&quot;
+    if [ -n &quot;$GPU_CARD&quot; ]; then
+        printf &quot;  ${W}GPU  ${N}%5s%%  %s\n&quot; &quot;$gpu_use&quot; &quot;$(draw_bar &quot;$gpu_use&quot; 30)&quot;
+        printf &quot;  ${W}VRAM ${N}%5s%%  %s  ${DIM}(%s)${N}\n&quot; \
+            &quot;$gpu_vram_pct&quot; &quot;$(draw_bar &quot;$gpu_vram_pct&quot; 30)&quot; &quot;$gpu_vram_str&quot;
+    else
+        printf &quot;  ${W}GPU  ${N}${DIM}  AMD sysfs okunamadı${N}\n&quot;
+    fi
+}
+
+# ── PID bul ─────────────────────────────────────────────────
+find_pid() {
+    local name=&quot;$1&quot;
+    pgrep -x &quot;$name&quot; 2&gt;/dev/null | head -1
+}
+
+find_pid_env() {
+    # RUN_MODE=X olan core process'ini bul
+    local mode=&quot;$1&quot;
+    pgrep -x &quot;core&quot; 2&gt;/dev/null | while read -r pid; do
+        if grep -qa &quot;RUN_MODE=$mode&quot; /proc/&quot;$pid&quot;/environ 2&gt;/dev/null; then
+            echo &quot;$pid&quot;
+            return
+        fi
+    done
+}
+
+# ── Ana döngü ────────────────────────────────────────────────
+INTERVAL=&quot;${MONITOR_INTERVAL:-1}&quot;
+
+# Cursor'ı gizle, çıkışta geri getir
+tput civis
+trap 'tput cnorm; echo' EXIT INT TERM
+
+# İlk açılışta bir kez temizle
+clear
+
+while true; do
+    # Ekranı silmeden cursor'ı sol-üst köşeye taşı (titreme yok)
+    tput cup 0 0
+
+    local_time=$(date '+%H:%M:%S')
+    local_date=$(date '+%d.%m.%Y')
+
+    echo -e &quot;${W}╔══════════════════════════════════════════════════════════════════════════════════╗${N}&quot;
+    printf &quot;${W}║${N}  ${M}📊 CYCLE FINANCE — SERVİS İZLEME PANELİ${N}%$((39 - ${#local_time}))s${Y}%s${N}  ${W}║${N}\n&quot; &quot;&quot; &quot;$local_time  $local_date&quot;
+    echo -e &quot;${W}╚══════════════════════════════════════════════════════════════════════════════════╝${N}&quot;
+    echo &quot;&quot;
+
+    # ── Sistem özeti ─────────────────────────────────────────
+    system_summary
+    echo &quot;&quot;
+
+    # ── Servis başlıkları ─────────────────────────────────────
+    echo -e &quot;${W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${N}&quot;
+    printf &quot;${DIM}%-22s  %-8s  %-7s  %-18s  %-8s  %-18s${N}\n&quot; \
+        &quot;SERVİS&quot; &quot;PID&quot; &quot;CPU%&quot; &quot;CPU KULLANIMI&quot; &quot;RAM&quot; &quot;RAM KULLANIMI&quot;
+    echo -e &quot;${W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${N}&quot;
+
+    # ── Servisler ────────────────────────────────────────────
+    PID_DATA=$(find_pid_env &quot;DATA&quot;)
+    PID_STRATEGY=$(find_pid_env &quot;STRATEGY&quot;)
+    PID_BACKTEST=$(find_pid_env &quot;BACKTEST&quot;)
+    PID_CORRELATION=$(find_pid_env &quot;CORRELATION&quot;)
+    PID_PAPER=$(find_pid &quot;paper-service&quot;)
+    PID_ALERT=$(find_pid &quot;alert-service&quot;)
+
+    # core binary tek isimle görünüyorsa genel bul
+    [ -z &quot;$PID_DATA&quot; ] &amp;&amp; [ -z &quot;$PID_STRATEGY&quot; ] &amp;&amp; [ -z &quot;$PID_BACKTEST&quot; ] &amp;&amp; [ -z &quot;$PID_CORRELATION&quot; ] &amp;&amp; {
+        ALL_CORE=$(pgrep -x &quot;core&quot; 2&gt;/dev/null | head -1)
+    }
+
+    print_service &quot;📡 DATA&quot;          &quot;${PID_DATA:-$ALL_CORE}&quot; &quot;$C&quot;
+    print_service &quot;🧠 STRATEGY&quot;      &quot;$PID_STRATEGY&quot;          &quot;$B&quot;
+    print_service &quot;🔄 BACKTEST&quot;      &quot;$PID_BACKTEST&quot;          &quot;$M&quot;
+    print_service &quot;📈 CORRELATION&quot;   &quot;$PID_CORRELATION&quot;       &quot;$Y&quot;
+    echo -e &quot;${DIM}──────────────────────────────────────────────────────────────────────────────────${N}&quot;
+    print_service &quot;🛡️  PAPER-SERVICE&quot; &quot;$PID_PAPER&quot;             &quot;$G&quot;
+    print_service &quot;🔔 ALERT-SERVICE&quot; &quot;$PID_ALERT&quot;             &quot;$Y&quot;
+
+    echo -e &quot;${W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${N}&quot;
+
+    # ── Çalışan servis sayısı ─────────────────────────────────
+    running=0
+    for p in &quot;$PID_DATA&quot; &quot;$PID_STRATEGY&quot; &quot;$PID_BACKTEST&quot; &quot;$PID_CORRELATION&quot; &quot;$PID_PAPER&quot; &quot;$PID_ALERT&quot;; do
+        [ -n &quot;$p&quot; ] &amp;&amp; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; (( running++ )) || true
+    done
+
+    echo &quot;&quot;
+    printf &quot;  ${DIM}Çalışan servis: ${W}%d/6${N}${DIM}   |   Yenileme: her %ss   |   Çıkış: Ctrl+C${N}\n&quot; \
+        &quot;$running&quot; &quot;$INTERVAL&quot;
+
+    # ── Ring buffer bilgisi ───────────────────────────────────
+    echo &quot;&quot;
+    echo -e &quot;  ${DIM}Ring Buffer Durumu:${N}&quot;
+    for ring in cycle_finance_ring cycle_finance_orders; do
+        if [ -f &quot;/dev/shm/$ring&quot; ]; then
+            ring_size=$(du -sh &quot;/dev/shm/$ring&quot; 2&gt;/dev/null | cut -f1)
+            printf &quot;    ${G}✔${N} /dev/shm/%-28s %s\n&quot; &quot;$ring&quot; &quot;$ring_size&quot;
+        else
+            printf &quot;    ${R}✘${N} /dev/shm/%-28s ${DIM}(yok)${N}\n&quot; &quot;$ring&quot;
+        fi
+    done
+
+    sleep &quot;$INTERVAL&quot;
+done
+</code></pre>
+<h3 id="additional-services-scripts-start-paper-sh"><code>additional-services/scripts/start_paper.sh</code><a class="headerlink" href="#additional-services-scripts-start-paper-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# PAPER sistemi tek komutla başlatma.
+#   DATA terminal (Binance Futures → tick ring) + paper-service (API + actor)
+set -euo pipefail
+
+ROOT=&quot;$(cd &quot;$(dirname &quot;$0&quot;)/../..&quot; &amp;&amp; pwd)&quot;
+cd &quot;$ROOT&quot;
+
+# ── Binary dizini: varsayılan release; debug için BIN_DIR=./target/debug ver ──
+BIN=&quot;${BIN_DIR:-$ROOT/target/release}&quot;
+BUILD_ARGS=&quot;&quot;
+case &quot;$BIN&quot; in
+  *release*) BUILD_ARGS=&quot;--release&quot; ;;
+esac
+
+API_ADDR=&quot;${PAPER_API_ADDR:-127.0.0.1:8080}&quot;
+ADMIN_USER=&quot;${PAPER_ADMIN_USER:-admin}&quot;
+ADMIN_PASS=&quot;${PAPER_ADMIN_PASS:-changeme123}&quot;
+INITIAL_USDT=&quot;${PAPER_INITIAL_USDT:-10000}&quot;
+
+echo &quot;=== Derleniyor... ===&quot;
+cargo build $BUILD_ARGS -p core -p paper-service
+
+echo &quot;=== Eski süreçler kapatılıyor (varsa) ===&quot;
+pkill -x core 2&gt;/dev/null || true
+pkill -x paper-service 2&gt;/dev/null || true
+pkill -x paper_cli 2&gt;/dev/null || true
+sleep 1
+
+# Tick ring'i temizle (farklı kapasiteyle başlatılırsa)
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+
+echo &quot;=== DATA terminali başlatılıyor (Binance Futures WS) ===&quot;
+setsid env RUN_MODE=DATA &quot;$BIN/core&quot; &gt; /tmp/data_terminal.log 2&gt;&amp;1 &lt; /dev/null &amp;
+disown
+
+echo &quot;=== paper-service başlatılıyor (REST API + Actor) ===&quot;
+rm -rf data-engine/data/paper_wal
+setsid env \
+  PAPER_ADMIN_USER=&quot;$ADMIN_USER&quot; \
+  PAPER_ADMIN_PASS=&quot;$ADMIN_PASS&quot; \
+  PAPER_API_ADDR=&quot;$API_ADDR&quot; \
+  PAPER_INITIAL_USDT=&quot;$INITIAL_USDT&quot; \
+  PAPER_DB_PATH=./data-engine/data/paper_live.db \
+  PAPER_SLED_PATH=./data-engine/data/paper_wal \
+  &quot;$BIN/paper-service&quot; &gt; /tmp/paper_service.log 2&gt;&amp;1 &lt; /dev/null &amp;
+disown
+
+echo &quot;=== Süreçler başlatılıyor... ===&quot;
+sleep 4
+
+echo &quot;&quot;
+echo &quot;✅ PAPER SİSTEMİ ÇALIŞIYOR&quot;
+echo &quot;==============================================&quot;
+echo &quot;REST API      : http://$API_ADDR/api/v1/system/health&quot;
+echo &quot;Metrikler     : http://$API_ADDR/metrics&quot;
+echo &quot;Giriş         : user=$ADMIN_USER pass=$ADMIN_PASS&quot;
+echo &quot;&quot;
+echo &quot;Kontrol (fiyat geliyor mu):&quot;
+echo &quot;  curl -s http://$API_ADDR/api/v1/system/health&quot;
+echo &quot;&quot;
+echo &quot;CLI örnekleri:&quot;
+echo &quot;  $BIN/paper_cli --api http://$API_ADDR --user $ADMIN_USER --password $ADMIN_PASS status&quot;
+echo &quot;  $BIN/paper_cli --api http://$API_ADDR --user $ADMIN_USER --password $ADMIN_PASS order --symbol BTCUSDT --side BUY --order-type MARKET --qty 0.001&quot;
+echo &quot;&quot;
+echo &quot;Loglar: /tmp/data_terminal.log , /tmp/paper_service.log&quot;
+echo &quot;Kapatmak için: ./scripts/stop_paper.sh&quot;
+</code></pre>
+<h3 id="additional-services-scripts-stop-paper-sh"><code>additional-services/scripts/stop_paper.sh</code><a class="headerlink" href="#additional-services-scripts-stop-paper-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# PAPER sistemini kapatır (DATA + paper-service).
+set -euo pipefail
+
+echo &quot;=== PAPER sistemi kapatılıyor ===&quot;
+pkill -x paper-service 2&gt;/dev/null &amp;&amp; echo &quot;  paper-service durduruldu&quot; || echo &quot;  paper-service zaten kapalı&quot;
+pkill -x core 2&gt;/dev/null &amp;&amp; echo &quot;  DATA terminal durduruldu&quot; || echo &quot;  DATA terminal zaten kapalı&quot;
+
+# Paylaşımlı hafıza temizliği
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+
+echo &quot;Done.&quot;
+</code></pre>
+<h3 id="additional-services-scripts-tmux-clipboard-paste-sh"><code>additional-services/scripts/tmux_clipboard_paste.sh</code><a class="headerlink" href="#additional-services-scripts-tmux-clipboard-paste-sh" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# OS panosunu tmux paste buffer'a yükleyip yapıştırır.
+# Wayland (wl-paste) → X11 (xclip/xsel) sırasıyla dener.
+#
+# tmux'ta Ctrl+V (veya Ctrl+Shift+V) bu betiği çalıştırır:
+#   bind -n C-v   run-shell &quot;~/.cycle_tmux_paste.sh&quot;
+# ─────────────────────────────────────────────────────────────────────────────
+set -u
+
+tmp=&quot;$(mktemp /tmp/tmux_paste.XXXXXX)&quot;
+
+if command -v wl-paste &gt;/dev/null 2&gt;&amp;1 &amp;&amp; [[ -n &quot;${WAYLAND_DISPLAY:-}&quot; ]]; then
+    wl-paste -p 2&gt;/dev/null &gt; &quot;$tmp&quot;
+elif command -v xclip &gt;/dev/null 2&gt;&amp;1; then
+    xclip -o -selection clipboard 2&gt;/dev/null &gt; &quot;$tmp&quot;
+elif command -v xsel &gt;/dev/null 2&gt;&amp;1; then
+    xsel -b -o 2&gt;/dev/null &gt; &quot;$tmp&quot;
+fi
+
+if [[ -s &quot;$tmp&quot; ]]; then
+    # Panodaki sondaki satır sonlarını (CR/LF) temizle: paste sırasında fazladan
+    # Enter/\r yutulup bir sonraki &quot;read&quot;i boş tetiklemesin.
+    perl -0777 -pi -e 's/[\r\n]+\z//' &quot;$tmp&quot; 2&gt;/dev/null || sed -i 's/\r$//' &quot;$tmp&quot;
+    tmux load-buffer &quot;$tmp&quot; 2&gt;/dev/null
+    tmux paste-buffer 2&gt;/dev/null
+fi
+
+rm -f &quot;$tmp&quot;
+</code></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#e0ecff',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>
+

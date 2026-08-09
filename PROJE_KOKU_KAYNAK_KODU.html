@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🏗️ Proje Kökü (Workspace ve Altyapı) — Tam Kaynak + Detaylı Analiz</title>
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.45;
+  }
+  pre.mermaid { background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #0f172a; border-color: #334155; } }
+  code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #1e293b; color: #e2e8f0; } }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #334155; } }
+  th { background: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { th { background: #1e293b; } }
+  h1 { border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.75rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 a, h2 a, h3 a, h4 a { color: inherit; }
+  .headerlink { opacity: 0.35; margin-left: 0.3rem; font-size: 0.8em; }
+  .headerlink:hover { opacity: 1; }
+  .topnav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;
+  }
+  @media (prefers-color-scheme: dark) { .topnav { background: #0f172a; border-color: #334155; } }
+  .topnav a { padding: 0.2rem 0.8rem; border-radius: 6px; background: #e2e8f0; color: inherit; }
+  @media (prefers-color-scheme: dark) { .topnav a { background: #1e293b; } }
+  .topnav a:hover { background: #2563eb; color: white; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 2rem 0; }
+  section.detay { border-top: 4px solid #2563eb; margin-top: 3rem; padding-top: 1rem; }
+
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+<nav class="sitenav"><span class="brand">📚 Cycle Finance Docs</span><a href="index.html">🏠 Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html" class="active">🏗️ Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html">🏛️ Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">🎯 Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">🔧 Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">🤖 AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a></nav>
+<nav class="topnav">
+  <strong>📑 Bölümler:</strong>
+  <a href="#dizin-agac">🌳 Dizin Ağacı</a>
+  <a href="#klasor-ve-dosya-sozlugu">📖 Klasör Sözlüğü</a>
+  <a href="#detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)</a>
+  <a href="#tam-kaynak-kodu">📄 Tam Kaynak Kodu</a>
+</nav>
+
+<h1 id="proje-koku-workspace-ve-altyap-tam-kaynak-kodu-detayl-analiz">🏗️ Proje Kökü (Workspace ve Altyapı) — Tam Kaynak Kodu + Detaylı Analiz<a class="headerlink" href="#proje-koku-workspace-ve-altyap-tam-kaynak-kodu-detayl-analiz" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><code>/</code>. Bu doküman dizin ağacını, klasör/dosya sözlüğünü, her dosyanın <strong>tam kaynak kodunu</strong> ve <strong>detaylı analizini</strong> (mermaid akış diyagramlarıyla) içerir. Tarih: 2026-08-09</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#dizin-agac">Dizin Ağacı</a></li>
+<li><a href="#klasor-ve-dosya-sozlugu">Klasör ve Dosya Sözlüğü</a></li>
+<li><a href="#detayl-analiz-mermaid">Detaylı Analiz (mermaid)</a></li>
+<li><a href="#tam-kaynak-kodu">Tam Kaynak Kodu</a></li>
+</ul>
+<hr />
+<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link">&para;</a></h2>
+<pre><code>PROJE/
+├── Cargo.toml
+├── README.md
+├── install.sh
+├── ai.toml
+├── alerts.toml
+├── risk.toml
+    ├── .cargo/config.toml
+        ├── .github/workflows/test-suite.yml
+├── .gitignore
+</code></pre>
+<hr />
+<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><code>/</code> — <strong>Genel amaç:</strong> Projenin kök dizinindeki workspace dosyaları: Cargo.toml (21 üyeli workspace + tek-sürüm bağımlılık yönetimi), README.md (proje dokümantasyonu), install.sh (kurulum betiği) ve yapılandırma dosyaları (ai.toml, alerts.toml, risk.toml).
+| Klasör / Dosya | Anlamı |
+|---|---|
+| <code>Cargo.toml</code> | 21 crate üyesini ve tüm ortak bağımlılıkları tek sürüm kaynağında toplayan workspace manifesti |
+| <code>README.md</code> | Projenin amacı, katmanlı mimarisi, servisleri, kurulum/çalıştırma, güvenlik ve test prosedürlerini anlatan 26 KB ana doküman |
+| <code>install.sh</code> | Sistemi release derleyip <code>~/.cycle</code> dizinine yükleyen ve <code>cycle</code> başlatıcısı + ortam + ikon/menü oluşturan bash script |
+| <code>ai.toml</code> | AI engine (LLM agent katmanı) için provider, planlama, icra modu ve risk kapısı ayarları |
+| <code>alerts.toml</code> | Fiyat eşiği koşullarına göre sesli uyarı üreten <code>alert-service</code> örnek yapılandırması |
+| <code>risk.toml</code> | Risk motorunun pozisyon/notional/exposure/kayıp/emir limitleri — hot path ve cold path'in tek kaynağı |
+| <code>.cargo/config.toml</code> | Cargo'ya ortam değişkeni enjekte eden minimal yapılandırma (PyO3 ABI3 uyumluluğu) |
+| <code>.github/workflows/test-suite.yml</code> | PR ve gece cron'u ile çalışan 4 aşamalı CI pipeline (deny, coverage, test, WCET bench, chaos) |
+| <code>.env</code> | Gizli API anahtarlarını tutan ortam dosyası — <strong>okunmadı</strong>, sadece varlığı ve amacı belgelendi |
+| <code>.gitignore</code> | <code>target</code>, <code>Cargo.lock</code>, <code>.env</code> ve veritabanı/çalışma dosyalarını git dışına alan kurallar |</p>
+</blockquote>
+<hr />
+<hr />
+<h2 id="detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)<a class="headerlink" href="#detayl-analiz-mermaid" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09</p>
+</blockquote>
+<h3 id="cargo-toml"><code>Cargo.toml</code><a class="headerlink" href="#cargo-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Workspace, 21 crate üyesini katmanlı bir monorepo altında toplar: cycle-engine (5: contracts, transport, core, adapter, splash), data-engine (2: cold-storage, cold-starter), execution-engine (1), risk-engine (1), strategies-engine (2), services-engine (8), ai-engine (1) ve additional-services/os-utils (1). <code>resolver = "2"</code> ile modern özellik çözümü kullanılır; <code>tests/</code> ve <code>unused_services/</code> <code>exclude</code> listesiyle workspace'ten çıkarılmıştır (derlenmez). <code>[workspace.dependencies]</code> bölümü ~45 ortak bağımlılığı (tokio, axum, rust_decimal, ndarray, ferro_ta_core, rusqlite, rtrb, redis, sled vb.) <strong>tek sürümle</strong> ilan eder; üyeler path'li kendi crates'leri ve <code>workspace = true</code> bağımlılıkları kullandığından sürüm kayması yaşanmaz. Sürüm kilidi <code>Cargo.lock</code> ile tutulur; <code>cargo build --workspace</code> / <code>cargo test --workspace</code> tek komutla tüm çatıyı işler.</p>
+<p><strong>Neden kullandık:</strong>
+- Tek sürüm kaynağı: 21 crate aynı bağımlılık sürümlerini kullanır, crate içi drift olmaz.
+- Katmanlı monorepo: çekirdek kütüphaneler (cycle-engine) ile servislerin ayrı crate'lerde izole geliştirilmesi.
+- Tek komutla toplu derleme/test: <code>--workspace</code> ile üye sayısından bağımsız uniform build.
+- Exclude listesi: deaktive servisler (<code>unused_services</code>) ve kök testler derlemeye/CI'a dahil edilmez.</p>
+<pre class="mermaid">flowchart TD
+    subgraph kat02[&quot;Katman 0-2 · cycle-engine&quot;]
+        c1[&quot;contracts&quot;]
+        c2[&quot;transport&quot;]
+        c3[&quot;core&quot;]
+        c4[&quot;adapter&quot;]
+        c5[&quot;splash&quot;]
+    end
+    subgraph kat03[&quot;Katman 3 · data-engine&quot;]
+        d1[&quot;cold-storage&quot;]
+        d2[&quot;cold-starter&quot;]
+    end
+    subgraph kat04[&quot;Katman 4 · services-engine&quot;]
+        s1[&quot;price-feed&quot;]
+        s2[&quot;detect-ms&quot;]
+        s3[&quot;calc-ind&quot;]
+        s4[&quot;ohlcv-engine&quot;]
+        s5[&quot;stream-ohlcv&quot;]
+        s6[&quot;paper-service&quot;]
+        s7[&quot;alert-service&quot;]
+        s8[&quot;exec-console&quot;]
+    end
+    subgraph kat05[&quot;Katman 5 · strategies-engine&quot;]
+        t1[&quot;strategies-engine&quot;]
+        t2[&quot;breakout-strategy&quot;]
+    end
+    subgraph kat06[&quot;Katman 6 · execution + risk&quot;]
+        e1[&quot;execution-engine&quot;]
+        e2[&quot;risk-engine&quot;]
+    end
+    ops[&quot;os-utils&quot;]
+    ai[&quot;ai-engine&quot;]
+
+    c1 --&gt; c2
+    c2 --&gt; c3
+    c4 --&gt; c3
+    c3 --&gt; d1
+    d1 --&gt; d2
+    c3 --&gt; s1
+    s1 --&gt; s2
+    s4 --&gt; s3
+    s3 --&gt; s2
+    s2 --&gt; t1
+    t1 --&gt; t2
+    t2 --&gt; e1
+    t2 --&gt; s6
+    e2 --&gt; e1
+    ops --&gt; c3
+    ai --&gt; s1
+    ai --&gt; s2
+    ai --&gt; s3
+    ai --&gt; e1
+</pre>
+<h3 id="readme-md"><code>README.md</code><a class="headerlink" href="#readme-md" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> README, Cycle Finance'i "Binance Futures verisi üzerinde gerçek zamanlı piyasa yapısı analizi yapan ve kırılım sinyali üreten" yüksek frekanslı bir platform olarak tanımlar. Katmanlı mimariyi (Katman 0 sözleşmeler → 1 transport → 2 çekirdek → 3 veri → 4 analiz → 5 strateji → 6 yürütme) tablo ve metin diyagramlarıyla anlatır; aktif 19 servisi, portlarını ve 5 deaktive servisi belgeler. Canlı execution-engine (DRY_RUN varsayılanı, kill switch, 8 emir tipi, REST API), AI engine (4 agent, icra modları), exec-console, risk yönetimi, tmux düzeni, test prosedürleri ve CI/K8s bölümlerini kapsar. Ayrıca <code>unused_services</code> içindeki 5 servisi yeniden etkinleştirme prosedürüyle birlikte listeler.</p>
+<p><strong>Neden kullandık:</strong>
+- Tek doküman kaynağı: mimari, kurulum, çalıştırma, güvenlik ve test talimatları tek yerde.
+- Canlı mod onay akışını ve risk önlemlerini belgeleyerek güvenli kullanım sağlar.
+- <code>install.sh</code> ve CI'ın davranışını doğrulayan referans görevi görür.
+- Kapsamlı port/servis envanteri sayesinde operasyon ekibi sistemi tek bakışta anlar.</p>
+<pre class="mermaid">flowchart LR
+    ws[&quot;Binance Futures WS&quot;]
+    adapter[&quot;adapter · Binance WS client&quot;]
+    core[&quot;core · simdjson parser + validator&quot;]
+    ring1[&quot;/dev/shm GenerationalRingBuffer&quot;]
+    db[&quot;data-engine · SQLite WAL&quot;]
+    pf[&quot;price-feed :3004&quot;]
+    dm[&quot;detect-ms :3002&quot;]
+    bs[&quot;breakout-strategy&quot;]
+    paper[&quot;paper-service :8080&quot;]
+    exec[&quot;execution-engine :3010&quot;]
+
+    ws --&gt;|&quot;fiyat akışı&quot;| adapter
+    adapter --&gt;|&quot;flume kuyruğu&quot;| core
+    core --&gt;|&quot;wire encode&quot;| ring1
+    ring1 --&gt;|&quot;batch yazım&quot;| db
+    ring1 --&gt;|&quot;event&quot;| pf
+    pf --&gt;|&quot;kendi ring'i&quot;| dm
+    dm --&gt;|&quot;piyasa yapısı raporu&quot;| bs
+    bs --&gt;|&quot;BUY / SELL sinyali&quot;| paper
+    bs -.-&gt;|&quot;canlı mod&quot;| exec
+</pre>
+<h3 id="install-sh"><code>install.sh</code><a class="headerlink" href="#install-sh" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>set -euo pipefail</code> ile çalışan script; önce <code>cargo/rustc/tmux/curl/jq</code> bağımlılıklarını kontrol eder, ardından <code>cargo build --release --workspace</code> ile tüm sistemi derler. <code>~/.cycle</code> altına (<code>--prefix</code> ile değiştirilebilir) bin/config/scripts/strategies/data/logs dizinlerini kurar; 18 binary'yi kopyalar, <code>alerts.toml</code>/<code>risk.toml</code>/<code>ai.toml</code>/<code>config_*.toml</code> ve tmux/ortam scriptlerini taşır. <code>cycle-env.sh</code> ortam dosyası, <code>cycle</code> başlatıcı (start/stop/status/attach/console), SVG ikon ve <code>.desktop</code> menü girişi üretir; <code>--package</code> ile tar.gz paketi, <code>--uninstall</code> ile temiz kaldırma yapar.</p>
+<p><strong>Neden kullandık:</strong>
+- Tek komutla kurulum: derleme + dizin kurulumu + binary/config/script kopyalama tek adımda.
+- Deterministik paket: <code>cycle</code> başlatıcı ve ortam dosyası sayesinde uçtan uca kullanım.
+- Geri dönüşümlü: <code>--uninstall</code> ile kaldırma, <code>--only-build</code> ile hızlı derleme, <code>--package</code> ile taşınabilir paket.
+- Eksik bağımlılıkta kurulum önerisiyle yönlendirme (fail-fast).</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;install.sh başlat&quot;] --&gt; B{&quot;Argüman?&quot;}
+    B --&gt;|&quot;--uninstall&quot;| U[&quot;uninstall · PKG_DIR sil&quot;]
+    B --&gt;|&quot;--only-build&quot;| C[&quot;check_deps&quot;]
+    B --&gt;|&quot;diğer&quot;| C
+    C --&gt;|&quot;eksik bağımlılık&quot;| E[&quot;hata + kurulum önerisi&quot;]
+    C --&gt;|&quot;tamam&quot;| D[&quot;build_all · cargo build --release --workspace&quot;]
+    D --&gt; F[&quot;setup_dirs&quot;]
+    F --&gt; G[&quot;copy_bins · 18 binary&quot;]
+    G --&gt; H[&quot;copy_assets · toml + script&quot;]
+    H --&gt; I[&quot;write_env · cycle-env.sh&quot;]
+    I --&gt; J[&quot;write_launcher · cycle&quot;]
+    J --&gt; K[&quot;write_icon · SVG&quot;]
+    K --&gt; L[&quot;write_desktop · .desktop&quot;]
+    L --&gt; M{&quot;--package?&quot;}
+    M --&gt;|&quot;evet&quot;| N[&quot;make_package · tar.gz&quot;]
+    M --&gt;|&quot;hayır&quot;| O[&quot;bitti · kurulum mesajı&quot;]
+</pre>
+<h3 id="ai-toml"><code>ai.toml</code><a class="headerlink" href="#ai-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> AI engine katmanının tüm ayarlarını tutar: <code>[providers]</code> (openai / anthropic / none — <code>none</code> fail-safe HOLD), <code>[schedule]</code> (60 sn periyot, 4 sembol), <code>[execution]</code> (mode: paper/live/both/none, approval: auto/human), <code>[risk]</code> (veto, <code>max_notional_usdt=1000</code> deterministik boyut tavanı) ve <code>[context]</code> (price-feed/detect-ms/calc-ind REST URL'leri). API anahtarları burada değil <code>.env</code>'de tutulur. Varsayılan <code>provider = "none"</code> + <code>mode = "paper"</code> sayesinde boru hattı LLM olmadan test edilebilir; canlıya geçiş bilinçli yapılır.</p>
+<p><strong>Neden kullandık:</strong>
+- Deterministik güvenlik ağı: <code>max_notional_usdt</code> ve risk veto LLM çıktısından bağımsızdır.
+- Fail-safe varsayılanlar: <code>provider=none</code> + <code>mode=paper</code> ile canlı para riski kapalı başlar.
+- Bağlam kaynakları tek yerde: ring'ler + REST URL'leri yapılandırılarak agent'lara bağlanır.
+- İnsan onayı seçeneği (<code>approval=human</code>) ile otomatik icraya kademeli geçiş.</p>
+<pre class="mermaid">flowchart TD
+    subgraph cfg[&quot;ai.toml bölümleri&quot;]
+        p[&quot;providers&quot;]
+        sc[&quot;schedule&quot;]
+        ex[&quot;execution&quot;]
+        rk[&quot;risk&quot;]
+        cx[&quot;context&quot;]
+    end
+    agents[&quot;SIGNAL / RISK / SENTIMENT / COORDINATOR&quot;]
+
+    p --&gt;|&quot;LLM çağrısı&quot;| agents
+    cx --&gt;|&quot;bağlam URL'leri&quot;| agents
+    sc --&gt;|&quot;periyot + semboller&quot;| agents
+    agents --&gt;|&quot;sinyal&quot;| rk
+    rk --&gt;|&quot;veto yok&quot;| ex
+    ex --&gt;|&quot;paper&quot;| ps[&quot;paper-service :8080&quot;]
+    ex --&gt;|&quot;live&quot;| ed[&quot;executiond :3010&quot;]
+</pre>
+<h3 id="alerts-toml"><code>alerts.toml</code><a class="headerlink" href="#alerts-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>alert-service</code>'in sesli uyarı koşullarını tanımlar: <code>data_source = "pricefeed"</code> (veri kaynağı) ve <code>[[alerts]]</code> listesi. Her uyarı için sembol, condition (<code>above</code>/<code>below</code>/<code>touch</code>/<code>cross</code>), eşik fiyat, isteğe bağlı <code>voice</code> metni ve <code>cooldown_sec</code> vardır; <code>touch</code> koşulu <code>tolerance_pct</code> ile tolerans alır. Örneklerde BTCUSDT 64500 üstü, ETHUSDT 3200 cross, HEIUSDT 0.21628 kırılımı gibi uyarılar verilmiştir.</p>
+<p><strong>Neden kullandık:</strong>
+- TOML bildirimsel yapı: yeni uyarı eklemek için derleme gerekmez, config ile yapılır.
+- Cooldown süresi ile tekrar eden bildirim baskısı önlenir.
+- <code>voice</code> alanı ile sentezlenen Türkçe uyarı cümleleri özelleştirilebilir.
+- <code>touch</code> için tolerance ile çoklu eşik geçişlerinde stabilite.</p>
+<pre class="mermaid">flowchart LR
+    src[&quot;data_source: pricefeed ring&quot;] --&gt; chk{&quot;koşul?&quot;}
+    chk --&gt;|&quot;above / below / touch / cross&quot;| thr[&quot;eşik fiyat + tolerance_pct&quot;]
+    thr --&gt;|&quot;tetiklenme&quot;| cooldown{&quot;cooldown_sec?&quot;}
+    cooldown --&gt;|&quot;süre doldu&quot;| voice[&quot;sesli uyarı&quot;]
+    cooldown --&gt;|&quot;beklemede&quot;| skip[&quot;atla&quot;]
+</pre>
+<h3 id="risk-toml"><code>risk.toml</code><a class="headerlink" href="#risk-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Risk motorunun limitlerinin tek kaynağıdır: <code>max_position_usdt</code>, <code>max_notional_per_order</code>, <code>max_gross_exposure_usdt</code>, <code>max_hhi</code>, <code>max_leverage</code>, <code>max_daily_loss_usdt</code>, <code>max_drawdown_pct</code>, <code>max_orders_per_min</code>, <code>stale_mark_ms</code> ve <code>consecutive_rejection_auto_stop</code>. Sembol bazlı override'lar <code>[symbol.X]</code> bölümüyle genel limitleri daraltır; <code>blocklist</code> tamamen engellenen sembolleri tutar. Parametrik/likidite kapıları <code>gate_on_parametric_risk</code> ve <code>enable_liquidity_gate</code> ile açılır. Hem execution-engine (hot path) hem risk-worker (cold path) bu dosyayı okur; risk-worker mtime izleyerek hot-reload yapar.</p>
+<p><strong>Neden kullandık:</strong>
+- Tek doğruluk kaynağı: hot path ve cold path aynı limitleri okur, tutarsızlık olmaz.
+- Hot-reload: mtime izleme ile restart gerekmeden limit güncelleme.
+- Sembol override + blocklist: sembol bazlı ince ayar ve tam engelleme imkânı.
+- Fail-closed garantisi: bayat mark ve ardışık red eşiğinde otomatik durma.</p>
+<pre class="mermaid">flowchart LR
+    hot[&quot;execution-engine · hot path&quot;]
+    cold[&quot;risk-worker · cold path&quot;]
+    subgraph riskcfg[&quot;risk.toml&quot;]
+        p[&quot;pozisyon / exposure limitleri&quot;]
+        l[&quot;kayıp limitleri&quot;]
+        o[&quot;emir akışı limitleri&quot;]
+        g[&quot;parametrik / likidite kapıları&quot;]
+        b[&quot;blocklist&quot;]
+        sym[&quot;sembol override'ları&quot;]
+    end
+    reload[&quot;hot-reload · mtime izleme&quot;]
+    rke[&quot;RiskEngine · pre-trade kapısı&quot;]
+
+    hot --&gt; riskcfg
+    cold --&gt; riskcfg
+    riskcfg --&gt; reload
+    reload --&gt; rke
+</pre>
+<h3 id="cargo-config-toml"><code>.cargo/config.toml</code><a class="headerlink" href="#cargo-config-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Minimal bir Cargo yapılandırmasıdır; <code>[env]</code> bölümüyle tüm cargo komutlarına ortam değişkeni enjekte eder. Tek anahtar <code>PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"</code> — PyO3 ile derlenen üyelerin ABI3 ileri uyumluluğunu sağlar. Workspace'e özgü linker/derleyici veya build ayarı içermez; bu değer her makinede tutarlı olarak uygulanır.</p>
+<p><strong>Neden kullandık:</strong>
+- PyO3 uyumluluğu: workspace'te PyO3 kullanan üyeler için ortam tutarlılığı.
+- Global uygulanır: değişken tek yerden tanımlanır, tüm <code>cargo</code> komutlarına otomatik aktarılır.</p>
+<pre class="mermaid">flowchart LR
+    envvar[&quot;PYO3_USE_ABI3_FORWARD_COMPATIBILITY = 1&quot;] --&gt;|&quot;tüm cargo komutlarına uygulanır&quot;| cargo[&quot;cargo build / run / test&quot;]
+</pre>
+<h3 id="github-workflows-test-suite-yml"><code>.github/workflows/test-suite.yml</code><a class="headerlink" href="#github-workflows-test-suite-yml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> PR (master) ve gece cron'u (<code>0 0 * * *</code>) ile tetiklenen 4 job'lı CI pipeline'ıdır: <code>audit-and-coverage</code> (cargo-deny advisory + tarpaulin %95), <code>unit-and-integration</code> (cargo test --release + cargo check --all-features), <code>performance-wcet</code> (cargo bench ile 750µs tick gecikme sınırı), <code>chaos-mesh-staging</code> (kubeconfig varsa network-partition kaos senaryosu, cluster yoksa skip). Job'lar <code>needs</code> ile sıralı çalışır: önce denetim+coverage, sonra testler, sonra performans, en son kaos.</p>
+<p><strong>Neden kullandık:</strong>
+- Çok katmanlı güvence: bağımlılık denetimi, satır coverage'ı, test, WCET performansı ve kaos.
+- Sıralı pipeline: her aşama bir öncekine bağlıdır, kırmızı aşama pipeline'ı durdurur.
+- Koşullu kaos testi: cluster erişilemiyorsa adım skip ile geçer, CI kırmızıya dönmez.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;PR / gece cron tetiklemesi&quot;] --&gt; B[&quot;audit-and-coverage&quot;]
+    B --&gt; C[&quot;cargo-deny check advisories&quot;]
+    B --&gt; D[&quot;tarpaulin %95 satır coverage&quot;]
+    C --&gt; E[&quot;unit-and-integration&quot;]
+    D --&gt; E
+    E --&gt; F[&quot;cargo test --release&quot;]
+    E --&gt; G[&quot;cargo check --all-features&quot;]
+    F --&gt; H[&quot;performance-wcet&quot;]
+    G --&gt; H
+    H --&gt; I[&quot;cargo bench · 750us WCET&quot;]
+    I --&gt; J{&quot;kubectl + cluster erişilebilir?&quot;}
+    J --&gt;|&quot;evet&quot;| K[&quot;Chaos Mesh · network partition&quot;]
+    J --&gt;|&quot;hayır&quot;| L[&quot;skip · CI kırmızıya dönmez&quot;]
+</pre>
+<h3 id="env"><code>.env</code><a class="headerlink" href="#env" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> 534 baytlık, yalnızca sahibi okuyabilen (<code>-rw-------</code>) gizli ortam dosyasıdır; <strong>içeriği okunmadı</strong>. README'ye göre <code>BINANCE_API_KEY</code> / <code>BINANCE_SECRET_KEY</code> (execution-engine imzalı istekleri) ve <code>OPENAI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code> (ai-engine LLM çağrıları) burada tutulur. <code>.gitignore</code> ile git dışına alınmıştır; dolayısıyla repo'ya asla girmez.</p>
+<p><strong>Neden kullandık:</strong>
+- Anahtar hijyeni: sırlar kaynak kodundan ve repo'dan ayrı tutulur.
+- Ortam değişkenleriyle geçiş: aynı binary farklı <code>.env</code> ile farklı kimlik/ortam kullanabilir.</p>
+<pre class="mermaid">flowchart LR
+    env[&quot;env dosyası (gizli · okunmadı)&quot;] --&gt;|&quot;Binance API anahtarları&quot;| ex[&quot;execution-engine · imzalı istekler&quot;]
+    env --&gt;|&quot;LLM API anahtarları&quot;| ai[&quot;ai-engine · LLM çağrıları&quot;]
+</pre>
+<h3 id="gitignore"><code>.gitignore</code><a class="headerlink" href="#gitignore" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Derleme çıktılarını (<code>target/</code>, <code>debug/</code>), <code>Cargo.lock</code>, rustfmt yedeklerini ve MSVC eklerini (pdb/lib/exp/ilk) git dışına alır. Veritabanı dosyalarını (<code>*.db</code>, <code>*.db-shm</code>, <code>*.db-wal</code>), merkezi veri dizini <code>data-engine/data/</code>, paper çalışma dosyalarını (<code>paper-*.db</code>) ve <code>__pycache__/</code> hariç tutar. <code>.env</code> de listededir — böylece gizli anahtarlar asla commit'lenmez.</p>
+<p><strong>Neden kullandık:</strong>
+- Repo temizliği: build artifact ve çalışma verisi commit'lenmez, repo boyutu küçük kalır.
+- Gizlilik: <code>.env</code> ve veritabanı (emir/pozisyon kaydı) sızıntıya karşı korunur.
+- Veri dizini istisnası: çalışma zamanında büyüyen DB/WAL dosyaları git'e yansımaz.</p>
+<pre class="mermaid">flowchart LR
+    g[&quot;gitignore kuralları&quot;] --&gt;|&quot;derleme çıktısı&quot;| t[&quot;target / debug&quot;]
+    g --&gt;|&quot;lock dosyası&quot;| l[&quot;Cargo.lock&quot;]
+    g --&gt;|&quot;gizli anahtarlar&quot;| dotenv[&quot;.env&quot;]
+    g --&gt;|&quot;çalışma verisi&quot;| db[&quot;*.db + data-engine/data&quot;]
+</pre>
+<hr />
+<h2 id="proje-genel-mimarisi-uctan-uca">Proje Genel Mimarisi (Uçtan Uca)<a class="headerlink" href="#proje-genel-mimarisi-uctan-uca" title="Permanent link">&para;</a></h2>
+<p><strong>Uçtan uca veri akışı:</strong> Binance Futures WebSocket'ten gelen fiyatlar <code>adapter</code> (WS client) ile alınır, <code>core</code> (simdjson parser + validator) tarafından doğrulanıp binary <code>wire</code> koduna çevrilir ve <code>/dev/shm</code> ring buffer'larına yazılır. Ring'lerden <code>price-feed</code> kendi ring'ini besler; <code>detect-ms</code> (piyasa yapısı), <code>calc-ind</code> (ferro_ta_core indikatörleri) ve <code>ai-engine</code> (LLM agent'ları) fiyat/indikatör bağlamını ring + REST üzerinden tüketir. Üretilen sinyaller <code>risk-engine</code>'in 13 adımlı pre-trade kapısından geçerek <code>execution-engine</code> (canlı, :3010) veya <code>paper-service</code> (sanal, :8080) üzerinden icra edilir; fill geri beslemesi riske döner ve tüm veriler <code>data-engine</code> üzerinden soğuk depolamaya yazılır. <code>unused_services</code> içindeki 5 deaktive servis workspace'ten çıkarıldığı için ayrı bir subgraph olarak gösterilmiştir (derlenmez, ağa bağlanmaz).</p>
+<pre class="mermaid">flowchart TD
+    subgraph borsa[&quot;Borsa&quot;]
+        ws[&quot;Binance Futures WebSocket&quot;]
+    end
+
+    subgraph giris[&quot;Veri Girişi&quot;]
+        adapter[&quot;adapter · WS client&quot;]
+        core[&quot;core · simdjson parser + validator&quot;]
+    end
+
+    subgraph ipc[&quot;/dev/shm ring'ler&quot;]
+        ring1[&quot;cycle_finance_ring&quot;]
+        ring2[&quot;cycle_finance_pricefeed&quot;]
+        ring3[&quot;cycle_finance_calc&quot;]
+        ring4[&quot;cycle_finance_orders&quot;]
+    end
+
+    subgraph analiz[&quot;Analiz Katmanı&quot;]
+        dm[&quot;detect-ms :3002&quot;]
+        ci[&quot;calc-ind :3007&quot;]
+        ai2[&quot;ai-engine&quot;]
+    end
+
+    subgraph riskk[&quot;Risk Katmanı&quot;]
+        rke[&quot;risk-engine&quot;]
+        rwk[&quot;risk-worker :3011&quot;]
+        rcfg[&quot;risk.toml&quot;]
+    end
+
+    subgraph icra[&quot;İcra Katmanı&quot;]
+        exe[&quot;execution-engine :3010&quot;]
+        pap[&quot;paper-service :8080&quot;]
+    end
+
+    subgraph depo[&quot;Veri Kaydı&quot;]
+        cold[&quot;cold-storage&quot;]
+        data[&quot;data-engine/data · SQLite&quot;]
+    end
+
+    subgraph unused[&quot;unused_services · workspace'ten exclude&quot;]
+        u1[&quot;detect-liquidity&quot;]
+        u2[&quot;detect-pattern&quot;]
+        u3[&quot;detect-trb&quot;]
+        u4[&quot;detect-wyckoff&quot;]
+        u5[&quot;scout-service&quot;]
+    end
+
+    ws --&gt;|&quot;fiyat + derinlik&quot;| adapter
+    adapter --&gt; core
+    core --&gt;|&quot;wire encode&quot;| ring1
+    ring1 --&gt;|&quot;IPC&quot;| ring2
+    ring1 --&gt;|&quot;batch yazım&quot;| data
+    ring2 --&gt;|&quot;event-by-event&quot;| dm
+    ring2 --&gt;|&quot;fiyat bağlamı&quot;| ai2
+    dm --&gt;|&quot;OHLCV isteği&quot;| ci
+    ci --&gt;|&quot;binary sonuç&quot;| ring3
+    ring3 --&gt;|&quot;indikatör&quot;| dm
+    ring3 --&gt;|&quot;indikatör&quot;| ai2
+    dm --&gt;|&quot;piyasa yapısı raporu&quot;| ai2
+    dm --&gt; rke
+    ai2 --&gt; rke
+    rcfg --&gt;|&quot;limitler · hot-reload&quot;| rke
+    rwk --&gt;|&quot;VaR + korelasyon parametreleri&quot;| rke
+    rke --&gt;|&quot;pre-trade onayı&quot;| exe
+    rke --&gt;|&quot;pre-trade onayı&quot;| pap
+    ai2 --&gt;|&quot;sinyal&quot;| ring4
+    ring4 --&gt;|&quot;emir&quot;| pap
+    exe --&gt;|&quot;fill geri beslemesi&quot;| rke
+    exe --&gt;|&quot;gerçek emir&quot;| ws
+    pap --&gt;|&quot;event store&quot;| data
+    data --&gt; cold
+</pre>
+<hr />
+<h2 id="tam-kaynak-kodu">📄 Tam Kaynak Kodu<a class="headerlink" href="#tam-kaynak-kodu" title="Permanent link">&para;</a></h2>
+<h3 id="cargo-toml_1"><code>Cargo.toml</code><a class="headerlink" href="#cargo-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[workspace]
+members = [
+    &quot;cycle-engine/contracts&quot;,
+    &quot;cycle-engine/transport&quot;,
+    &quot;cycle-engine/core&quot;,
+    &quot;cycle-engine/adapter&quot;,
+    &quot;cycle-engine/splash&quot;,
+    &quot;additional-services/os-utils&quot;,
+    &quot;data-engine/cold-storage&quot;,
+    &quot;data-engine/cold-starter&quot;,
+    &quot;execution-engine&quot;,
+    &quot;risk-engine&quot;,
+    &quot;strategies-engine&quot;,
+    &quot;strategies-engine/breakout-strategy&quot;,
+    &quot;services-engine/ohlcv-engine&quot;,
+    &quot;services-engine/calc-ind&quot;,
+    &quot;services-engine/stream-ohlcv&quot;,
+    &quot;services-engine/detect-ms&quot;,
+    &quot;services-engine/paper-service&quot;,
+    &quot;services-engine/alert-service&quot;,
+    &quot;services-engine/price-feed&quot;,
+    &quot;services-engine/exec-console&quot;,
+    &quot;ai-engine&quot;,
+]
+exclude = [&quot;tests&quot;, &quot;unused_services&quot;]
+resolver = &quot;2&quot;
+
+# ── Tek kaynak: tüm üyeler buradaki sürümleri kullanır (sürüm kayması yok) ──
+[workspace.dependencies]
+rust_decimal = { version = &quot;1.34&quot;, features = [&quot;maths&quot;, &quot;serde&quot;] }
+ndarray      = { version = &quot;0.15&quot;, features = [&quot;rayon&quot;] }
+rayon        = &quot;1.8&quot;
+wide         = &quot;0.7&quot;
+
+terminal_size = &quot;0.4&quot;
+figlet-rs     = &quot;0.1&quot;
+ferro_ta_core = { version = &quot;1.2&quot;, features = [&quot;serde&quot;] }
+
+tokio        = { version = &quot;1.0&quot;, features = [&quot;full&quot;] }
+tokio-tungstenite = { version = &quot;0.20&quot;, features = [&quot;rustls-tls-webpki-roots&quot;] }
+futures-util = &quot;0.3&quot;
+serde        = { version = &quot;1.0&quot;, features = [&quot;derive&quot;] }
+serde_json   = &quot;1.0&quot;
+axum         = &quot;0.8&quot;
+axum-server  = { version = &quot;0.8&quot;, features = [&quot;tls-rustls&quot;] }
+reqwest      = { version = &quot;0.11&quot;, default-features = false, features = [&quot;json&quot;, &quot;rustls-tls&quot;, &quot;blocking&quot;] }
+flume        = &quot;0.11&quot;
+parking_lot  = &quot;0.12&quot;
+clap         = { version = &quot;4.6&quot;, features = [&quot;derive&quot;, &quot;env&quot;] }
+chrono       = &quot;0.4&quot;
+rusqlite     = { version = &quot;0.31.0&quot;, features = [&quot;bundled&quot;] }
+libc         = &quot;0.2&quot;
+memmap2      = &quot;0.9&quot;
+core_affinity = &quot;0.8&quot;
+crossbeam    = &quot;0.8&quot;
+crossbeam-channel = &quot;0.5&quot;
+hdrhistogram = &quot;7.6&quot;
+simd-json    = &quot;0.13&quot;
+dotenvy      = &quot;0.15&quot;
+sha3         = &quot;0.10&quot;
+rustyline    = &quot;14&quot;
+uuid         = { version = &quot;1.6&quot;, features = [&quot;v4&quot;, &quot;serde&quot;] }
+tracing      = &quot;0.1&quot;
+tracing-subscriber = { version = &quot;0.3&quot;, features = [&quot;env-filter&quot;] }
+tower        = &quot;0.5&quot;
+tower-http   = { version = &quot;0.6&quot;, features = [&quot;cors&quot;, &quot;trace&quot;] }
+jsonwebtoken = &quot;9&quot;
+argon2       = &quot;0.5&quot;
+rand         = &quot;0.8&quot;
+sled         = &quot;0.34&quot;
+toml         = &quot;0.8&quot;
+rtrb         = &quot;0.3&quot;
+redis        = { version = &quot;0.27&quot;, features = [&quot;tokio-comp&quot;] }
+async-trait  = &quot;0.1&quot;
+flate2       = &quot;1.0&quot;
+
+# Test araçları
+proptest     = &quot;1.0&quot;
+</code></pre>
+<h3 id="readme-md_1"><code>README.md</code><a class="headerlink" href="#readme-md_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-markdown"># 🏛️ Cycle Finance — Yüksek Frekanslı Alım-Satım Sistemi
+
+&gt; **High-Frequency Trading / Market Structure Analysis Platform**
+&gt; Rust monorepo · event-driven mimari · düşük gecikme hedefli
+
+---
+
+## 📌 İçindekiler
+
+- [Genel Bakış](#-genel-bakış)
+- [Klasör Yapısı](#-klasör-yapısı)
+- [Katmanlı Mimari](#-katmanlı-mimari)
+- [Aktif Servisler](#-aktif-servisler)
+- [Deaktive Edilmiş Servisler](#-deaktive-edilmiş-servisler)
+- [Kırılım Stratejisi (Breakout)](#-kırılım-stratejisi-breakout)
+- [Execution Engine (Canlı)](#-execution-engine-canlı)
+- [Veri Kaydı](#-veri-kaydı)
+- [Kurulum](#-kurulum)
+- [Çalıştırma](#-çalıştırma)
+- [tmux Terminal Düzeni](#-tmux-terminal-düzeni)
+- [Testler](#-testler)
+- [CI / K8s](#-ci--k8s)
+- [Teknik Detaylar](#-teknik-detaylar)
+
+---
+
+## 📖 Genel Bakış
+
+**Cycle Finance**, Binance Futures verisi üzerinde gerçek zamanlı piyasa yapısı analizi yapan ve **kırılım (breakout) sinyalleri** üreten yüksek frekanslı bir alım-satım platformudur.
+
+Ana akış:
+
+</code></pre>
+<p>Binance Futures WS
+   → adapter (binance WS client)
+   → core (parser + validator + SQLite yazıcı)
+   → /dev/shm ring buffer (IPC)
+   → detect-ms (Market Structure Multi-Protocol, 7 katman)
+   → breakout-strategy (kırılım sinyali: sembol + yön)</p>
+<pre><code>
+**Not:** Bu sistem şu an **paper-trading** modundadır. `breakout-strategy` yalnızca **sembol + yön** sinyali üretir, emir açmaz. `paper-service` sanal emir yürütme sağlar.
+
+&gt; 🛡️ **`execution-engine` artık canlı (LIVE) Binance Futures emir altyapısına sahiptir** (REST + user-data WS, idempotency, preflight, kill switch). Varsayılan `EXEC_DRY_RUN=true`'dır — gerçek emir için **bilinçli onay** gerekir. Detaylar: [Execution Engine (Canlı)](#-execution-engine-canlı).
+
+---
+
+## 🗂️ Klasör Yapısı
+
+</code></pre>
+<p>PROJE/
+├── cycle-engine/          # Çekirdek kütüphaneler (Katman 0-2)
+│   ├── contracts/         #   Veri sözleşmeleri (events, wire binary codec)
+│   ├── transport/         #   IPC: /dev/shm ring buffer'lar
+│   ├── core/              #   Parser, validator, orkestratör, LOB sim, timer
+│   └── adapter/           #   Dış entegrasyonlar (Binance WS, Redis, Vault...)
+│
+├── additional-services/   # Operasyonel destek
+│   ├── os-utils/          #   RT zamanlayıcı (SCHED_FIFO), lock-free config
+│   ├── scripts/           #   tmux başlatıcılar, izleme, ortam betikleri
+│   ├── config/            #   TOML yapılandırmaları
+│   ├── k8s/               #   Kubernetes manifestleri + chaos senaryoları
+│   └── formal_verification/ # TLA+ spesifikasyonları
+│
+├── data-engine/           # Veri katmanı
+│   ├── cold-storage/      #   mmap tabanlı disk tamponu
+│   ├── cold-starter/      #   Soğuk başlatma / geri yakalama
+│   └── data/              #   MERKEZİ VERİ KAYDI (DB, WAL)
+│
+├── services-engine/       # Aktif servisler
+│   ├── alert-service/     #   Sesli koşul uyarıları
+│   ├── detect-ms/         #   Market Structure Multi-Protocol (:3002)
+│   ├── ohlcv-engine/      #   Klines istemcisi (kütüphane + API)
+│   ├── paper-service/     #   Paper trading REST API (:8080)
+│   └── price-feed/        #   Fiyat akışı daemon'u (:3004)
+│
+├── strategies-engine/     # Stratejiler
+│   ├── breakout-strategy/ #   Kırılım stratejisi (sinyal üretici)
+│   └── trait_def.rs       #   Strateji trait tanımları (Signal, FillReport)
+│
+├── execution-engine/      # Emir yürütme (PAPER / LIVE) — kütüphane
+├── risk-engine/           # Risk çekirdeği (pre-trade kapısı, muhasebe, VaR) + risk-worker daemon
+├── risk.toml              # Risk limitleri (hot-reload)
+├── unused_services/       # Deaktive edilmiş servisler (arşiv)
+├── tests/                 # Kök test klasörü (tüm testler burada yapılır)
+├── docs/                  # Dokümantasyon + akış diyagramları
+└── target/                # Build çıktısı</p>
+<pre><code>
+---
+
+## 🧱 Katmanlı Mimari
+
+| Katman | Klasör | Görev |
+|---|---|---|
+| **0 — Sözleşmeler** | `cycle-engine/contracts` | `events.rs`, `wire.rs` (tipli binary codec) |
+| **1 — Transport (IPC)** | `cycle-engine/transport` | `/dev/shm` GenerationalRingBuffer + OrderRingBuffer (torn-read korumalı) |
+| **2 — Çekirdek Motor** | `cycle-engine/core` | simdjson parser, validator, TitaniumOrchestrator (spin-loop), RiskEngine, LOB sim, TscTimer (RDTSC) |
+| **2 — Açılış Ekranı** | `cycle-engine/splash` | FIGlet ASCII animasyonu (CYCLE FINANCE, harf harf) |
+| **3 — Veri** | `data-engine` | SQLite yazımı, soğuk depolama, WAL |
+| **4 — Analiz** | `services-engine/detect-ms` | 7 katmanlı piyasa yapısı analizi |
+| **5 — Strateji** | `strategies-engine` | Kırılım sinyali üretimi |
+| **6 — Yürütme** | `execution-engine` + `paper-service` | Emir yürütme (paper) |
+| **Ops** | `additional-services` | Ortam, betikler, k8s, TLA+ |
+
+### Veri Akışı
+
+</code></pre>
+<p>Binance WS (adapter) → flume queue → EventParser (simdjson)
+  → DataValidator (stale ≤ 200ms, crossed book, circuit breaker)
+  → wire::encode → GenerationalRingBuffer (/dev/shm/cycle_finance_ring)
+  → SQLite batch writer (data-engine/data/market_data.db)</p>
+<p>price-feed (:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
+detect-ms (:3002)  ← BinanceClient (ohlcv-engine)
+breakout-strategy  → SINYAL (sembol + yön)</p>
+<pre><code>
+---
+
+## 🚀 Aktif Servisler
+
+| Servis | Port | Görev |
+|---|---|---|
+| **core** (DATA modu) | — | Binance WS → parse → ring → DB |
+| **detect-ms** | `:3002` | 7 katmanlı piyasa yapısı analizi (pivot, trend, seviye, likidite, FVG, naratif) |
+| **price-feed** | `:3004` | WS → EventParser → kendi ring'i + REST `/api/lastprice/{symbol}` |
+| **paper-service** | `:8080` | REST API, JWT auth, actor + event store (sled WAL), pozisyon/PnL |
+| **alert-service** | — | `alerts.toml` koşullarına göre sesli uyarı |
+| **breakout-strategy** | — | Kırılım sinyali üretici (emir açmaz) |
+| **ohlcv-engine** | `:3000` | Klines istemcisi (kütüphane + `cli`/`server` bin) |
+| **calc-ind** | `:3007` | İndikatör hesaplama motoru (ferro_ta_core) + `/dev/shm` ring yayını |
+| **executiond** | `:3010` | Canlı Binance Futures emir daemon'u (DRY_RUN varsayılan) |
+| **exec-cli** | — | Execution yönetim CLI (emir/kaldıraç/margin/hedge) |
+| **risk-worker** | `:3011` | Soğuk yol risk parametre üretici (korelasyon, VaR, konsantrasyon, 60s) |
+
+### Aktif Workspace Üyeleri (19)
+
+`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service, price-feed, splash`
+
+---
+
+## 🗄️ Deaktive Edilmiş Servisler
+
+Aşağıdaki servisler `unused_services/` klasörüne taşınmış ve workspace'ten çıkarılmıştır (derlenmez):
+
+| Servis | Eski Görevi |
+|---|---|
+| `detect-liquidity` | EQH/EQL, FVG, sweep tespiti |
+| `detect-pattern` | Formasyon taraması |
+| `detect-trb` | Navier-Stokes / kavitasyon çözücü |
+| `detect-wyckoff` | Wyckoff faz analizi |
+| `scout-service` | Fırsat tarayıcı |
+
+*Bu servisleri yeniden etkinleştirmek için: klasörü `services-engine/`'e geri taşıyın, `Cargo.toml`'a `members` olarak ekleyin ve path bağımlılıklarını güncelleyin.*
+
+---
+
+## 🎯 Kırılım Stratejisi (Breakout)
+
+`strategies-engine/breakout-strategy` — **sinyal üretici** (emir açmaz).
+
+### Algoritma
+
+</code></pre>
+<p>detect-ms raporundan:
+  ats &gt; 0 (yukarı trend) → en yüksek skorlu SH (direnç) seviyesini seç
+                           └─ fiyat &gt; SH  →  BUY sinyali
+  ats &lt; 0 (aşağı trend) → en yüksek skorlu SL (destek) seviyesini seç
+                           └─ fiyat &lt; SL  →  SELL sinyali
+  ats = 0 → nötr, sinyal yok</p>
+<pre><code>
+### Fiyat kaynağı (öncelik sırası)
+
+1. `price-feed` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
+2. `price-feed` REST `:3004`
+3. `detect-ms` `current_price`
+
+### Çıktı
+
+</code></pre>
+<p>📡 SİNYAL → Sembol: HEIUSDT | Yön: BUY (fiyat: ring) | Fiyat=0.2135 ATS=2.1 Trend=... Confluence=%</p>
+<pre><code>
+### Konfigürasyon (env)
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `BREAKOUT_SYMBOL` | `HEIUSDT` | Analiz edilecek sembol |
+| `BREAKOUT_INTERVAL` | `1m` | Kline intervali |
+| `BREAKOUT_LIMIT` | `100` | Analizdeki mum sayısı |
+| `BREAKOUT_WAIT_SEC` | `check_every×60` | Değerlendirme aralığı (sn) |
+| `BREAKOUT_CHECK_EVERY` | `20` | Bekleme = pencere×60 sn |
+
+Dinamik bekleme: `/tmp/breakout_wait_sec.txt` dosyasına saniye yazarak çalışan stratejinin beklemesini değiştirebilirsiniz.
+
+---
+
+## 🛡️ Execution Engine (Canlı)
+
+Kurumsal Binance USDT-M Futures emir yürütme katmanı (`execution-engine` + `executiond` daemon + `exec-cli`).
+
+### Mimari Özeti
+
+</code></pre>
+<p>strateji / REST API ──► ExecutionActor (tek-yazıcı) ──► BinanceClient (REST, imzalı)
+      ▲                          │                              ▲
+      │                          │ UserDataEvent (gzip WS)      │ periyodik uzlaştırma
+UserDataStream ◄── listenKey ────┴───────────────────────────────┘
+      │
+      ▼
+AccountSnapshot (Arc<RwLock>) ──► REST API (:3010) / stratejiler (okuma)</p>
+<pre><code>
+- **REST + WS hibrit**: emir/kontrol REST, anlık hesap/pozisyon/emir güncellemeleri user-data stream.
+- **Tek-yazıcı**: tüm yazma işlemleri `ExecutionActor` task'ından geçer.
+- **Borsa doğrudur**: state, user-data deltalarının snapshot'a işlenmesidir; periyodik uzlaştırma sapmayı yakalar.
+- **Idempotency**: her emir benzersiz `newClientOrderId` taşır; tekrar istek aynı yanıtı döner.
+- **Pre-trade doğrulama**: sembol filtreleri (PRICE_FILTER, LOT_SIZE, MIN_NOTIONAL, MAX_POSITION), precizyon, pozisyon modu tutarlılığı, notional limit.
+- **8 emir tipi**: `LIMIT, MARKET, STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET, TRAILING_STOP_MARKET, LIMIT_MAKER` + batch (≤5) + modify (PUT /fapi/v1/order).
+
+### Kontrol Edilen Hesap Özellikleri
+
+| Alan | Endpoint / İşlem |
+|---|---|
+| Emir | place, batchOrders, query, cancel, cancelAll, modify, workingType (MARK/CONTRACT), priceProtect, reduceOnly, closePosition |
+| Pozisyon | positionRisk, positionMargin (+history), ADL quantile, forceOrders, leverageBracket |
+| Hesap | /fapi/v3/account, balance, income (FUNDING_FEE dahil), commissionRate, apiTradingStatus |
+| Yapılandırma | leverage set, marginType (ISOLATED/CROSSED), positionSide/dual (hedge modu), multiAssetsMargin, listenKey |
+| Anlık | User Data Stream: ACCOUNT_UPDATE, ORDER_TRADE_UPDATE, ACCOUNT_CONFIG_UPDATE, MARGIN_CALL, listenKeyExpired |
+
+### Güvenlik (Canlı Mod)
+
+| Önlem | Davranış |
+|---|---|
+| `EXEC_DRY_RUN=true` (varsayılan) | Emir doğrulanır, imzalanır, loglanır ama **gönderilmez** |
+| Kill switch | `/tmp/exec_kill_switch` dosyası + `PUT /api/v1/risk/kill-switch`; açıkken tüm yazma reddedilir |
+| İlk eşitleme | Borsa ile eşitlenmeden **hiçbir emir kabul edilmez** |
+| `EXEC_MAX_NOTIONAL` | Tek emir USDT üst sınırı (varsayılan 1000 USDT) |
+| `EXEC_MAX_ORDERS_PER_MIN` | Kayan pencere emir limiti |
+| `EXEC_SYMBOL_BLOCKLIST` | Sembol bazlı engelleme |
+| Cevap okunmadan emir | Asla &quot;başarılı&quot; sayılmaz; ACK beklenir, zaman aşımında sorgu ile uzlaştırılır |
+
+### Çalıştırma
+
+```bash
+# DRY_RUN ile güvenli başlangıç
+EXEC_MODE=LIVE EXEC_DRY_RUN=true ./target/debug/executiond
+
+# Gerçek emir gönderimi (AÇIK ONAY — dikkat!)
+EXEC_DRY_RUN=false ./target/debug/executiond --host 127.0.0.1 --port 3010
+</code></pre>
+<h3 id="rest-api-3010-jwt">REST API (:3010, JWT)<a class="headerlink" href="#rest-api-3010-jwt" title="Permanent link">&para;</a></h3>
+<pre><code>POST   /api/v1/auth/login · /api/v1/auth/refresh
+POST   /api/v1/orders          → emir gönder (idempotent)
+POST   /api/v1/orders/batch    → toplu emir (≤5)
+GET    /api/v1/orders?symbol=  → açık emirler (snapshot)
+GET    /api/v1/orders/query    → REST sorgu (orderId / clientOrderId)
+POST   /api/v1/orders/cancel   → iptal
+DELETE /api/v1/orders/{cid}    → clientOrderId ile iptal
+DELETE /api/v1/orders/open?symbol= → sembolün tümünü iptal
+PUT    /api/v1/orders/{cid}    → modify (fiyat/miktar/stop)
+GET    /api/v1/account | /positions | /balances | /income | /funding
+POST   /api/v1/positions/close   → pozisyon kapat (body: {symbol?, position_side?})
+GET    /api/v1/force-orders | /commission-rate/{s} | /adl/{s} | /trading-status
+GET    /api/v1/exchange-info/{s}
+PUT    /api/v1/symbols/{s}/leverage · /margin-type · POST /symbols/{s}/margin
+PUT    /api/v1/position-mode · /api/v1/multi-assets
+GET    /api/v1/risk · PUT /api/v1/risk/kill-switch · GET /api/v1/mode · /healthz
+GET    /metrics            → Prometheus metrikleri
+</code></pre>
+<p>Örnek emir:</p>
+<pre><code class="language-bash">TOKEN=$(curl -s -X POST http://127.0.0.1:3010/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{&quot;username&quot;:&quot;admin&quot;,&quot;password&quot;:&quot;changeme123&quot;}' | jq -r .access_token)
+
+curl -s -X POST http://127.0.0.1:3010/api/v1/orders \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;client_order_id&quot;:&quot;strat-1&quot;,&quot;symbol&quot;:&quot;BTCUSDT&quot;,&quot;side&quot;:&quot;BUY&quot;,&quot;type&quot;:&quot;MARKET&quot;,
+       &quot;quantity&quot;:&quot;0.001&quot;,&quot;position_side&quot;:&quot;BOTH&quot;}'
+</code></pre>
+<p><strong>USDT bazlı emir</strong> (MARKET + <code>quote_order_qty</code>): miktarı coin yerine USDT büyüklüğüyle verirsin.</p>
+<pre><code class="language-bash">curl -s -X POST http://127.0.0.1:3010/api/v1/orders \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;symbol&quot;:&quot;TUTUSDT&quot;,&quot;side&quot;:&quot;BUY&quot;,&quot;type&quot;:&quot;MARKET&quot;,&quot;quote_order_qty&quot;:&quot;6&quot;,&quot;position_side&quot;:&quot;LONG&quot;}'
+</code></pre>
+<p><strong>Pozisyon kapatma</strong> (body'de symbol yoksa TÜMÜ):</p>
+<pre><code class="language-bash"># Tek sembol (her iki taraf)
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;symbol&quot;:&quot;TUTUSDT&quot;}'
+# Tek sembol + tek taraf (hedge)
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;symbol&quot;:&quot;TUTUSDT&quot;,&quot;position_side&quot;:&quot;SHORT&quot;}'
+# TÜM açık pozisyonlar
+curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{}'
+</code></pre>
+<h3 id="cli-exec-cli">CLI (<code>exec-cli</code>)<a class="headerlink" href="#cli-exec-cli" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">./target/debug/exec-cli account                    # bakiye + pozisyon + açık emir
+./target/debug/exec-cli order BTCUSDT BUY MARKET 0.001 --reduce-only
+./target/debug/exec-cli orders BTCUSDT
+./target/debug/exec-cli leverage BTCUSDT 10
+./target/debug/exec-cli margin-type BTCUSDT ISOLATED
+./target/debug/exec-cli hedge true
+./target/debug/exec-cli funding BTCUSDT
+./target/debug/exec-cli exchange-info BTCUSDT
+</code></pre>
+<h3 id="ortam-degiskenleri-exec">Ortam Değişkenleri (<code>EXEC_</code>)<a class="headerlink" href="#ortam-degiskenleri-exec" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Değişken</th>
+<th>Varsayılan</th>
+<th>Açıklama</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EXEC_MODE</code></td>
+<td><code>LIVE</code></td>
+<td><code>PAPER</code> ise <code>paper-service</code> kullanılır</td>
+</tr>
+<tr>
+<td><code>EXEC_DRY_RUN</code></td>
+<td><code>true</code></td>
+<td><code>false</code> = gerçek emir (açık onay)</td>
+</tr>
+<tr>
+<td><code>EXEC_BASE_URL</code></td>
+<td><code>https://fapi.binance.com</code></td>
+<td>Testnet: <code>https://testnet.binancefuture.com</code></td>
+</tr>
+<tr>
+<td><code>EXEC_WS_URL</code></td>
+<td><code>wss://fstream.binance.com</code></td>
+<td>Testnet: <code>wss://stream.binancefuture.com</code></td>
+</tr>
+<tr>
+<td><code>EXEC_MAX_NOTIONAL</code></td>
+<td><code>1000</code></td>
+<td>Tek emir USDT üst sınırı (0 = sınırsız)</td>
+</tr>
+<tr>
+<td><code>EXEC_MAX_ORDERS_PER_MIN</code></td>
+<td><code>60</code></td>
+<td>Dakikada emir limiti (0 = sınırsız)</td>
+</tr>
+<tr>
+<td><code>EXEC_SYMBOL_BLOCKLIST</code></td>
+<td>—</td>
+<td>Virgülle ayrılmış semboller</td>
+</tr>
+<tr>
+<td><code>EXEC_KILL_SWITCH_PATH</code></td>
+<td><code>/tmp/exec_kill_switch</code></td>
+<td>Kill switch dosyası</td>
+</tr>
+<tr>
+<td><code>EXEC_API_ADDR</code></td>
+<td><code>127.0.0.1:3010</code></td>
+<td>REST bind adresi</td>
+</tr>
+<tr>
+<td><code>EXEC_JWT_SECRET</code></td>
+<td>dev değeri</td>
+<td>JWT secret (üretimde değiştirin)</td>
+</tr>
+<tr>
+<td><code>EXEC_ADMIN_USER</code> / <code>EXEC_ADMIN_PASS</code></td>
+<td><code>admin</code> / <code>changeme123</code></td>
+<td>REST giriş</td>
+</tr>
+</tbody>
+</table>
+<h3 id="testler">Testler<a class="headerlink" href="#testler" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">cargo test -p execution-engine            # birim + sahte-Binance entegrasyon
+cargo test -p execution-engine --test mock_binance
+</code></pre>
+<hr />
+<h2 id="veri-kayd">💾 Veri Kaydı<a class="headerlink" href="#veri-kayd" title="Permanent link">&para;</a></h2>
+<p>Tüm veriler merkezi olarak <code>data-engine/data/</code> altında tutulur:</p>
+<pre><code>data-engine/data/
+├── market_data.db     # Ana tick/OHLCV SQLite (WAL modu)
+├── paper_live.db      # Paper-service çalışma veritabanı
+└── paper_wal/         # Paper event store (sled)
+</code></pre>
+<p>Herhangi bir servis veri yazarsa buraya yazar. <code>.gitignore</code> ile git dışı tutulur.</p>
+<hr />
+<h2 id="kurulum">🔧 Kurulum<a class="headerlink" href="#kurulum" title="Permanent link">&para;</a></h2>
+<p><strong>Gereksinimler:</strong> Rust (stable), tmux, curl, jq</p>
+<pre><code class="language-bash"># Tüm workspace'i derle
+cargo build --workspace
+
+# Kurulum paketi oluştur
+./install.sh
+
+# Sadece derle
+./install.sh --only-build
+</code></pre>
+<hr />
+<h2 id="calstrma">▶️ Çalıştırma<a class="headerlink" href="#calstrma" title="Permanent link">&para;</a></h2>
+<h3 id="1-veri-terminali-data">1. Veri terminali (DATA)<a class="headerlink" href="#1-veri-terminali-data" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">cd PROJE &amp;&amp; RUN_MODE=DATA ./target/debug/core
+</code></pre>
+<blockquote>
+<p>Açılış ekranı (<code>cycle-engine/splash</code>) <code>cycle_tmux.sh</code> başlatıcısında gösterilir; <code>core</code>'u doğrudan çalıştırırken splash oynamaz.</p>
+</blockquote>
+<h3 id="2-servisleri-ayr-ayr-baslat">2. Servisleri ayrı ayrı başlat<a class="headerlink" href="#2-servisleri-ayr-ayr-baslat" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">./target/debug/detect-ms        # :3002  analiz motoru
+./target/debug/price-feed       # :3004  fiyat akışı
+./target/debug/paper-service     # :8080  paper API
+./target/debug/alert-service     # sesli uyarı
+./target/debug/breakout-strategy # kırılım sinyali
+./target/debug/calc-ind          # :3007  indikatör hesaplama motoru
+</code></pre>
+<h3 id="2b-calc-ind-indikator-hesaplama-ferro-ta-core">2b. calc-ind — indikatör hesaplama (ferro_ta_core)<a class="headerlink" href="#2b-calc-ind-indikator-hesaplama-ferro-ta-core" title="Permanent link">&para;</a></h3>
+<p><code>calc-ind</code> servisi istek üzerine OHLCV'yi <code>ohlcv-engine</code>'den çeker, <code>ferro_ta_core</code> ile indikatör hesaplar ve sonucu <strong>binary olarak</strong> <code>/dev/shm/cycle_finance_calc</code> ring'ine yayınlar. İstek atan servis <code>calc_ind::client</code> ile sonucu ring'den okur.</p>
+<pre><code class="language-bash"># İstek (HTTP): symbol + interval + start/end + indikatör + parametreler
+curl -X POST http://127.0.0.1:3007/api/calc \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;symbol&quot;:&quot;BTCUSDT&quot;,&quot;interval&quot;:&quot;1h&quot;,&quot;start_ms&quot;:null,&quot;end_ms&quot;:null,
+       &quot;indicator&quot;:&quot;rsi&quot;,&quot;params&quot;:{&quot;period&quot;:14}}'
+# → {&quot;count&quot;:1000,&quot;request_id&quot;:1,&quot;series&quot;:[&quot;rsi&quot;],&quot;status&quot;:&quot;success&quot;}
+</code></pre>
+<p><strong>Rust tüketici API'si:</strong></p>
+<pre><code class="language-rust">use calc_ind::{IndRequest, client};
+use std::collections::HashMap;
+
+let mut params = HashMap::new();
+params.insert(&quot;period&quot;.to_string(), 14.0);
+let req = IndRequest::new(&quot;BTCUSDT&quot;, &quot;1h&quot;, None, None, &quot;rsi&quot;).with_params(params);
+let id = client::request_default(&amp;req).await?;          // request_id
+let res = client::read_result(id, 5, 200);               // ring'den oku (retry)
+// res.series[&quot;rsi&quot;] → Vec&lt;Option&lt;f64&gt;&gt; (None = warm-up NaN)
+</code></pre>
+<p>Örnek: <code>cargo run -p calc-ind --example read_ring</code></p>
+<p><strong>Desteklenen indikatörler:</strong> <code>sma, ema, wma, macd, bbands, rsi, stoch, momentum, roc, stddev, atr, vwap, volume</code> — parametreler istekte <code>params</code> haritasıyla verilir.</p>
+<h3 id="3-tmux-ile-tum-ortam-baslat-onerilen">3. tmux ile tüm ortamı başlat (önerilen)<a class="headerlink" href="#3-tmux-ile-tum-ortam-baslat-onerilen" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">./additional-services/scripts/cycle_tmux.sh          # başlat + bağlan
+./additional-services/scripts/cycle_tmux.sh kill     # durdur
+./additional-services/scripts/cycle_tmux.sh status   # durum
+</code></pre>
+<blockquote>
+<p><code>cycle_tmux.sh</code> çalıştırıldığında önce <strong>CYCLE FINANCE</strong> FIGlet açılış ekranı tek terminalde (harf harf animasyon) gösterilir, ardından her servis tek bir sekmede olacak şekilde tmux session'ı açılır. Açılış ekranı <code>cycle-engine/splash</code> crate'i (<code>cycle-splash</code> binary) ile sağlanır; hız <code>show_splash_with(text, ms)</code> ile özelleştirilebilir.</p>
+</blockquote>
+<h3 id="4-ortam-fonksiyonlar">4. Ortam fonksiyonları<a class="headerlink" href="#4-ortam-fonksiyonlar" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">source additional-services/scripts/cycle_env.sh
+help-cycle   # komut listesi
+</code></pre>
+<p>Yaygın komutlar: <code>data-live</code>, <code>detect-ms-start</code>, <code>calc-ind-start</code>, <code>breakout-start</code>, <code>paper-start</code>, <code>alert-start</code>, <code>listener-start</code>, <code>risk-start</code>, <code>risk-worker-start</code>, <code>monitor-start</code>, <code>ai-start</code>.</p>
+<hr />
+<h2 id="tmux-terminal-duzeni">🖥️ tmux Terminal Düzeni<a class="headerlink" href="#tmux-terminal-duzeni" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Pencere</th>
+<th>İçerik</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 — STRATEGY</td>
+<td>Strateji terminali (PyO3)</td>
+</tr>
+<tr>
+<td>1 — LISTENER</td>
+<td>Anlık metrik analizi</td>
+</tr>
+<tr>
+<td>2 — RISK</td>
+<td>Risk analizi (--watch)</td>
+</tr>
+<tr>
+<td>3 — SHELL</td>
+<td>Ortam fonksiyonları (help-cycle)</td>
+</tr>
+<tr>
+<td>4 — DATA</td>
+<td>Binance WS veri terminali</td>
+</tr>
+<tr>
+<td>5 — ALERT</td>
+<td>Sesli uyarı servisi</td>
+</tr>
+<tr>
+<td>6 — PAPER</td>
+<td>Paper REST API</td>
+</tr>
+<tr>
+<td>7 — Monitor</td>
+<td>CPU/RAM/GPU izleme</td>
+</tr>
+<tr>
+<td>8 — DETECT-MS</td>
+<td>Analiz motoru</td>
+</tr>
+<tr>
+<td>9 — BREAKOUT</td>
+<td>Kırılım stratejisi</td>
+</tr>
+<tr>
+<td>10 — STREAM-OHLCV</td>
+<td>Canlı OHLCV mum akışı</td>
+</tr>
+<tr>
+<td>11 — CALC-IND</td>
+<td>İndikatör hesaplama motoru</td>
+</tr>
+<tr>
+<td>12 — 🤖 AI</td>
+<td>LLM agent katmanı (OpenAI/Anthropic)</td>
+</tr>
+<tr>
+<td>13 — 🖥️ CONSOLE</td>
+<td>executiond elle komut konsolu</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ai-engine-llm-agent-katman">🤖 AI Engine (LLM Agent Katmanı)<a class="headerlink" href="#ai-engine-llm-agent-katman" title="Permanent link">&para;</a></h2>
+<p>Rust-native <code>ai-engine</code> servisi, mevcut veri/yürütme altyapısını kullanarak çoklu LLM agent'ı çalıştırır:</p>
+<pre><code>ring'ler + REST (price-feed/detect-ms/calc-ind/paper) → context.rs → agent'lar
+        🧠 SIGNAL → ⚠️ RISK → 📰 SENTIMENT → 🤝 COORDINATOR → risk gate → icra
+        icra: paper (order ring :8080) ve/veya canlı (executiond :3010)
+</code></pre>
+<h3 id="agent-lar">Agent'lar<a class="headerlink" href="#agent-lar" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>Görev</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🧠 SIGNAL</td>
+<td>Fiyat + indikatör + yapı bağlamından BUY/SELL/HOLD</td>
+</tr>
+<tr>
+<td>⚠️ RISK</td>
+<td>Risk skoru, <code>veto</code> (fail-safe), <code>max_size_bps</code> boyut sınırı</td>
+</tr>
+<tr>
+<td>📰 SENTIMENT</td>
+<td>Dış haber kaynağından duygu skoru (-1..+1)</td>
+</tr>
+<tr>
+<td>🤝 COORDINATOR</td>
+<td>3 agent çıktısını sentezler; risk veto her zaman öncelikli</td>
+</tr>
+</tbody>
+</table>
+<h3 id="konfigurasyon-ai-toml-env">Konfigürasyon (<code>ai.toml</code> + env)<a class="headerlink" href="#konfigurasyon-ai-toml-env" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>.env</code>: <code>OPENAI_API_KEY</code> (OpenAI) veya <code>ANTHROPIC_API_KEY</code> (Anthropic) — repo'ya girmez.</li>
+<li><code>ai.toml</code>: provider, model, periyot, semboller, icra modu, risk kapısı, bağlam URL'leri.</li>
+<li><code>provider = "none"</code> → LLM çağrılmaz, her karar fail-safe HOLD (boru hattını test eder).</li>
+</ul>
+<h3 id="icra-modlar">İcra modları<a class="headerlink" href="#icra-modlar" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>mode = "paper"</code> (varsayılan): emir <code>/cycle_finance_orders</code> ring'ine yazılır → paper-service icra eder.</li>
+<li><code>mode = "live"</code>: executiond :3010 üzerinden (JWT + <code>POST /api/v1/orders</code>).</li>
+<li><code>mode = "both"</code>: ikisine de gönderir; <code>none</code>: sadece izler.</li>
+<li><code>approval = "human"</code>: emir gönderilmeden önce <code>ai-approve</code> / <code>ai-reject</code> ile insan onayı bekler.</li>
+</ul>
+<h3 id="calstrma_1">Çalıştırma<a class="headerlink" href="#calstrma_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-bash">ai-start      # tmux pencere 12'de başlat
+ai-status     # durum + son döngü (http://127.0.0.1:3110/api/status)
+ai-stop
+</code></pre>
+<p>Bağımlılık: <code>price-feed</code> (:3004), <code>detect-ms</code> (:3002), <code>calc-ind</code> (:3007) ve <code>paper-service</code> (:8080) çalışıyor olmalı.</p>
+<h3 id="guvenlik-canl-mod">Güvenlik (canlı mod)<a class="headerlink" href="#guvenlik-canl-mod" title="Permanent link">&para;</a></h3>
+<ul>
+<li>LLM başarısız → HOLD (fail-closed), asla kör emir yok.</li>
+<li><code>max_notional_usdt</code> deterministik boyut tavanı LLM çıktısından bağımsızdır.</li>
+<li>Risk agent'ı <code>veto</code> veya <code>risk_score ≥ 0.8</code> → emir otomatik red.</li>
+<li><code>RiskEngine</code> (risk.toml) gate'i: notional/exposure/daily-loss/kill-switch.</li>
+<li>Varsayılan <code>mode="paper"</code>; canlıya geçiş <code>ai.toml</code> ile bilinçli yapılır.</li>
+</ul>
+<hr />
+<h2 id="exec-console-elle-komut-katman">🖥️ Exec Console (Elle Komut Katmanı)<a class="headerlink" href="#exec-console-elle-komut-katman" title="Permanent link">&para;</a></h2>
+<p><code>services-engine/exec-console</code>, executiond (:3010) REST API'sine JWT ile bağlanan interaktif bir konsoldur. Komutlar Binance'e değil, executiond'nin preflight/risk katmanından geçerek gider.</p>
+<pre><code class="language-bash">exec-console-start     # tmux sekmesi 13'te başlat
+exec-console-status
+exec-console-stop
+</code></pre>
+<p>Sekmede <code>help</code> yazın. Başlıca komutlar:</p>
+<table>
+<thead>
+<tr>
+<th>Komut</th>
+<th>Açıklama</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>health</code> / <code>mode</code> / <code>risk</code> / <code>kill on\|off</code></td>
+<td>Durum + kill switch</td>
+</tr>
+<tr>
+<td><code>account</code> / <code>balance</code> / <code>positions [SYM]</code></td>
+<td>Hesap</td>
+</tr>
+<tr>
+<td><code>buy SYM QTY\|--usdt N [--pos LONG\|SHORT]</code> / <code>sell ...</code></td>
+<td>Market emir (USDT büyüklük de olur)</td>
+</tr>
+<tr>
+<td><code>order SYM SIDE TYPE QTY\|--usdt N [--price] [--stop] [--tif] [--pos] [--reduce] [--close]</code></td>
+<td>Tam emir</td>
+</tr>
+<tr>
+<td><code>orders</code> / <code>query</code> / <code>cancel</code> / <code>cancelall</code> / <code>modify</code></td>
+<td>Emir yönetimi</td>
+</tr>
+<tr>
+<td><code>close SYM [LONG\|SHORT]</code></td>
+<td>Sembolün açık pozisyon(lar)ını kapat</td>
+</tr>
+<tr>
+<td><code>closeall</code></td>
+<td>TÜM açık pozisyonları kapat</td>
+</tr>
+<tr>
+<td><code>leverage</code> / <code>margintype</code> / <code>margin</code> / <code>hedge</code> / <code>multiass</code></td>
+<td>Hesap yapılandırma</td>
+</tr>
+<tr>
+<td><code>funding</code> / <code>income</code> / <code>forceorders</code> / <code>exinfo</code> / <code>commission</code> / <code>adl</code> / <code>tradingstatus</code></td>
+<td>Borsa sorguları</td>
+</tr>
+</tbody>
+</table>
+<p>Hedge modda emirlerde <code>--pos LONG|SHORT</code> verilmelidir.</p>
+<hr />
+<h2 id="testler_1">🧪 Testler<a class="headerlink" href="#testler_1" title="Permanent link">&para;</a></h2>
+<p>Tüm testler kök <code>tests/</code> klasöründe yapılır (<code>Cargo.toml</code> workspace <code>exclude</code> listesindedir).</p>
+<pre><code class="language-bash">cargo test --workspace
+</code></pre>
+<blockquote>
+<p>Not: Birim testler crate içlerinde; entegrasyon/e2e testleri <code>tests/</code> altına eklenmelidir.</p>
+</blockquote>
+<hr />
+<h2 id="ci-k8s">🚦 CI / K8s<a class="headerlink" href="#ci-k8s" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CI</strong> (<code>.github/workflows/test-suite.yml</code>): <code>cargo test --release</code>, <code>cargo check --all-features</code>, <code>cargo bench</code> (WCET 750µs), kaos testleri (Chaos Mesh, erişilebilirse)</li>
+<li><strong>K8s</strong> (<code>additional-services/k8s/</code>): deployment + chaos senaryoları (DNS/network partition/NTP drift)</li>
+<li><strong>TLA+</strong> (<code>additional-services/formal_verification/</code>): <code>CycleFinance.tla</code> + <code>.cfg</code></li>
+</ul>
+<hr />
+<h2 id="teknik-detaylar">⚙️ Teknik Detaylar<a class="headerlink" href="#teknik-detaylar" title="Permanent link">&para;</a></h2>
+<h3 id="gecikme-optimizasyonlar">Gecikme optimizasyonları<a class="headerlink" href="#gecikme-optimizasyonlar" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>/dev/shm</code> ring buffer</strong>: prosesler arası sıfır-kopya IPC, torn-read korumalı (generational check)</li>
+<li><strong>RT zamanlayıcı</strong>: <code>os-utils::set_rt_thread_priority</code> → <code>SCHED_FIFO</code> (prio 99)</li>
+<li><strong>CPU pin</strong>: <code>hal::cpu::pin_to_core</code> — tick thread'i belirli çekirdeğe sabitlenir</li>
+<li><strong>Pre-fault bellek</strong>: <code>hal::memory::allocate_huge_buffer</code> — çalışma anında page fault yok</li>
+<li><strong>TSC timer</strong>: <code>timer/tsc.rs</code> — <code>RDTSC</code> tabanlı yüksek çözünürlüklü zamanlama</li>
+<li><strong>simdjson</strong>: zero-copy JSON parsing</li>
+<li><strong>SQLite WAL + batch</strong>: 10k yazma/1sn batching</li>
+</ul>
+<h3 id="risk-yonetimi">Risk Yönetimi<a class="headerlink" href="#risk-yonetimi" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>risk-engine</code> — ortak risk çekirdeği (tek doğruluk kaynağı):</li>
+<li><code>RiskEngine::evaluate</code> — 13 adımlı pre-trade kural zinciri (kill switch,
+    circuit breaker, blocklist, rate-limit, notional, leverage, pozisyon,
+    exposure, HHI konsantrasyon, marj, günlük kayıp, drawdown, fail-closed mark)</li>
+<li><code>Portfolio</code>/<code>Position</code> — coin-bazlı muhasebe, fill/PnL, likidasyon fiyatı</li>
+<li><code>RiskWorker</code> daemon (<code>risk-worker</code>, :3011) — korelasyon → Tikhonov → EWMA vol
+    → parametrik VaR → önerilen limitler (60s)</li>
+<li><code>Seqlock</code> <code>RiskCache</code>, JSONL <code>AuditLog</code>, <code>KillSwitch</code> (dosya + bayrak)</li>
+<li><code>risk.toml</code> — tüm limitler; hot-reload (mtime izleme)</li>
+<li>Execution entegrasyonu: <code>RiskChecks</code> bağdaştırıcısı → <code>RiskEngine</code>, fill
+  geri beslemesi (<code>ORDER_TRADE_UPDATE</code> → <code>on_fill</code>), resync senkronizasyonu</li>
+<li>Circuit breaker: 100+ hatalı/sn → akışı durdur; 3+ ardışık risk reddi → otomatik kill switch</li>
+</ul>
+<h3 id="guvenlik">Güvenlik<a class="headerlink" href="#guvenlik" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>execution-engine/src/signer.rs</code> — Binance imzalama (HMAC-SHA256) altyapısı</li>
+<li><code>paper-service</code> — JWT auth (argon2 şifre hash)</li>
+<li><code>adapter/vault</code> — HashiCorp Vault entegrasyon taslağı (anahtar rotasyonu)</li>
+<li><code>.env</code> repodan hariç tutulur (<code>BINANCE_API_KEY</code>, <code>BINANCE_SECRET_KEY</code>)</li>
+</ul>
+<hr />
+<h2 id="lisans-not">📜 Lisans / Not<a class="headerlink" href="#lisans-not" title="Permanent link">&para;</a></h2>
+<p>Bu proje özel bir araştırma/geliştirme projesidir. Canlı para ile kullanım risk içerir; sistem yalnızca paper-trading için yapılandırılmıştır.</p>
+<hr />
+<p><em>Doküman oluşturma tarihi: 2026-08-08 · Ayrıntılı mimari doküman: <code>docs/PROJE_DOKUMANTASYONU.md</code> · Risk motoru mimarisi: <code>docs/RISK_ENGINE_MIMARISI.md</code> · Akış diyagramları: <code>docs/flowcharts/</code></em></p>
+<pre><code>
+### `install.sh`
+
+```bash
+#!/usr/bin/env bash
+# ============================================================
+#  Cycle Finance — Kurulum / Yükleme Script'i
+#  Sistemin tamamını derler ve yüklenebilir bir paket oluşturur.
+#
+#  Kullanım:
+#    ./install.sh                # tüm sistemi derle + kur
+#    ./install.sh --prefix /opt  # özel kurulum dizini (varsayılan: ~/.cycle)
+#    ./install.sh --only-build   # sadece derle, kurma
+#    ./install.sh --package      # kurulum + sıkıştırılmış paket (.tar.gz)
+#    ./install.sh --uninstall    # kurulumu kaldır
+# ============================================================
+set -euo pipefail
+
+ROOT=&quot;$(cd &quot;$(dirname &quot;$0&quot;)&quot; &amp;&amp; pwd)&quot;
+PREFIX=&quot;${PREFIX:-$HOME/.cycle}&quot;
+PKG_DIR=&quot;$PREFIX&quot;
+BIN_DIR=&quot;$PKG_DIR/bin&quot;
+CONFIG_DIR=&quot;$PKG_DIR/config&quot;
+SCRIPTS_DIR=&quot;$PKG_DIR/scripts&quot;
+STRATEGIES_DIR=&quot;$PKG_DIR/strategies&quot;
+DATA_DIR=&quot;$PKG_DIR/data&quot;
+LOG_DIR=&quot;$PKG_DIR/logs&quot;
+
+# ── Renkler ──────────────────────────────────────────────────
+_G='\033[0;32m'; _Y='\033[1;33m'; _C='\033[0;36m'
+_R='\033[0;31m'; _N='\033[0m'
+
+say()  { echo -e &quot;${_C}[cycle]${_N} $*&quot;; }
+ok()   { echo -e &quot;${_G}✔${_N} $*&quot;; }
+warn() { echo -e &quot;${_Y}⚠${_N} $*&quot;; }
+err()  { echo -e &quot;${_R}✘${_N} $*&quot;; }
+
+# ── Bağımlılık kontrolü ──────────────────────────────────────
+check_deps() {
+  say &quot;Bağımlılıklar kontrol ediliyor...&quot;
+  local missing=()
+  for c in cargo rustc tmux curl jq; do
+    if ! command -v &quot;$c&quot; &gt;/dev/null 2&gt;&amp;1; then
+      missing+=(&quot;$c&quot;)
+    fi
+  done
+  if [ ${#missing[@]} -gt 0 ]; then
+    err &quot;Eksik bağımlılıklar: ${missing[*]}&quot;
+    echo &quot;  Kurulum:  sudo apt install build-essential tmux curl jq&quot;
+    echo &quot;  Rust:     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh&quot;
+    exit 1
+  fi
+  ok &quot;Bağımlılıklar tamam&quot;
+}
+
+# ── Release derleme ──────────────────────────────────────────
+build_all() {
+  say &quot;Tüm çalışma alanı derleniyor (release)...&quot;
+  cd &quot;$ROOT&quot;
+  cargo build --release --workspace 2&gt;&amp;1 | tail -5
+  ok &quot;Derleme tamamlandı&quot;
+}
+
+# ── Kurulum dizini oluştur ───────────────────────────────────
+setup_dirs() {
+  mkdir -p &quot;$BIN_DIR&quot; &quot;$CONFIG_DIR&quot; &quot;$SCRIPTS_DIR&quot; &quot;$STRATEGIES_DIR&quot; &quot;$DATA_DIR&quot; &quot;$LOG_DIR&quot;
+}
+
+# ── Binary'leri kopyala ──────────────────────────────────────
+copy_bins() {
+  say &quot;Binary'ler kopyalanıyor → $BIN_DIR&quot;
+  local bins=(
+    core paper-service paper-cli alert-service detect-ms
+    risk-worker cold-starter price-feed breakout-strategy listener alerts risk_analysis
+    calc-ind ai-engine exec-console stream-ohlcv cycle-splash
+  )
+  local n=0
+  for b in &quot;${bins[@]}&quot;; do
+    if [ -f &quot;$ROOT/target/release/$b&quot; ]; then
+      cp &quot;$ROOT/target/release/$b&quot; &quot;$BIN_DIR/$b&quot;
+      chmod +x &quot;$BIN_DIR/$b&quot;
+      n=$((n+1))
+    else
+      warn &quot;  $b bulunamadı (atlandı)&quot;
+    fi
+  done
+  ok &quot;$n binary kopyalandı&quot;
+}
+
+# ── Config ve script kopyala ─────────────────────────────────
+copy_assets() {
+  say &quot;Yapılandırma ve script'ler kopyalanıyor...&quot;
+  cp &quot;$ROOT/alerts.toml&quot;          &quot;$CONFIG_DIR/&quot; 2&gt;/dev/null || warn &quot;alerts.toml yok&quot;
+  cp &quot;$ROOT/risk.toml&quot;            &quot;$CONFIG_DIR/&quot; 2&gt;/dev/null || warn &quot;risk.toml yok&quot;
+  cp &quot;$ROOT/ai.toml&quot;              &quot;$CONFIG_DIR/&quot; 2&gt;/dev/null || warn &quot;ai.toml yok&quot;
+  cp &quot;$ROOT/additional-services/config/&quot;config_*.toml  &quot;$CONFIG_DIR/&quot; 2&gt;/dev/null || true
+
+  for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh tmux_clipboard_paste.sh; do
+    [ -f &quot;$ROOT/additional-services/scripts/$s&quot; ] &amp;&amp; cp &quot;$ROOT/additional-services/scripts/$s&quot; &quot;$SCRIPTS_DIR/&quot; || warn &quot;scripts/$s yok&quot;
+  done
+
+  [ -f &quot;$ROOT/test_data.csv&quot; ] &amp;&amp; cp &quot;$ROOT/test_data.csv&quot; &quot;$DATA_DIR/&quot; || true
+  ok &quot;Yapılandırma dosyaları kopyalandı&quot;
+}
+
+# ── Ortam / başlatıcı oluştur ────────────────────────────────
+write_env() {
+  cat &gt; &quot;$PKG_DIR/cycle-env.sh&quot; &lt;&lt;ENVEOF
+#!/usr/bin/env bash
+# Cycle Finance — kurulum ortamı
+export CYCLE_ROOT=&quot;$PKG_DIR&quot;
+export PATH=&quot;$BIN_DIR:\$PATH&quot;
+source &quot;$SCRIPTS_DIR/cycle_env.sh&quot;
+ENVEOF
+  chmod +x &quot;$PKG_DIR/cycle-env.sh&quot;
+  ok &quot;Ortam dosyası oluşturuldu: $PKG_DIR/cycle-env.sh&quot;
+}
+
+write_launcher() {
+  cat &gt; &quot;$BIN_DIR/cycle&quot; &lt;&lt;LAUNCH
+#!/usr/bin/env bash
+# Cycle Finance başlatıcı
+CYCLE_ROOT=&quot;$PKG_DIR&quot;
+export CYCLE_ROOT
+export BIN_DIR=&quot;$BIN_DIR&quot;
+export CYCLE_CONFIG_DIR=&quot;$CONFIG_DIR&quot;
+export CYCLE_SCRIPTS_DIR=&quot;$SCRIPTS_DIR&quot;
+export PATH=&quot;$BIN_DIR:\$PATH&quot;
+case &quot;\${1:-}&quot; in
+  start)   exec &quot;\$CYCLE_ROOT/scripts/cycle_tmux.sh&quot; ;;
+  stop)    exec &quot;\$CYCLE_ROOT/scripts/cycle_tmux.sh&quot; kill ;;
+  status)  exec &quot;\$CYCLE_ROOT/scripts/cycle_tmux.sh&quot; status ;;
+  attach)  exec &quot;\$CYCLE_ROOT/scripts/cycle_tmux.sh&quot; attach ;;
+  console) exec &quot;\$BIN_DIR/exec-console&quot; ;;
+  env)     echo &quot;source \$CYCLE_ROOT/cycle-env.sh&quot; ;;
+  *)
+    echo &quot;Cycle Finance — kullanım:&quot;
+    echo &quot;  cycle start     Tüm sistemi tmux ile başlat&quot;
+    echo &quot;  cycle stop      Tüm sistemi durdur&quot;
+    echo &quot;  cycle status    Servis durumları&quot;
+    echo &quot;  cycle attach    Oturuma bağlan&quot;
+    echo &quot;  cycle console   executiond elle komut konsolu&quot;
+    echo &quot;  cycle env       Ortamı yükle (source \$CYCLE_ROOT/cycle-env.sh)&quot;
+    ;;
+esac
+LAUNCH
+  chmod +x &quot;$BIN_DIR/cycle&quot;
+  ok &quot;Başlatıcı oluşturuldu: $BIN_DIR/cycle&quot;
+}
+
+# ── Uygulama menüsü girişi (diğer uygulamalar gibi açılır) ────
+write_icon() {
+  mkdir -p &quot;$PKG_DIR/share/icons&quot;
+  cat &gt; &quot;$PKG_DIR/share/icons/cycle-finance.svg&quot; &lt;&lt;ICONEOF
+&lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;128&quot; height=&quot;128&quot; viewBox=&quot;0 0 128 128&quot;&gt;
+  &lt;rect width=&quot;128&quot; height=&quot;128&quot; rx=&quot;24&quot; fill=&quot;#0a0a0a&quot;/&gt;
+  &lt;text x=&quot;64&quot; y=&quot;52&quot; font-family=&quot;monospace&quot; font-size=&quot;34&quot; font-weight=&quot;bold&quot; text-anchor=&quot;middle&quot; fill=&quot;#00ff41&quot;&gt;▲▼&lt;/text&gt;
+  &lt;rect x=&quot;30&quot; y=&quot;58&quot; width=&quot;10&quot; height=&quot;42&quot; fill=&quot;#00ff41&quot;/&gt;
+  &lt;rect x=&quot;46&quot; y=&quot;70&quot; width=&quot;10&quot; height=&quot;30&quot; fill=&quot;#ff3355&quot;/&gt;
+  &lt;rect x=&quot;62&quot; y=&quot;50&quot; width=&quot;10&quot; height=&quot;50&quot; fill=&quot;#00ff41&quot;/&gt;
+  &lt;rect x=&quot;78&quot; y=&quot;64&quot; width=&quot;10&quot; height=&quot;36&quot; fill=&quot;#ff3355&quot;/&gt;
+  &lt;rect x=&quot;94&quot; y=&quot;44&quot; width=&quot;10&quot; height=&quot;56&quot; fill=&quot;#00ff41&quot;/&gt;
+  &lt;text x=&quot;64&quot; y=&quot;112&quot; font-family=&quot;monospace&quot; font-size=&quot;12&quot; text-anchor=&quot;middle&quot; fill=&quot;#00cc33&quot;&gt;CYCLE FINANCE&lt;/text&gt;
+&lt;/svg&gt;
+ICONEOF
+  ok &quot;Simge oluşturuldu: $PKG_DIR/share/icons/cycle-finance.svg&quot;
+}
+
+write_desktop() {
+  local apps_dir=&quot;${XDG_DATA_HOME:-$HOME/.local/share}/applications&quot;
+  mkdir -p &quot;$apps_dir&quot;
+  cat &gt; &quot;$apps_dir/cycle-finance.desktop&quot; &lt;&lt;DESKEOF
+[Desktop Entry]
+Type=Application
+Name=Cycle Finance
+GenericName=Kripto Ticaret Sistemi
+Comment=Cycle Finance tmux ortamını başlatır (veri, strateji, execution)
+Exec=$BIN_DIR/cycle start
+Icon=$PKG_DIR/share/icons/cycle-finance.svg
+Terminal=true
+Categories=Finance;Office;
+Keywords=kripto;trade;binance;tmux;
+StartupNotify=false
+DESKEOF
+  chmod +x &quot;$apps_dir/cycle-finance.desktop&quot;
+  if command -v update-desktop-database &gt;/dev/null 2&gt;&amp;1; then
+    update-desktop-database &quot;$apps_dir&quot; 2&gt;/dev/null || true
+  fi
+  ok &quot;Uygulama menüsü girişi: $apps_dir/cycle-finance.desktop&quot;
+}
+
+# ── Paketle ──────────────────────────────────────────────────
+make_package() {
+  local out=&quot;$ROOT/cycle-finance-package.tar.gz&quot;
+  say &quot;Paket oluşturuluyor → $out&quot;
+  tar -czf &quot;$out&quot; -C &quot;$(dirname &quot;$PKG_DIR&quot;)&quot; &quot;$(basename &quot;$PKG_DIR&quot;)&quot;
+  ls -lh &quot;$out&quot;
+  ok &quot;Paket hazır&quot;
+}
+
+# ── Kaldır ───────────────────────────────────────────────────
+uninstall() {
+  if [ -d &quot;$PKG_DIR&quot; ]; then
+    rm -rf &quot;$PKG_DIR&quot;
+    ok &quot;Kurulum kaldırıldı: $PKG_DIR&quot;
+  else
+    warn &quot;Kurulum dizini yok: $PKG_DIR&quot;
+  fi
+}
+
+# ── Ana akış ─────────────────────────────────────────────────
+case &quot;${1:-}&quot; in
+  --uninstall)
+    uninstall
+    exit 0
+    ;;
+  --only-build)
+    check_deps
+    build_all
+    exit 0
+    ;;
+esac
+
+check_deps
+build_all
+setup_dirs
+copy_bins
+copy_assets
+write_env
+write_launcher
+write_icon
+write_desktop
+
+echo &quot;&quot;
+echo &quot;════════════════════════════════════════════════════════&quot;
+echo &quot;  ✅  Cycle Finance kuruldu → $PKG_DIR&quot;
+echo &quot;&quot;
+echo &quot;  Başlat  :  $BIN_DIR/cycle start&quot;
+echo &quot;  Durdur  :  $BIN_DIR/cycle stop&quot;
+echo &quot;  Durum   :  $BIN_DIR/cycle status&quot;
+echo &quot;  Ortam   :  source $PKG_DIR/cycle-env.sh&quot;
+echo &quot;════════════════════════════════════════════════════════&quot;
+
+if [ &quot;${1:-}&quot; = &quot;--package&quot; ]; then
+  make_package
+fi
+</code></pre>
+<h3 id="ai-toml_1"><code>ai.toml</code><a class="headerlink" href="#ai-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml"># AI Engine — Cycle Finance yapay zeka katmanı konfigürasyonu.
+# Yol: AI_CONFIG env veya kök dizindeki ai.toml.
+# API anahtarları ENV'de tutulur: OPENAI_API_KEY / ANTHROPIC_API_KEY (.env)
+
+[providers]
+# openai | anthropic | none (none = fail-safe HOLD, LLM çağrılmaz)
+provider = &quot;none&quot;
+openai_model = &quot;gpt-4o-mini&quot;
+anthropic_model = &quot;claude-sonnet-4-20250514&quot;
+temperature = 0.2
+max_tokens = 2048
+timeout_secs = 60
+
+[schedule]
+interval_secs = 60
+symbols = [&quot;BTCUSDT&quot;, &quot;ETHUSDT&quot;, &quot;SOLUSDT&quot;, &quot;HEIUSDT&quot;]
+approval_wait_secs = 60
+
+[execution]
+# paper | live | both | none
+mode = &quot;paper&quot;
+# auto | human (human = /tmp/ai_approve.txt onayı beklenir)
+approval = &quot;auto&quot;
+execd_url = &quot;http://127.0.0.1:3010&quot;
+execd_user = &quot;admin&quot;
+execd_password = &quot;changeme123&quot;
+paper_url = &quot;http://127.0.0.1:8080&quot;
+paper_admin_user = &quot;admin&quot;
+paper_admin_pass = &quot;changeme123&quot;
+# Deterministik emir boyutu üst sınırı (USDT) — LLM'den bağımsız güvenlik ağı.
+max_notional_usdt = 1000
+
+[risk]
+enable_risk_gate = true
+# risk_score &gt;= 0.8 ise emir otomatik reddedilir.
+anomaly_veto = true
+risk_config_path = &quot;risk.toml&quot;
+initial_balance_usdt = 100000
+
+[context]
+price_feed_url = &quot;http://127.0.0.1:3004&quot;
+detect_ms_url = &quot;http://127.0.0.1:3002&quot;
+calc_ind_url = &quot;http://127.0.0.1:3007&quot;
+# İsteğe bağlı haber kaynağı (JSON). Boşsa duygu agent'ı nötr kalır.
+news_feed_url = &quot;&quot;
+indicator_interval = &quot;1m&quot;
+structure_interval = &quot;1m&quot;
+structure_limit = 100
+</code></pre>
+<h3 id="alerts-toml_1"><code>alerts.toml</code><a class="headerlink" href="#alerts-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml"># Sesli uyarı örnek yapılandırması
+# Veri kaynağı: &quot;ring&quot; (DATA terminali) veya &quot;binance&quot; (bağımsız doğrudan WS)
+data_source = &quot;pricefeed&quot;
+
+[[alerts]]
+symbol = &quot;BTCUSDT&quot;
+condition = &quot;above&quot;
+price = 64500
+voice = &quot;Bitcoin 64 bin 500 üzerine çıktı&quot;
+cooldown_sec = 30
+
+[[alerts]]
+symbol = &quot;BTCUSDT&quot;
+condition = &quot;below&quot;
+price = 64000
+voice = &quot;Bitcoin 64 bin altına indi&quot;
+cooldown_sec = 30
+
+[[alerts]]
+symbol = &quot;BTCUSDT&quot;
+condition = &quot;touch&quot;
+price = 64300
+tolerance_pct = 0.002
+cooldown_sec = 20
+
+[[alerts]]
+symbol = &quot;ETHUSDT&quot;
+condition = &quot;cross&quot;
+price = 3200
+cooldown_sec = 60
+
+[[alerts]]
+symbol = &quot;SOLUSDT&quot;
+condition = &quot;above&quot;
+price = 150
+cooldown_sec = 60
+
+[[alerts]]
+symbol = &quot;HEIUSDT&quot;
+condition = &quot;above&quot;
+price = 0.21628
+voice = &quot;HEI 0 virgül 21628 seviyesini yukarı kırdı&quot;
+cooldown_sec = 60
+</code></pre>
+<h3 id="risk-toml_1"><code>risk.toml</code><a class="headerlink" href="#risk-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml"># ── Risk-Engine Yapılandırması ──────────────────────────────────────────
+# Hot path (execution-engine) ve cold path (risk-worker) aynı dosyayı okur.
+# Hot-reload: risk-worker bir sonraki çevrimde mtime değişikliğini yakalar.
+# Varsayılan konum: ./risk.toml (RISK_CONFIG env ile değiştirilebilir).
+
+# ── Genel pozisyon / exposure limitleri ──
+max_position_usdt = 1000            # Tek sembol üst net pozisyon (USDT). 0 = sınırsız
+max_notional_per_order = 500        # Tek emir üst notional (USDT). 0 = sınırsız
+max_gross_exposure_usdt = 3000      # Portföy toplam brüt exposure (USDT). 0 = sınırsız
+max_hhi = 0.5                       # Konsantrasyon üst sınırı (0 = kapalı)
+max_leverage = 3                    # Maksimum kaldıraç (x)
+
+# ── Kayıp limitleri ──
+max_daily_loss_usdt = 50            # Günlük maksimum kayıp (gerçekleşen + gerçekleşmemiş)
+max_drawdown_pct = 0.20             # Maksimum drawdown (0.20 = %20)
+maintenance_margin_rate = 0.005     # Likidasyon fiyatı hesabı için bakım marjı (%0.5)
+
+# ── Emir akışı ──
+max_orders_per_min = 10             # Dakikada maksimum emir (0 = sınırsız)
+stale_mark_ms = 200                 # Mark bayatlık eşiği — aşılırsa fail-closed
+consecutive_rejection_auto_stop = 3 # Ardışık red eşiği → otomatik kill switch
+
+# ── Parametrik / likidite kapıları (worker çıktısına bağlı) ──
+gate_on_parametric_risk = false     # true → worker parametreleri yoksa emir reddedilir
+enable_liquidity_gate = false       # LOB slippage kapısı (depth20 verisi gerekir)
+max_slippage_bps = 50               # Maksimum kabul edilebilir slippage (baz puan)
+
+# Emir gönderimi tamamen engellenen semboller
+blocklist = [&quot;TRXUSDT&quot;, &quot;DOGEUSDT&quot;]
+
+# ── Sembol bazlı override'lar (genel limitleri daraltır) ──
+[symbol.HEIUSDT]
+max_position_usdt = 500
+max_leverage = 5
+
+[symbol.ETHUSDT]
+max_position_usdt = 2000
+max_leverage = 5
+</code></pre>
+<h3 id="cargo-config-toml_1"><code>.cargo/config.toml</code><a class="headerlink" href="#cargo-config-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[env]
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY = &quot;1&quot;
+</code></pre>
+<h3 id="github-workflows-test-suite-yml_1"><code>.github/workflows/test-suite.yml</code><a class="headerlink" href="#github-workflows-test-suite-yml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-yaml">name: Cycle Finance 2.0 Sertifika Testleri
+
+on:
+  pull_request:
+    branches: [ &quot;master&quot; ]
+  schedule:
+    - cron: '0 0 * * *' # Gece yarısı regression
+
+jobs:
+  audit-and-coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Bağımlılık Taraması (cargo-deny)
+      run: |
+        cargo install cargo-deny
+        cargo deny check advisories
+    - name: Line Coverage (tarpaulin %95)
+      run: |
+        cargo install cargo-tarpaulin
+        cargo tarpaulin --ignore-tests --fail-under 95
+
+  unit-and-integration:
+    runs-on: ubuntu-latest
+    needs: audit-and-coverage
+    steps:
+    - uses: actions/checkout@v3
+    - name: Birim ve Entegrasyon Testleri
+      run: cargo test --release
+    - name: Tüm Feature Setleri Derlenebiliyor mu (full + https)
+      run: cargo check --workspace --all-features
+
+  performance-wcet:
+    runs-on: ubuntu-latest
+    needs: unit-and-integration
+    steps:
+    - uses: actions/checkout@v3
+    - name: 750µs Maksimum Tick Gecikme Testi (WCET)
+      run: cargo bench
+
+  # Kaos testleri staging'de GERÇEK Chaos Mesh senaryosu ile tetiklenir.
+  # Varsayılan: cluster erişilemiyorsa adım &quot;skip&quot; ile geçer (CI kırmızıya dönmez),
+  # kubeconfig sağlandığında network-partition + orkestratör kurtarma doğrulanır.
+  chaos-mesh-staging:
+    runs-on: ubuntu-latest
+    needs: performance-wcet
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cluster erişilebilirliği
+      id: cluster
+      run: |
+        if command -v kubectl &gt;/dev/null 2&gt;&amp;1 &amp;&amp; kubectl cluster-info &gt;/dev/null 2&gt;&amp;1; then
+          echo &quot;reachable=true&quot; &gt;&gt; &quot;$GITHUB_OUTPUT&quot;
+        else
+          echo &quot;reachable=false&quot; &gt;&gt; &quot;$GITHUB_OUTPUT&quot;
+          echo &quot;Kaos testleri için cluster yok — staging'de KUBECONFIG ile çalışır.&quot;
+        fi
+    - name: Gerçek Chaos Mesh — Network Partition (10dk maske + kurtarma doğrulama)
+      if: steps.cluster.outputs.reachable == 'true'
+      run: |
+        kubectl apply -f additional-services/k8s/chaos_network_partition.yaml
+        # Orkestratör ve WAL servislerinin partition boyunca ayakta kalması:
+        sleep 30
+        kubectl wait --for=condition=Ready pod -l app=paper-service --timeout=60s
+        # Kaos senaryosunu temizle, ardından iletişimin geri geldiğini doğrula
+        kubectl delete -f additional-services/k8s/chaos_network_partition.yaml --wait=false
+        kubectl rollout status deployment/paper-service --timeout=60s
+
+  # MANİFESTO
+  # &quot;Bu testleri geçmeyen sistem, 20 yıl değil 20 saniye dayanır. Artık kod yazmak kadar, 
+  # bu testleri otomasyona bağlamak da sizin sorumluluğunuzdadır. Mükemmeliyet ancak bu 
+  # kırmızı çizgilerle korunabilir. Test senaryolarını hazırlayın ve 'cargo test --release' 
+  # komutunu bu dokümanın altına imza olarak kazıyın. Başlayın.&quot;
+</code></pre>
+<h3 id="gitignore_1"><code>.gitignore</code><a class="headerlink" href="#gitignore_1" title="Permanent link">&para;</a></h3>
+<pre><code># Generated by Cargo
+# will have compiled files and executables
+debug/
+target/
+
+# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
+# More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
+Cargo.lock
+
+# These are backup files generated by rustfmt
+**/*.rs.bk
+
+# MSVC Windows builds of rustc generate these, which can generally be ignored
+*.pdb
+*.lib
+*.exp
+*.ilk
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+.env
+
+# Paper service runtime artifacts
+data-engine/data/
+paper-*.db
+__pycache__/
+</code></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#e0ecff',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>
+

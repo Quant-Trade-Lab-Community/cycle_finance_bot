@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎯 Strategies Engine — Tam Kaynak + Detaylı Analiz</title>
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.45;
+  }
+  pre.mermaid { background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #0f172a; border-color: #334155; } }
+  code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #1e293b; color: #e2e8f0; } }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #334155; } }
+  th { background: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { th { background: #1e293b; } }
+  h1 { border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.75rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 a, h2 a, h3 a, h4 a { color: inherit; }
+  .headerlink { opacity: 0.35; margin-left: 0.3rem; font-size: 0.8em; }
+  .headerlink:hover { opacity: 1; }
+  .topnav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;
+  }
+  @media (prefers-color-scheme: dark) { .topnav { background: #0f172a; border-color: #334155; } }
+  .topnav a { padding: 0.2rem 0.8rem; border-radius: 6px; background: #e2e8f0; color: inherit; }
+  @media (prefers-color-scheme: dark) { .topnav a { background: #1e293b; } }
+  .topnav a:hover { background: #2563eb; color: white; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 2rem 0; }
+  section.detay { border-top: 4px solid #2563eb; margin-top: 3rem; padding-top: 1rem; }
+
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+<nav class="sitenav"><span class="brand">📚 Cycle Finance Docs</span><a href="index.html">🏠 Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">🏗️ Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html">🏛️ Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html" class="active">🎯 Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">🔧 Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">🤖 AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a></nav>
+<nav class="topnav">
+  <strong>📑 Bölümler:</strong>
+  <a href="#dizin-agac">🌳 Dizin Ağacı</a>
+  <a href="#klasor-ve-dosya-sozlugu">📖 Klasör Sözlüğü</a>
+  <a href="#detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)</a>
+  <a href="#tam-kaynak-kodu">📄 Tam Kaynak Kodu</a>
+</nav>
+
+<h1 id="strategies-engine-tam-kaynak-kodu-detayl-analiz">🎯 Strategies Engine — Tam Kaynak Kodu + Detaylı Analiz<a class="headerlink" href="#strategies-engine-tam-kaynak-kodu-detayl-analiz" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><code>strategies-engine/</code>. Bu doküman dizin ağacını, klasör/dosya sözlüğünü, her dosyanın <strong>tam kaynak kodunu</strong> ve <strong>detaylı analizini</strong> (mermaid akış diyagramlarıyla) içerir. Tarih: 2026-08-09</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#dizin-agac">Dizin Ağacı</a></li>
+<li><a href="#klasor-ve-dosya-sozlugu">Klasör ve Dosya Sözlüğü</a></li>
+<li><a href="#detayl-analiz-mermaid">Detaylı Analiz (mermaid)</a></li>
+<li><a href="#tam-kaynak-kodu">Tam Kaynak Kodu</a></li>
+</ul>
+<hr />
+<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link">&para;</a></h2>
+<pre><code>strategies-engine/
+├── Cargo.toml
+├── mod.rs
+├── trait_def.rs
+    ├── breakout-strategy/Cargo.toml
+        ├── breakout-strategy/src/lib.rs
+        ├── breakout-strategy/src/main.rs
+        ├── breakout-strategy/src/metrics.rs
+            ├── breakout-strategy/src/bin/alerts.rs
+            ├── breakout-strategy/src/bin/listener.rs
+            ├── breakout-strategy/src/bin/risk_analysis.rs
+</code></pre>
+<hr />
+<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><code>strategies-engine/</code> — <strong>Genel amaç:</strong> Strateji katmanı. <code>trait_def.rs</code>'te strateji sözleşmesi, <code>breakout-strategy</code> ise ilk canlı strateji: price-feed ring'inden fiyat okur, detect-ms'ten seviye alır, kırılım kontrolü yapar ve sinyal üretir.
+| Klasör / Dosya | Anlamı |
+|---|---|
+| <code>strategies-engine/</code> | Strateji katmanının kök workspace lib kutusu; <code>Strategy</code> trait arayüzünü tanımlar |
+| <code>strategies-engine/Cargo.toml</code> | Lib manifesti; kütüphaneyi <code>mod.rs</code> üzerinden derler, <code>transport</code> ve workspace <code>rust_decimal</code> bağımlılıklarını ilan eder |
+| <code>strategies-engine/mod.rs</code> | Lib kök modülü; <code>trait_def</code> modülünü dışa açar (tek satırlık modül ağacı) |
+| <code>strategies-engine/trait_def.rs</code> | <code>Signal</code>, <code>FillReport</code> veri tipleri ile tüm stratejilerin uygulaması gereken <code>Strategy</code> trait'ini tanımlar |
+| <code>breakout-strategy/</code> | Kırılım stratejisinin bağımsız binary kutusu; sinyal üretici + metrik/korelasyon/alarm/risk yardımcı araçları |
+| <code>breakout-strategy/Cargo.toml</code> | Binary manifesti; main, listener, alerts, risk_analysis hedeflerini tanımlar ve çalışma zamanı bağımlılıklarını (tokio, reqwest, serde, rusqlite, contracts, transport) ilan eder |
+| <code>breakout-strategy/src/lib.rs</code> | Kutunun lib kökü; <code>metrics</code> mikro-yapı metrik çekirdeğini modül olarak açar |
+| <code>breakout-strategy/src/main.rs</code> | Event-driven kırılım stratejisi: ring'den fiyat okur, detect-ms'ten seviye alır, kırılımı değerlendirir ve BUY/SELL sinyali üretir |
+| <code>breakout-strategy/src/metrics.rs</code> | Kurumsal tick-by-tick mikro-yapı metrik çekirdeği: Lee-Ready, WLOBI, EffDelta, Absorption, aVPIN, Hasbrouck VAR, EfP ve Alpha Basket sinyali |
+| <code>breakout-strategy/src/bin/listener.rs</code> | Veri merkezi izleyicisi: mikro-yapı metrik tablosu + price-feed fiyat korelasyonu + DATA trade hacim korelasyonu, JSON çıktılı |
+| <code>breakout-strategy/src/bin/alerts.rs</code> | <code>alerts.toml</code> yönetim CLI'ı: alarm bloklarını listele/ekle/güncelle/sil (toml el-ayrıştırıcılı) |
+| <code>breakout-strategy/src/bin/risk_analysis.rs</code> | <code>market_data.db</code>'deki trades tablosunu SQL ile özetleyen risk/hacim/volatilite raporlayıcı (watch modlu) |</p>
+</blockquote>
+<hr />
+<h2 id="detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)<a class="headerlink" href="#detayl-analiz-mermaid" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09</p>
+</blockquote>
+<h3 id="strategies-engine-cargo-toml"><code>strategies-engine/Cargo.toml</code><a class="headerlink" href="#strategies-engine-cargo-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Lib kutusunu <code>[lib] path = "mod.rs"</code> ile tanımlar; yani workspace kökünün bu dizini bir kütüphane olarak derlediği paket manifestidir. <code>transport</code> bağımlılığı path ile <code>../cycle-engine/transport</code>'tan alınır (paylaşımlı bellek ring buffer'ları için), <code>rust_decimal</code> ise workspace'te tek sürümde tutulur (HFT'de float yerine ondalık hassasiyeti korumak için). Versiyon 0.1.0 / edition 2021'dir; mantıksal olarak strateji tanımı yalnızca bu iki dış bağımlılığa dayanır — emir/veri katmanlarıyla bağı transport üzerinden kurulur.
+<strong>Neden kullandık:</strong> Workspace düzeninde ortak <code>rust_decimal</code> sürümünü merkezileştirmek; transport ring buffer arayüzünü tek path ile içe almak; kutuyu lib olarak derleyip tüm stratejilerin aynı trait'e bağlanmasını sağlamak.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;strategies-engine&lt;br&gt;(lib: mod.rs)&quot;] --&gt; B[&quot;transport&lt;br&gt;../cycle-engine/transport&quot;]
+    A --&gt; C[&quot;rust_decimal&lt;br&gt;(workspace)&quot;]
+    B --&gt; D[&quot;ring_buffer&lt;br&gt;MarketDataSlot,&lt;br&gt;GenerationalRingBuffer&quot;]
+</pre>
+<h3 id="strategies-engine-mod-rs"><code>strategies-engine/mod.rs</code><a class="headerlink" href="#strategies-engine-mod-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Tek satırlık kök modül dosyasıdır; <code>pub mod trait_def;</code> ile strateji arayüzünü kutu dışına açar. Bir <code>Strategy</code> arayüzü dışında strateji çekirdeğinde başka modül yoktur — alt stratejiler (ör. breakout) kendi kutularında yaşar ve bu lib'i bağımlılık olarak kullanır.
+<strong>Neden kullandık:</strong> Lib kökünü mod.rs olarak ayırmak (Cargo.toml path eşleşmesi); trait tanımını tek modülde tutarak alt stratejilerin <code>use strategies_engine::trait_def::Strategy</code> ile tüketmesini sağlamak.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;mod.rs&lt;br&gt;pub mod trait_def&quot;] --&gt; B[&quot;trait_def.rs&lt;br&gt;Strategy trait + Signal&quot;]
+</pre>
+<h3 id="strategies-engine-trait-def-rs"><code>strategies-engine/trait_def.rs</code><a class="headerlink" href="#strategies-engine-trait-def-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Strateji sözleşmesini kurar. <code>Signal</code> enum'u bir stratejinin karar çıktısını modeller: <code>None</code> (işlem yok), <code>BuyMarket</code>/<code>SellMarket</code> (miktar bazlı piyasa emri), <code>BuyLimit</code>/<code>SellLimit</code> (fiyat+miktar bazlı limit emri) ve <code>CancelAll</code>. <code>FillReport</code> ise gerçekleşen emir bilgisini (order_id, executed_qty, avg_price) taşır. <code>Strategy</code> trait'i <code>Send + Sync</code> olup dört olay güdümlü geri çağrı sunar: <code>on_market_data</code> (ring slot'undan veri geldiğinde), <code>on_timer</code> (zamanlayıcı tick'i, <code>frame_id</code> + süre farkı ile), <code>on_fill</code> (fill raporu geldiğinde) ve <code>reset</code> (durum sıfırlama). Motor bu çağrıları sırayla tetikler, strateji her çağrıda bir <code>Signal</code> döndürür.
+<strong>Neden kullandık:</strong> Tüm stratejilerin tek tip veri/karar arayüzüne bağlanması; olay güdümlü HFT döngüsüne uygun, kilit/engelleme barındırmayan saf <code>Send + Sync</code> sözleşme; emir çeşitlerini (market/limit) tek enum ile taşıyabilme.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;Motor / Ring&quot;] --&gt;|&quot;MarketDataSlot + frame_id&quot;| B[&quot;on_market_data&quot;]
+    B --&gt; C{&quot;Karar?&quot;}
+    C --&gt;|&quot;işlem yok&quot;| D[&quot;Signal::None&quot;]
+    C --&gt;|&quot;piyasa al&quot;| E[&quot;Signal::BuyMarket&lt;br&gt;qty&quot;]
+    C --&gt;|&quot;piyasa sat&quot;| F[&quot;Signal::SellMarket&lt;br&gt;qty&quot;]
+    C --&gt;|&quot;limit emir&quot;| G[&quot;Signal::BuyLimit /&lt;br&gt;SellLimit&lt;br&gt;price + qty&quot;]
+    C --&gt;|&quot;tüm emirleri iptal&quot;| H[&quot;Signal::CancelAll&quot;]
+    A --&gt;|&quot;delta_ns + frame_id&quot;| I[&quot;on_timer&quot;]
+    I --&gt; C
+    J[&quot;FillReport&lt;br&gt;order_id, qty, avg&quot;] --&gt; K[&quot;on_fill&quot;]
+    K --&gt; C
+</pre>
+<h3 id="breakout-strategy-cargo-toml"><code>breakout-strategy/Cargo.toml</code><a class="headerlink" href="#breakout-strategy-cargo-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>breakout-strategy</code> binary kutusunun manifestidir; <code>src/main.rs</code> ana binary (<code>breakout-strategy</code>), diğer yardımcı araçlar (<code>listener.rs</code>, <code>alerts.rs</code>, <code>risk_analysis.rs</code>) <code>src/bin/</code> altında otomatik binary hedefleri olarak derlenir. Bağımlılık seti iki gruba ayrılır: çalışma zamanı servis katmanı (<code>tokio</code>, <code>reqwest</code>, <code>serde</code>, <code>serde_json</code>, <code>chrono</code>, <code>rusqlite</code>) ve çekirdek sözleşmeler (<code>contracts</code> = event/wire kodlama, <code>transport</code> = ring buffer okuma, <code>rust_decimal</code> = hassas fiyat). <code>contracts</code> ve <code>transport</code> workspace path'leriyle (<code>../../cycle-engine/</code>) katmanlar arası bağ kurulur.
+<strong>Neden kullandık:</strong> Çekirdek event tiplerini (<code>contracts::events</code>) ve wire decode'u transport'tan ayrı bir sözleşme katmanına taşımak; tokio async döngü + reqwest REST + rusqlite raporlama ihtiyacını tek kutuda karşılamak; bin'lerin ortak kütüphane (<code>metrics.rs</code>) paylaşımını sağlamak.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;breakout-strategy&quot;] --&gt; B[&quot;main.rs&lt;br&gt;kırılım sinyali&quot;]
+    A --&gt; C[&quot;listener.rs&lt;br&gt;metrik + korelasyon&quot;]
+    A --&gt; D[&quot;alerts.rs&lt;br&gt;toml yönetimi&quot;]
+    A --&gt; E[&quot;risk_analysis.rs&lt;br&gt;SQL risk&quot;]
+    A --&gt; F[&quot;contracts&lt;br&gt;events + wire&quot;]
+    A --&gt; G[&quot;transport&lt;br&gt;GenerationalRingBuffer&quot;]
+    A --&gt; H[&quot;tokio / reqwest / serde / rusqlite / chrono / rust_decimal&quot;]
+</pre>
+<h3 id="breakout-strategy-src-main-rs"><code>breakout-strategy/src/main.rs</code><a class="headerlink" href="#breakout-strategy-src-main-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Event-driven kırılım stratejisinin ana binary'sidir. Bir std thread (<code>spawn_price_reader</code>) paylaşımlı bellekteki price-feed ring'ini (<code>/cycle_finance_pricefeed</code>) sürekli okur, <code>wire::decode</code> ile event'i çözüp sembol eşleşmesi yapar, <code>event_price</code> ile tek fiyatı (Trade→ask öncelikli BookTicker→mark) çıkarır ve mpsc unbounded kanala basar. Tokio actor döngüsü fiyatları 500 ms zaman aşımıyla alır (fiyat daima anlık), beklenen <code>wait_sec</code> (varsayılan 20 dk, <code>/tmp/breakout_wait_sec.txt</code> ile dinamik) dolduğunda <code>analyze_once</code> çağırır: detect-ms (<code>:3002/api/ms</code>) seviyelerini alır, fiyat kaynağını ring→REST price-feed→detect-ms <code>current_price</code> önceliğiyle seçer, <code>evaluate</code> ile kırılımı değerlendirir. <code>evaluate</code> ATS işaretine bakar: ATS&gt;0 iken en yüksek skorlu <code>SH</code> (direnç) seviyesi <code>price &gt; SH</code> ise BUY, ATS&lt;0 iken <code>SL</code> (destek) seviyesi <code>price &lt; SL</code> ise SELL sinyali üretir. <code>--once</code> modu tek değerlendirme yapar; normal modda döngü sonsuzdur. Kod şu an <strong>sinyal üreticidir</strong>: emir açmaz, sadece sembol + yön bilgisini konsola basar; kararın emire dönüşmesi execution/paper-service katmanının işidir.
+<strong>Neden kullandık:</strong> Polling yerine ring'den event-by-event fiyat alarak gecikmeyi düşürmek; fiyat kaynağını üçlü öncelikle (ring→REST→detect-ms) dayanıklı hale getirmek; kırılım mantığını saf test edilebilir <code>evaluate</code> fonksiyonuna ayırarak seviye seçimini (<code>best_level</code>) skorla yapmak; bekleme süresini dosya üzerinden çalışırken değiştirilebilir kılmak.</p>
+<pre class="mermaid">flowchart TD
+    subgraph K2[&quot;Katman 2: Ring Okuyucu (std thread)&quot;]
+        A[&quot;price-feed ring&lt;br&gt;/cycle_finance_pricefeed&quot;] --&gt; B[&quot;read_slot + get_head&quot;]
+        B --&gt; C[&quot;wire::decode&quot;]
+        C --&gt; D{&quot;sembol eşleşti mi?&quot;}
+        D --&gt;|&quot;hayır&quot;| B
+        D --&gt;|&quot;evet&quot;| E[&quot;event_price&lt;br&gt;Trade/BookTicker/FundingRate&quot;]
+        E --&gt; F[&quot;mpsc unbounded&lt;br&gt;tx.send fiyat&quot;]
+    end
+    subgraph ACT[&quot;Actor Döngüsü (tokio)&quot;]
+        G[&quot;rx.recv&lt;br&gt;500ms zaman aşımı&quot;] --&gt; H[&quot;latest_price güncelle&quot;]
+        H --&gt; I{&quot;wait_sec doldu mu?&quot;}
+        I --&gt;|&quot;hayır&quot;| G
+        I --&gt;|&quot;evet&quot;| J[&quot;analyze_once&quot;]
+    end
+    subgraph SERV[&quot;Servis Katmanı&quot;]
+        K[&quot;detect-ms :3002&lt;br&gt;/api/ms?symbol+interval&quot;] --&gt; L[&quot;seviyeler + ATS + trend&quot;]
+        M[&quot;price-feed :3004&lt;br&gt;/api/lastprice (REST)&quot;] --&gt; N[&quot;fiyat seçimi&lt;br&gt;ring öncelikli&quot;]
+        L --&gt; O[&quot;evaluate&quot;]
+        N --&gt; O
+    end
+    J --&gt; K
+    J --&gt; M
+    O --&gt; P{&quot;ATS işareti?&quot;}
+    P --&gt;|&quot;ATS &gt; 0&quot;| Q[&quot;best_level SH&lt;br&gt;direnç&quot;]
+    P --&gt;|&quot;ATS &lt; 0&quot;| R[&quot;best_level SL&lt;br&gt;destek&quot;]
+    P --&gt;|&quot;ATS = 0&quot;| S[&quot;Nötr, sinyal yok&quot;]
+    Q --&gt; T{&quot;price &gt; SH?&quot;}
+    T --&gt;|&quot;evet&quot;| U[&quot;📡 SİNYAL: BUY&lt;br&gt;sembol + yön&quot;]
+    T --&gt;|&quot;hayır&quot;| V[&quot;kırılım yok&quot;]
+    R --&gt; W{&quot;price &lt; SL?&quot;}
+    W --&gt;|&quot;evet&quot;| X[&quot;📡 SİNYAL: SELL&lt;br&gt;sembol + yön&quot;]
+    W --&gt;|&quot;hayır&quot;| V
+    U --&gt; Y[&quot;konsola bas&lt;br&gt;emir açılmaz (sinyal üretici)&quot;]
+    X --&gt; Y
+    Y -.-&gt;|&quot;sonraki katman&lt;br&gt;execution / paper-service&quot;| Z[&quot;emir oluşturma&quot;]
+</pre>
+<h3 id="breakout-strategy-src-lib-rs"><code>breakout-strategy/src/lib.rs</code><a class="headerlink" href="#breakout-strategy-src-lib-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Kutunun kütüphane köküdür; tek <code>pub mod metrics;</code> ifadesiyle mikro-yapı metrik çekirdeğini binary'lere (özellikle <code>listener.rs</code>) açık hale getirir. main.rs doğrudan binary olarak çalıştığı için bu lib yalnızca paylaşılan metrik modülünü barındırır.
+<strong>Neden kullandık:</strong> Metrik çekirdeğinin hem <code>listener</code> hem potansiyel diğer tüketicilerce tek yerden kullanılmasını sağlamak; lib/bin ayrımıyla test ve kütüphane dışa aktarımını kolaylaştırmak.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;lib.rs&quot;] --&gt; B[&quot;metrics.rs&lt;br&gt;SymbolMetrics + CorrSeries + normalized_corr&quot;]
+    B --&gt; C[&quot;listener.rs (bin)&quot;]
+</pre>
+<h3 id="breakout-strategy-src-metrics-rs"><code>breakout-strategy/src/metrics.rs</code><a class="headerlink" href="#breakout-strategy-src-metrics-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Kurumsal tick-by-tick mikro-yapı analiz çekirdeğidir. Her <code>process_tick</code> çağrısı 7 aşamayı sırayla işler: (0) Lee-Ready işaretleme mid'e göre trade yönünü bulur; (1) WLOBI (üstel ağırlıklı emir dengesizliği) ve quote slope likidite mimarisini ölçer; (2) EffDelta + saniyelik delta velocity agresif akışı ölçer; (3) Absorption Ratio pasif alım / agresif satış oranını verir; (4) aVPIN dinamik Parkinson volatilite bazlı hacim bucket'larıyla akış toksisitesini hesaplar; (5) Hasbrouck VAR (OLS: r = α1·x + α2·r_prev) kalıcı/geçici etkiyi ve EfP agresif trade / L2 derinlik oranını verir; (6) Alpha Basket bu metrikleri z-skor benzeri normalleştirip <code>γ</code> ağırlıklarıyla birleştirir, lojistik <code>p_long</code> üretir ve kesin karar kuralıyla (aVPIN≥0.6 → nötr, p_long&gt;0.65 → +1, &lt;0.35 → −1) <code>signal</code> döndürür. Tüm parametreler (<code>MetricsConfig</code>) <code>/tmp/listener_metrics.conf</code> dosyasından hot-reload edilir.
+<strong>Neden kullandık:</strong> Kurumsal yayın metodolojilerini tek sembol durumunda akümüle edip tek <code>refresh</code> ile tazelemek; çekirdek ve korelasyon ayrımı (CorrSeries + normalized Pearson) ile çok sembollü panel kurmak; tüm metrikleri karar sinyaliyle (Long/Short/Nötr) tek bir sayıya indirmek.</p>
+<pre class="mermaid">flowchart TD
+    subgraph A[&quot;Aşama 0-1: Likidite&quot;]
+        B[&quot;process_tick&lt;br&gt;price, qty, is_buyer_maker&quot;] --&gt; C[&quot;Lee-Ready&lt;br&gt;mid'e göre işaret&quot;]
+        C --&gt; D[&quot;WLOBI +&lt;br&gt;quote slope&quot;]
+    end
+    subgraph E[&quot;Aşama 2-3: Akış&quot;]
+        C --&gt; F[&quot;EffDelta +&lt;br&gt;ΔV (velocity)&quot;]
+        C --&gt; G[&quot;Absorption +&lt;br&gt;IDM&quot;]
+    end
+    subgraph H[&quot;Aşama 4-5: Toksisite&quot;]
+        C --&gt; I[&quot;aVPIN&lt;br&gt;Parkinson vol + bucket&quot;]
+        C --&gt; J[&quot;Hasbrouck VAR&lt;br&gt;kalıcı/geçici etki&quot;]
+        J --&gt; K[&quot;EfP&lt;br&gt;qty / L2 derinlik&quot;]
+    end
+    D --&gt; L[&quot;Alpha Basket&lt;br&gt;γ ağırlıkları&quot;]
+    F --&gt; L
+    G --&gt; L
+    I --&gt; L
+    K --&gt; L
+    L --&gt; M[&quot;p_long lojistik&quot;]
+    M --&gt; N{&quot;Karar kuralı?&quot;}
+    N --&gt;|&quot;aVPIN &gt;= 0.6&quot;| O[&quot;signal = 0&lt;br&gt;toksik, pasif&quot;]
+    N --&gt;|&quot;p_long &gt; 0.65&quot;| P[&quot;signal = +1&lt;br&gt;▲ LONG&quot;]
+    N --&gt;|&quot;p_long &lt; 0.35&quot;| Q[&quot;signal = -1&lt;br&gt;▼ SHORT&quot;]
+    N --&gt;|&quot;diğer&quot;| R[&quot;signal = 0&lt;br&gt;Nötr&quot;]
+</pre>
+<h3 id="breakout-strategy-src-bin-listener-rs"><code>breakout-strategy/src/bin/listener.rs</code><a class="headerlink" href="#breakout-strategy-src-bin-listener-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Veri merkezi izleyici binary'sidir. Ana thread DATA ring'ini (<code>/dev/shm/cycle_finance_ring</code>) 160k kapasiteyle okur, <code>wire::decode</code> sonrası <code>alerts.toml</code> sembol listesinden (HEIUSDT her zaman eklenir) geçenler için <code>SymbolMetrics</code> tutar; <code>Trade</code> → <code>process_tick</code> + hacim korelasyon serisi, <code>Orderbook</code> → ilk 5 kademe derinliği (<code>update_depth</code> + <code>refresh</code>) işler. Ayrı thread (<code>spawn_price_corr_thread</code>) <code>:3004/api/lastprice</code>'tan 200 ms'de bir fiyat çekip fiyat korelasyon serilerine yazar. Her 2 sn'de bir <code>render</code> iki korelasyon matrisini (fiyat ve hacim, normalize Pearson) + mikro-yapı metrik tablosunu çizer ve <code>/tmp/listener_metrics.json</code>'a yazar. Pencere süreleri conf dosyasından hot-reload edilir.
+<strong>Neden kullandık:</strong> Trade + derinlik + REST fiyatını tek ekranda birleştirip semboller arası fiyat/hacim korelasyonunu normalize 0-1 çizdirmek; izleyiciyi ayrı binary yaparak ana stratejiyi etkilemeden çalıştırmak; konsol + JSON çift çıktı ile otomasyona uygunluk sağlamak.</p>
+<pre class="mermaid">flowchart TD
+    subgraph A[&quot;Veri Kaynakları&quot;]
+        B[&quot;DATA ring&lt;br&gt;/dev/shm/cycle_finance_ring&quot;] --&gt; C[&quot;read_slot + wire::decode&quot;]
+        D[&quot;price-feed :3004&lt;br&gt;lastprice&quot;] --&gt; E[&quot;spawn_price_corr_thread&lt;br&gt;200ms periyot&quot;]
+    end
+    C --&gt; F{&quot;Event türü?&quot;}
+    F --&gt;|&quot;Trade&quot;| G[&quot;process_tick&lt;br&gt;Lee-Ready → tüm metrikler&quot;]
+    G --&gt; H[&quot;vol_series&lt;br&gt;hacim CorrSeries&quot;]
+    F --&gt;|&quot;Orderbook&quot;| I[&quot;ilk 5 kademe&lt;br&gt;update_depth + refresh&quot;]
+    E --&gt; J[&quot;price_series&lt;br&gt;fiyat CorrSeries&quot;]
+    G --&gt; K[&quot;SymbolMetrics&lt;br&gt;TPS/WLOBI/EFFΔ/aVPIN/...&quot;]
+    I --&gt; K
+    K --&gt; L{&quot;2 sn doldu mu?&quot;}
+    L --&gt;|&quot;evet&quot;| M[&quot;render&lt;br&gt;metrik tablosu&quot;]
+    M --&gt; N[&quot;fiyat korelasyon matrisi&lt;br&gt;normalized_corr 0-1&quot;]
+    M --&gt; O[&quot;hacim korelasyon matrisi&quot;]
+    M --&gt; P[&quot;/tmp/listener_metrics.json&lt;br&gt;yaz&quot;]
+    L --&gt;|&quot;hayır&quot;| C
+</pre>
+<h3 id="breakout-strategy-src-bin-alerts-rs"><code>breakout-strategy/src/bin/alerts.rs</code><a class="headerlink" href="#breakout-strategy-src-bin-alerts-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>alerts.toml</code>'u yöneten CLI aracıdır. <code>parse_blocks</code> dosyayı satır satır okuyup <code>[[alerts]]</code> bloklarını <code>AlertBlock</code> yapısına ayrıştırır (başlık satırlarını korur). Komutlar: <code>list</code> mevcut alarmları tablo halinde gösterir; <code>add</code> --symbol/--condition/--price (opsiyonel --tolerance/--voice/--cooldown) ile yeni blok ekler; <code>update</code> --old-price eşleşen bloğu günceller; <code>remove</code> eşleşen bloğu siler. <code>write_config</code> başlığı koruyup blokları <code>render_block</code> ile geri yazar; semboller büyük, koşullar küçük harfe normalleştirilir.
+<strong>Neden kullandık:</strong> Alarm yönetimini toml parse kütüphanesine bağımlı olmadan küçük bir CLI ile otomasyona açmak; Python muadili (<code>scripts/alerts_cli.py</code>) ile işlev eşitliği sağlarken ek binary derlemesi sunmak; yanlış eşleşmede hata kodu (exit 1) ile güvenli işlem yapmak.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;main&lt;br&gt;argv komut&quot;] --&gt; B{&quot;Komut?&quot;}
+    B --&gt;|&quot;list&quot;| C[&quot;parse_blocks + listele&quot;]
+    B --&gt;|&quot;add&quot;| D[&quot;parametre doğrula&lt;br&gt;--symbol/--condition/--price&quot;]
+    B --&gt;|&quot;update&quot;| E[&quot;--old-price eşle&lt;br&gt;blok bul&quot;]
+    B --&gt;|&quot;remove&quot;| F[&quot;filtrele&lt;br&gt;eşleşen bloğu sil&quot;]
+    D --&gt; G[&quot;normalize&lt;br&gt;sym büyük / cond küçük&quot;]
+    G --&gt; H[&quot;blok ekle&quot;]
+    H --&gt; I[&quot;write_config&lt;br&gt;header korunur&quot;]
+    E --&gt; I
+    F --&gt; I
+    C --&gt; J[&quot;konsol tablosu&quot;]
+    I --&gt; J
+    E --&gt; K{&quot;eşleşme yok?&quot;}
+    K --&gt;|&quot;evet&quot;| L[&quot;exit 1&quot;]
+    F --&gt; K
+</pre>
+<h3 id="breakout-strategy-src-bin-risk-analysis-rs"><code>breakout-strategy/src/bin/risk_analysis.rs</code><a class="headerlink" href="#breakout-strategy-src-bin-risk-analysis-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>data-engine/data/market_data.db</code> (rusqlite) içindeki <code>trades</code> tablosunu tek SQL ile özetler: sembol bazında işlem sayısı, hacim (Σ price×qty), min/max fiyat; <code>cnt &gt; 50</code> filtresiyle en çok işlem gören 15 pariteyi hacme göre sıralı gösterir. Volatilite yüzdesi <code>(max−min)/min×100</code> formülüyle hesaplanır ve en yüksek riskli 10 parite ayrı tabloda listelenir. <code>--watch</code> modunda ekran temizlenmeden imleç başa alınarak <code>WATCH_SEC</code> (varsayılan 5 sn) periyodla yenilenir (tmux RISK paneli için titreşimsiz).
+<strong>Neden kullandık:</strong> Ham trade verisini SQL toplamıyla hızlı özetleyip risk dağılımını tablolaştırmak; <code>--watch</code> ile tmux'ta canlı panel olarak kullanmak; veri yetersizse sessizce uyarı verip uygulamayı çökertmemek.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;main&quot;] --&gt; B{&quot;--watch mı?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;render&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;temizle + render&lt;br&gt;imleç başta&quot;]
+    C --&gt; E[&quot;SQL GROUP BY symbol&lt;br&gt;count, volume, min, max&quot;]
+    E --&gt; F[&quot;cnt &gt; 50 filtre&lt;br&gt;ORDER BY volume DESC&quot;]
+    F --&gt; G[&quot;volatilite %&lt;br&gt;max-min üzerinden&quot;]
+    G --&gt; H[&quot;en çok işlem gören&lt;br&gt;15 parite&quot;]
+    G --&gt; I[&quot;en yüksek risk&lt;br&gt;10 parite&quot;]
+    D --&gt; J[&quot;sleep WATCH_SEC&lt;br&gt;varsayılan 5 sn&quot;]
+    J --&gt; D
+</pre>
+<hr />
+<h2 id="ozet">Özet<a class="headerlink" href="#ozet" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Analiz edilen dosya sayısı:</strong> 10 (2 × Cargo.toml, mod.rs, trait_def.rs, lib.rs, main.rs, metrics.rs, listener.rs, alerts.rs, risk_analysis.rs)</li>
+<li><strong>Mermaid diyagramı sayısı:</strong> 10 (her dosya için 1)</li>
+<li><strong>Ayrıca incelenen referanslar:</strong> <code>transport::ring_buffer</code> (MarketDataSlot, GenerationalRingBuffer), <code>contracts::events</code> (EventType, wire::decode) — motorun akışını doğrulamak için.</li>
+</ul>
+<hr />
+<h2 id="tam-kaynak-kodu">📄 Tam Kaynak Kodu<a class="headerlink" href="#tam-kaynak-kodu" title="Permanent link">&para;</a></h2>
+<h3 id="strategies-engine-cargo-toml_1"><code>strategies-engine/Cargo.toml</code><a class="headerlink" href="#strategies-engine-cargo-toml_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[package]
+name = &quot;strategies-engine&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+path = &quot;mod.rs&quot;
+
+[dependencies]
+transport = { path = &quot;../cycle-engine/transport&quot; }
+rust_decimal = { workspace = true }
+</code></pre>
+<h3 id="strategies-engine-mod-rs_1"><code>strategies-engine/mod.rs</code><a class="headerlink" href="#strategies-engine-mod-rs_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">pub mod trait_def;
+</code></pre>
+<h3 id="strategies-engine-trait-def-rs_1"><code>strategies-engine/trait_def.rs</code><a class="headerlink" href="#strategies-engine-trait-def-rs_1" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">use transport::ring_buffer::MarketDataSlot;
+use rust_decimal::Decimal;
+
+#[derive(Debug, Clone)]
+pub enum Signal {
+    None,
+    BuyMarket { quantity: Decimal },
+    SellMarket { quantity: Decimal },
+    BuyLimit { price: Decimal, quantity: Decimal },
+    SellLimit { price: Decimal, quantity: Decimal },
+    CancelAll,
+}
+
+#[derive(Debug, Clone)]
+pub struct FillReport {
+    pub order_id: String,
+    pub executed_qty: Decimal,
+    pub avg_price: Decimal,
+}
+
+pub trait Strategy: Send + Sync {
+    fn id(&amp;self) -&gt; u32;
+    fn on_market_data(&amp;mut self, frame_id: u64, data: &amp;MarketDataSlot) -&gt; Signal;
+    fn on_timer(&amp;mut self, frame_id: u64, delta_ns: u64) -&gt; Signal;
+    fn on_fill(&amp;mut self, report: &amp;FillReport) -&gt; Signal;
+    fn reset(&amp;mut self);
+}
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-cargo-toml"><code>strategies-engine/breakout-strategy/Cargo.toml</code><a class="headerlink" href="#strategies-engine-breakout-strategy-cargo-toml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[package]
+name = &quot;breakout-strategy&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[[bin]]
+name = &quot;breakout-strategy&quot;
+path = &quot;src/main.rs&quot;
+
+[dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { workspace = true }
+contracts = { path = &quot;../../cycle-engine/contracts&quot; }
+transport = { path = &quot;../../cycle-engine/transport&quot; }
+rust_decimal = { workspace = true }
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-lib-rs"><code>strategies-engine/breakout-strategy/src/lib.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-lib-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! heiusdt — HEIUSDT stratejisi + mikro-yapı metrik çekirdeği.
+
+pub mod metrics;
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-main-rs"><code>strategies-engine/breakout-strategy/src/main.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-main-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! BREAKOUT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
+//!
+//! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
+//! bir REST polling ile uyanıyordu; bu sürüm fiyatı price-feed ring'inden
+//! **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
+//! (varsayılan 20 dakika, `/tmp/breakout_wait_sec.txt` ile dinamik).
+//!
+//! **Sinyal üretici mod**: Emir AÇMAZ. Sadece kırılım algılandığında
+//! sembol + yön (BUY/SELL) bilgisini üretir.
+//!
+//! Akış:
+//! ```text
+//! price-feed ring (/cycle_finance_pricefeed)
+//!   → ring okuyucu std thread (fiyat event'leri)
+//!   → mpsc UnboundedChannel → [actor döngüsü]
+//!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
+//!                                └─ bekleme aralığı dolmuşsa değerlendirme:
+//!                                   detect-ms (:3002) → kırılım → sinyal (sembol+yön)
+//! ```
+
+use contracts::events::{EventType, OwnedEvent};
+use contracts::wire;
+use rust_decimal::prelude::*;
+use serde_json::Value;
+use std::env;
+use std::time::{Duration, Instant};
+use tokio::sync::mpsc;
+use transport::ring_buffer::GenerationalRingBuffer;
+
+const DETECT_MS_URL: &amp;str = &quot;http://127.0.0.1:3002&quot;;
+const PRICE_FEED_URL: &amp;str = &quot;http://127.0.0.1:3004&quot;;
+const WAIT_FILE: &amp;str = &quot;/tmp/breakout_wait_sec.txt&quot;;
+/// Ring'de yeni event yoksa uyanma sınırı — döngü asla tamamen uykuda kalmaz.
+const WAKE_INTERVAL: Duration = Duration::from_millis(500);
+
+struct Config {
+    symbol: String,
+    interval: String,
+    limit: usize,
+    wait_sec: u64,
+    once: bool,
+}
+
+fn env_or(key: &amp;str, default: &amp;str) -&gt; String {
+    env::var(key).unwrap_or_else(|_| default.to_string())
+}
+
+fn load_config() -&gt; Config {
+    let check_every: usize = env_or(&quot;BREAKOUT_CHECK_EVERY&quot;, &quot;20&quot;).parse().unwrap_or(20);
+    let wait_sec: u64 = env_or(&quot;BREAKOUT_WAIT_SEC&quot;, &amp;(check_every * 60).to_string())
+        .parse()
+        .unwrap_or((check_every * 60) as u64);
+    let args: Vec&lt;String&gt; = env::args().collect();
+    Config {
+        symbol: env_or(&quot;BREAKOUT_SYMBOL&quot;, &quot;HEIUSDT&quot;),
+        interval: env_or(&quot;BREAKOUT_INTERVAL&quot;, &quot;1m&quot;),
+        limit: env_or(&quot;BREAKOUT_LIMIT&quot;, &quot;100&quot;).parse().unwrap_or(100),
+        wait_sec,
+        once: args.iter().any(|a| a == &quot;--once&quot;),
+    }
+}
+
+// ── HTTP yardımcıları ────────────────────────────────────────
+async fn http_get(client: &amp;reqwest::Client, url: &amp;str) -&gt; Value {
+    match client.get(url).send().await {
+        Ok(r) =&gt; r.json::&lt;Value&gt;().await.unwrap_or(Value::Null),
+        Err(e) =&gt; serde_json::json!({&quot;error&quot;: e.to_string()}),
+    }
+}
+
+async fn fetch_analysis(client: &amp;reqwest::Client, cfg: &amp;Config) -&gt; Value {
+    let url = format!(
+        &quot;{DETECT_MS_URL}/api/ms?symbol={}&amp;interval={}&amp;limit={}&quot;,
+        cfg.symbol, cfg.interval, cfg.limit
+    );
+    http_get(client, &amp;url).await
+}
+
+async fn fetch_price_feed(client: &amp;reqwest::Client, cfg: &amp;Config) -&gt; (Option&lt;f64&gt;, Option&lt;String&gt;) {
+    let url = format!(&quot;{PRICE_FEED_URL}/api/lastprice/{}&quot;, cfg.symbol);
+    let v = http_get(client, &amp;url).await;
+    if v.get(&quot;error&quot;).is_some() {
+        return (None, v.get(&quot;error&quot;).and_then(|e| e.as_str()).map(|s| s.to_string()));
+    }
+    if let Some(p) = v.pointer(&quot;/price&quot;) {
+        for key in [&quot;last&quot;, &quot;mark&quot;, &quot;index&quot;, &quot;ask&quot;] {
+            if let Some(f) = p.get(key).and_then(|x| x.as_f64()) {
+                if f &gt; 0.0 {
+                    return (Some(f), None);
+                }
+            }
+        }
+    }
+    (None, Some(&quot;price-feed'te fiyat yok&quot;.to_string()))
+}
+
+// ── Seviye seçimi ────────────────────────────────────────────
+fn best_level(levels: &amp;[Value], level_type: &amp;str) -&gt; Option&lt;(f64, f64)&gt; {
+    levels
+        .iter()
+        .filter(|l| l.get(&quot;level_type&quot;).and_then(|x| x.as_str()) == Some(level_type))
+        .filter_map(|l| {
+            let price = l.get(&quot;price&quot;).and_then(|x| x.as_str()).and_then(|s| s.parse::&lt;f64&gt;().ok())?;
+            let score = l.get(&quot;priority_score&quot;).and_then(|x| x.as_str()).and_then(|s| s.parse::&lt;f64&gt;().ok()).unwrap_or(0.0);
+            Some((price, score))
+        })
+        .max_by(|a, b| a.1.partial_cmp(&amp;b.1).unwrap_or(std::cmp::Ordering::Equal))
+}
+
+// ── Kırılım değerlendirme (saf fonksiyon — test edilebilir) ──
+fn evaluate(data: &amp;Value, price: f64) -&gt; (Option&lt;String&gt;, String) {
+    if data.get(&quot;error&quot;).is_some() {
+        return (None, format!(&quot;detect-ms hatası: {}&quot;, data.get(&quot;error&quot;).unwrap()));
+    }
+    let levels = match data.get(&quot;levels&quot;).and_then(|l| l.as_array()) {
+        Some(l) if !l.is_empty() =&gt; l,
+        _ =&gt; return (None, &quot;Seviye yok&quot;.to_string()),
+    };
+
+    let ats: f64 = data.get(&quot;ats&quot;).and_then(|a| a.as_str()).and_then(|s| s.parse().ok()).unwrap_or(0.0);
+    let trend = data.get(&quot;trend_label&quot;).and_then(|t| t.as_str()).unwrap_or(&quot;&quot;);
+    let confluence = data.get(&quot;confluence_index&quot;).and_then(|c| c.as_str()).unwrap_or(&quot;&quot;);
+    let log = format!(&quot;Fiyat={price:.6}  ATS={ats:.4}  Trend={trend}  Confluence=%{confluence}&quot;);
+
+    if ats &gt; 0.0 {
+        match best_level(levels, &quot;SH&quot;) {
+            Some((lv, score)) =&gt; {
+                if price &gt; lv {
+                    (Some(&quot;BUY&quot;.into()), format!(&quot;{log} | 🎯 DİRENC KIRILDI SH={lv} (skor:{score}) → BUY&quot;))
+                } else {
+                    (None, format!(&quot;{log} | Direnc yukarı kırılmadı SH={lv}&quot;))
+                }
+            }
+            None =&gt; (None, format!(&quot;{log} | Direnc yok&quot;)),
+        }
+    } else if ats &lt; 0.0 {
+        match best_level(levels, &quot;SL&quot;) {
+            Some((lv, score)) =&gt; {
+                if price &lt; lv {
+                    (Some(&quot;SELL&quot;.into()), format!(&quot;{log} | 🎯 DESTEK KIRILDI SL={lv} (skor:{score}) → SELL&quot;))
+                } else {
+                    (None, format!(&quot;{log} | Destek aşağı kırılmadı SL={lv}&quot;))
+                }
+            }
+            None =&gt; (None, format!(&quot;{log} | Destek yok&quot;)),
+        }
+    } else {
+        (None, format!(&quot;{log} | Nötr trend&quot;))
+    }
+}
+
+// ── Bekleme süresi (dinamik) ─────────────────────────────────
+fn current_wait_sec(default: u64) -&gt; u64 {
+    if let Ok(content) = std::fs::read_to_string(WAIT_FILE) {
+        if let Ok(v) = content.trim().parse::&lt;u64&gt;() {
+            if v &gt; 0 {
+                return v;
+            }
+        }
+    }
+    default
+}
+
+// ── Ring okuyucu (Katman 2 trans sözleşmesi) ─────────────────
+/// Price-feed ring'indeki ilgili sembolün fiyat event'lerini kanala basar.
+fn spawn_price_reader(symbol: &amp;str, tx: mpsc::UnboundedSender&lt;f64&gt;) {
+    let symbol = symbol.to_ascii_uppercase();
+    std::thread::spawn(move || {
+        let gen_ring = GenerationalRingBuffer::with_name(&quot;/cycle_finance_pricefeed&quot;, 20_000);
+        let mut cursor = gen_ring.get_head();
+        let mut symbol_buf = [0u8; 16];
+        let bytes = symbol.as_bytes();
+        let len = bytes.len().min(16);
+        symbol_buf[..len].copy_from_slice(&amp;bytes[..len]);
+
+        loop {
+            match gen_ring.read_slot(cursor) {
+                Some(slot) =&gt; {
+                    if let Some(ev) = wire::decode(&amp;slot.data[..slot.len as usize]) {
+                        if ev.symbol == symbol_buf {
+                            if let Some(price) = event_price(&amp;ev) {
+                                if tx.send(price).is_err() {
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    cursor += 1;
+                }
+                None =&gt; {
+                    let head = gen_ring.get_head();
+                    if head &gt; cursor {
+                        cursor = head; // üretici arayı kapattı
+                    } else {
+                        std::thread::sleep(std::time::Duration::from_micros(500));
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// Event'ten stratejinin kullanacağı tek fiyatı çıkarır (bridge ile aynı öncelik).
+fn event_price(ev: &amp;OwnedEvent) -&gt; Option&lt;f64&gt; {
+    match &amp;ev.payload {
+        EventType::Trade { price, .. } =&gt; price.to_f64(),
+        EventType::BookTicker { best_ask_price, best_bid_price, .. } =&gt; {
+            let ask = best_ask_price.to_f64()?;
+            if ask &gt; 0.0 {
+                Some(ask)
+            } else {
+                let bid = best_bid_price.to_f64()?;
+                (bid &gt; 0.0).then_some(bid)
+            }
+        }
+        EventType::FundingRate { mark_price, .. } =&gt; mark_price.to_f64(),
+        _ =&gt; None,
+    }
+}
+
+// ── Tek değerlendirme ────────────────────────────────────────
+struct EvalOutcome {
+    ok: bool,
+    msg: String,
+}
+
+async fn analyze_once(client: &amp;reqwest::Client, cfg: &amp;Config, price_override: Option&lt;f64&gt;) -&gt; EvalOutcome {
+    let data = fetch_analysis(client, cfg).await;
+    if data.get(&quot;error&quot;).is_some() {
+        let e = data.get(&quot;error&quot;).unwrap();
+        return EvalOutcome { ok: false, msg: format!(&quot;⚠️ detect-ms erişilemiyor: {e}&quot;) };
+    }
+
+    let (pf_price, pf_err) = fetch_price_feed(client, cfg).await;
+    let price = price_override
+        .filter(|p| *p &gt; 0.0)
+        .or(pf_price)
+        .unwrap_or_else(|| {
+            data.get(&quot;current_price&quot;).and_then(|c| c.as_str()).and_then(|s| s.parse::&lt;f64&gt;().ok()).unwrap_or(0.0)
+        });
+    let (signal, msg) = evaluate(&amp;data, price);
+    let feed_tag = if price_override.is_some() { &quot;ring&quot; } else if pf_err.is_none() { &quot;REST&quot; } else { &quot;detect-ms&quot; };
+
+    let Some(side) = signal else {
+        return EvalOutcome { ok: true, msg: format!(&quot;{msg}&quot;) };
+    };
+
+    EvalOutcome {
+        ok: true,
+        msg: format!(&quot;📡 SİNYAL → Sembol: {} | Yön: {} (fiyat: {feed_tag}) | {msg}&quot;, cfg.symbol, side),
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let cfg = load_config();
+    println!(&quot;══════════════════════════════════════════════════&quot;);
+    println!(&quot;  🎯 BREAKOUT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})&quot;, cfg.symbol, cfg.interval);
+    println!(&quot;  Pencere: {} | Bekleme: {} sn | Kaynak: price-feed ring&quot;, cfg.limit, cfg.wait_sec);
+    println!(&quot;  detect-ms: {DETECT_MS_URL}&quot;);
+    println!(&quot;  📡 MOD: Sinyal üretici (sembol + yön, emir AÇILMAZ)&quot;);
+    println!(&quot;══════════════════════════════════════════════════&quot;);
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .expect(&quot;reqwest client&quot;);
+
+    if cfg.once {
+        let r = analyze_once(&amp;client, &amp;cfg, None).await;
+        println!(&quot;[{}] {}&quot;, timestamp(), r.msg);
+        return;
+    }
+
+    // Event-driven döngü: fiyat anlık (ring), değerlendirme bekleme aralığında.
+    let (tx, mut rx) = mpsc::unbounded_channel::&lt;f64&gt;();
+    spawn_price_reader(&amp;cfg.symbol, tx);
+
+    let mut latest_price: Option&lt;f64&gt; = None;
+    let mut last_eval = Instant::now() - Duration::from_secs(cfg.wait_sec);
+    let mut startup = true;
+
+    loop {
+        let evt = tokio::time::timeout(WAKE_INTERVAL, rx.recv()).await;
+        if let Ok(Some(p)) = evt {
+            latest_price = Some(p);
+        }
+
+        let sec = current_wait_sec(cfg.wait_sec);
+        if startup || last_eval.elapsed().as_secs() &gt;= sec {
+            last_eval = Instant::now();
+            startup = false;
+
+            let r = analyze_once(&amp;client, &amp;cfg, latest_price).await;
+            println!(&quot;[{}] {}&quot;, timestamp(), r.msg);
+            if !r.ok {
+                println!(&quot;  🔄 10 sn sonra yeniden deneniyor...&quot;);
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+            println!(&quot;  😴 {sec} sn ({:.1} dk) bekleniyor... (breakout-wait ile değişir)\n&quot;, sec as f64 / 60.0);
+        }
+    }
+}
+
+fn timestamp() -&gt; String {
+    chrono::Local::now().format(&quot;%H:%M:%S&quot;).to_string()
+}
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-metrics-rs"><code>strategies-engine/breakout-strategy/src/metrics.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-metrics-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Microstructure Metrics — kurumsal tick-by-tick metrik çekirdeği.
+//!
+//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/cycle_finance_ring`). price-feed KULLANILMAZ.
+//!
+//! Aşamalar:
+//!   0. Lee-Ready Signing (trade yönü)
+//!   1. WLOBI + Quote Slope (likidite mimarisi)
+//!   2. EffDelta + Delta Velocity (saldırgan akış)
+//!   3. Absorption Ratio + Iceberg (pasif emilim)
+//!   4. aVPIN (mikro-yapı toksisitesi)
+//!   5. Hasbrouck VAR + EfP (kalıcı/geçici etki)
+//!   6. Alpha Basket (lojistik sinyal)
+
+use std::collections::VecDeque;
+
+// ── Metrik parametreleri (Θ) — shell'den değiştirilebilir ─────
+// /tmp/listener_metrics.conf dosyasından okunur (listenconfig komutu).
+pub const CONFIG_FILE: &amp;str = &quot;/tmp/listener_metrics.conf&quot;;
+
+#[derive(Debug, Clone)]
+pub struct MetricsConfig {
+    pub lambda: f64,           // WLOBI decay
+    pub theta_vol: f64,        // Delta velocity eşiği
+    pub alpha_bucket: f64,     // aVPIN bucket sabiti
+    pub k_abs: usize,          // absorption penceresi (trade)
+    pub n_bucket: usize,       // aVPIN bucket sayısı
+    pub ice_threshold: f64,    // IDM eşiği
+    pub efp_threshold: f64,    // execution footprint eşiği
+    pub noise_corr: f64,       // Lee-Ready gürültü filtresi
+    pub delta_window_sec: usize, // ΔV penceresi (saniye)
+    pub tps_window_sec: usize,   // TPS pencere (saniye)
+    pub corr_price_window_sec: usize, // fiyat korelasyon penceresi (saniye)
+    pub corr_vol_window_sec: usize,   // hacim korelasyon penceresi (saniye)
+    pub gamma: [f64; 6],       // Alpha Basket ağırlıkları
+}
+
+impl Default for MetricsConfig {
+    fn default() -&gt; Self {
+        Self {
+            lambda: 0.015,
+            theta_vol: 2.5,
+            alpha_bucket: 0.75,
+            k_abs: 100,
+            n_bucket: 50,
+            ice_threshold: 1.2,
+            efp_threshold: 0.05,
+            noise_corr: 0.85,
+            delta_window_sec: 60,
+            tps_window_sec: 10,
+            corr_price_window_sec: 5,
+            corr_vol_window_sec: 5,
+            gamma: [0.0, 0.4, -0.3, 0.5, 0.6, -0.35],
+        }
+    }
+}
+
+impl MetricsConfig {
+    /// /tmp/listener_metrics.conf dosyasından parametreleri yükler.
+    /// Format: key = value  (bir satırda bir parametre)
+    pub fn load() -&gt; Self {
+        let mut cfg = Self::default();
+        let content = match std::fs::read_to_string(CONFIG_FILE) {
+            Ok(c) =&gt; c,
+            Err(_) =&gt; return cfg,
+        };
+        for line in content.lines() {
+            let t = line.trim();
+            if t.is_empty() || t.starts_with('#') {
+                continue;
+            }
+            let (k, v) = match t.split_once('=') {
+                Some(x) =&gt; x,
+                None =&gt; continue,
+            };
+            let k = k.trim();
+            let v = v.trim();
+            let f = |d: f64| v.parse::&lt;f64&gt;().unwrap_or(d);
+            match k {
+                &quot;lambda&quot; =&gt; cfg.lambda = f(cfg.lambda),
+                &quot;theta_vol&quot; =&gt; cfg.theta_vol = f(cfg.theta_vol),
+                &quot;alpha_bucket&quot; =&gt; cfg.alpha_bucket = f(cfg.alpha_bucket),
+                &quot;k_abs&quot; =&gt; cfg.k_abs = v.parse::&lt;usize&gt;().unwrap_or(cfg.k_abs),
+                &quot;n_bucket&quot; =&gt; cfg.n_bucket = v.parse::&lt;usize&gt;().unwrap_or(cfg.n_bucket),
+                &quot;ice_threshold&quot; =&gt; cfg.ice_threshold = f(cfg.ice_threshold),
+                &quot;efp_threshold&quot; =&gt; cfg.efp_threshold = f(cfg.efp_threshold),
+                &quot;noise_corr&quot; =&gt; cfg.noise_corr = f(cfg.noise_corr),
+                &quot;delta_window_sec&quot; =&gt; cfg.delta_window_sec = v.parse::&lt;usize&gt;().unwrap_or(cfg.delta_window_sec),
+                &quot;tps_window_sec&quot; =&gt; cfg.tps_window_sec = v.parse::&lt;usize&gt;().unwrap_or(cfg.tps_window_sec),
+                &quot;corr_price_window_sec&quot; =&gt; cfg.corr_price_window_sec = v.parse::&lt;usize&gt;().unwrap_or(cfg.corr_price_window_sec),
+                &quot;corr_vol_window_sec&quot; =&gt; cfg.corr_vol_window_sec = v.parse::&lt;usize&gt;().unwrap_or(cfg.corr_vol_window_sec),
+                &quot;gamma0&quot; =&gt; cfg.gamma[0] = f(cfg.gamma[0]),
+                &quot;gamma1&quot; =&gt; cfg.gamma[1] = f(cfg.gamma[1]),
+                &quot;gamma2&quot; =&gt; cfg.gamma[2] = f(cfg.gamma[2]),
+                &quot;gamma3&quot; =&gt; cfg.gamma[3] = f(cfg.gamma[3]),
+                &quot;gamma4&quot; =&gt; cfg.gamma[4] = f(cfg.gamma[4]),
+                &quot;gamma5&quot; =&gt; cfg.gamma[5] = f(cfg.gamma[5]),
+                _ =&gt; {}
+            }
+        }
+        cfg
+    }
+}
+
+// ── Derinlik kademesi ────────────────────────────────────────
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DepthLevel {
+    pub price: f64,
+    pub qty: f64,
+}
+
+// ── Sembol başına metrik durumu ──────────────────────────────
+pub struct SymbolMetrics {
+    // Lee-Ready
+    prev_price: f64,
+    prev_prev_price: f64,
+    prev_sign: i8,
+    prev_delta: f64,
+    // mid / spread
+    mid: f64,
+    avg_spread: f64,
+    spread_count: u64,
+    // order book (ilk 5 kademe)
+    bids: [DepthLevel; 5],
+    asks: [DepthLevel; 5],
+    // EffDelta
+    pub eff_delta: f64,
+    eff_delta_hist: VecDeque&lt;f64&gt;, // saniyelik
+    last_delta_time: u64,
+    // Absorption
+    trade_signs: VecDeque&lt;(f64, i8)&gt;, // (qty, sign)
+    // aVPIN
+    bucket_volume: f64,
+    bucket_vbuy: VecDeque&lt;f64&gt;,
+    bucket_vsell: VecDeque&lt;f64&gt;,
+    last_park_high: f64,
+    last_park_low: f64,
+    // Hasbrouck VAR (son 200 örnek)
+    var_r: VecDeque&lt;f64&gt;,
+    var_x: VecDeque&lt;f64&gt;,
+    // TPS (trade/saniye) — son tps_window_sec saniyedeki trade sayısı
+    trade_times: VecDeque&lt;u64&gt;,
+    pub tps: f64,
+    // EfP
+    last_depth_total: f64,
+    // sonuçlar
+    pub cfg: MetricsConfig,
+    pub wlobi: f64,
+    pub slope_ask: f64,
+    pub slope_bid: f64,
+    pub delta_velocity: f64,
+    pub absorption: f64,
+    pub idm: f64,
+    pub avpin: f64,
+    pub permanent_impact: f64,
+    pub temporary_impact: f64,
+    pub efp: f64,
+    pub alpha_score: f64,
+    pub p_long: f64,
+    pub signal: i8, // +1 Long, -1 Short, 0 Nötr
+}
+
+impl Default for SymbolMetrics {
+    fn default() -&gt; Self {
+        Self {
+            prev_price: 0.0,
+            prev_prev_price: 0.0,
+            prev_sign: 0,
+            prev_delta: 0.0,
+            mid: 0.0,
+            avg_spread: 0.0,
+            spread_count: 0,
+            bids: [DepthLevel::default(); 5],
+            asks: [DepthLevel::default(); 5],
+            eff_delta: 0.0,
+            eff_delta_hist: VecDeque::new(),
+            last_delta_time: 0,
+            trade_signs: VecDeque::new(),
+            bucket_volume: 0.0,
+            bucket_vbuy: VecDeque::new(),
+            bucket_vsell: VecDeque::new(),
+            last_park_high: 0.0,
+            last_park_low: f64::MAX,
+            var_r: VecDeque::new(),
+            var_x: VecDeque::new(),
+            trade_times: VecDeque::new(),
+            tps: 0.0,
+            last_depth_total: 0.0,
+            cfg: MetricsConfig::load(),
+            wlobi: 0.0,
+            slope_ask: 0.0,
+            slope_bid: 0.0,
+            delta_velocity: 0.0,
+            absorption: 0.0,
+            idm: 0.0,
+            avpin: 0.0,
+            permanent_impact: 0.0,
+            temporary_impact: 0.0,
+            efp: 0.0,
+            alpha_score: 0.0,
+            p_long: 0.5,
+            signal: 0,
+        }
+    }
+}
+
+impl SymbolMetrics {
+    /// Config dosyasını yeniden yükler (shell'den değiştirilen parametreleri uygular)
+    pub fn reload_config(&amp;mut self) {
+        self.cfg = MetricsConfig::load();
+        // Pencere sınırlarını yeni değerlere kırp
+        while self.eff_delta_hist.len() &gt; self.cfg.delta_window_sec {
+            self.eff_delta_hist.pop_front();
+        }
+        while self.trade_signs.len() &gt; self.cfg.k_abs {
+            self.trade_signs.pop_front();
+        }
+        while self.bucket_vbuy.len() &gt; self.cfg.n_bucket {
+            self.bucket_vbuy.pop_front();
+        }
+        while self.bucket_vsell.len() &gt; self.cfg.n_bucket {
+            self.bucket_vsell.pop_front();
+        }
+    }
+    // ══ AŞAMA 0: Lee-Ready Signing ═══════════════════════════
+    pub fn lee_ready_sign(&amp;mut self, price: f64) -&gt; i8 {
+        let mid = self.mid;
+        let sign = if price &gt; mid {
+            1
+        } else if price &lt; mid {
+            -1
+        } else if self.prev_delta != 0.0 {
+            self.prev_sign
+        } else {
+            // Tick rule: sign(P_t - P_{t-2})
+            if price &gt; self.prev_prev_price { 1 } else if price &lt; self.prev_prev_price { -1 } else { 0 }
+        } as i8;
+
+        self.prev_delta = price - self.prev_price;
+        self.prev_prev_price = self.prev_price;
+        self.prev_price = price;
+        self.prev_sign = sign;
+        sign
+    }
+
+    // ══ Order book güncelleme (ilk 5 kademe) ═════════════════
+    pub fn update_depth(&amp;mut self, bids: &amp;[DepthLevel], asks: &amp;[DepthLevel]) {
+        for i in 0..5 {
+            self.bids[i] = bids.get(i).copied().unwrap_or_default();
+            self.asks[i] = asks.get(i).copied().unwrap_or_default();
+        }
+        // Top of book → mid + spread
+        let b0 = self.bids[0].price;
+        let a0 = self.asks[0].price;
+        if b0 &gt; 0.0 &amp;&amp; a0 &gt; 0.0 {
+            self.mid = (b0 + a0) / 2.0;
+            let spread = a0 - b0;
+            self.avg_spread = (self.avg_spread * self.spread_count as f64 + spread) / (self.spread_count + 1) as f64;
+            self.spread_count += 1;
+        }
+        // EfP paydası: ilk 5 kademe toplam derinlik
+        self.last_depth_total = self.bids.iter().map(|l| l.qty).sum::&lt;f64&gt;()
+            + self.asks.iter().map(|l| l.qty).sum::&lt;f64&gt;();
+    }
+
+    // ══ AŞAMA 1: WLOBI ═══════════════════════════════════════
+    pub fn compute_wlobi(&amp;mut self) -&gt; f64 {
+        // ω_i = e^(-λ·i) — kademe derinliği yaşam süresi vekili
+        let mut w_bid = 0.0;
+        let mut w_ask = 0.0;
+        for i in 0..5 {
+            let w = (-self.cfg.lambda * (i as f64 + 1.0)).exp();
+            w_bid += w * self.bids[i].qty;
+            w_ask += w * self.asks[i].qty;
+        }
+        let denom = w_ask + w_bid;
+        self.wlobi = if denom &gt; 0.0 { (w_ask - w_bid) / denom } else { 0.0 };
+        self.wlobi
+    }
+
+    // Quote Slope: (ln V1 - ln V5) / (P5 - P1)
+    pub fn compute_slopes(&amp;mut self) {
+        let (v1a, v5a, p1a, p5a) = (
+            self.asks[0].qty.max(1e-12),
+            self.asks[4].qty.max(1e-12),
+            self.asks[0].price,
+            self.asks[4].price,
+        );
+        let (v1b, v5b, p1b, p5b) = (
+            self.bids[0].qty.max(1e-12),
+            self.bids[4].qty.max(1e-12),
+            self.bids[0].price,
+            self.bids[4].price,
+        );
+        self.slope_ask = if (p5a - p1a).abs() &gt; 1e-12 { (v1a.ln() - v5a.ln()) / (p5a - p1a) } else { 0.0 };
+        self.slope_bid = if (p5b - p1b).abs() &gt; 1e-12 { (v1b.ln() - v5b.ln()) / (p5b - p1b) } else { 0.0 };
+    }
+
+    // ══ AŞAMA 2: EffDelta + Delta Velocity ═══════════════════
+    pub fn update_eff_delta(&amp;mut self, price: f64, qty: f64, sign: i8, ts_ms: u64) {
+        let s_eff = 2.0 * (price - self.mid).abs();
+        let s_bar = if self.avg_spread &gt; 0.0 { self.avg_spread } else { s_eff.max(1e-12) };
+        let delta_contribution = (sign as f64) * qty * (s_eff / s_bar);
+        self.eff_delta += delta_contribution;
+
+        // Saniyelik velocity
+        let sec = ts_ms / 1000;
+        if sec != self.last_delta_time {
+            if self.eff_delta_hist.len() &gt;= self.cfg.delta_window_sec {
+                self.eff_delta_hist.pop_front();
+            }
+            self.eff_delta_hist.push_back(self.eff_delta);
+            self.last_delta_time = sec;
+        }
+        if self.eff_delta_hist.len() &gt;= 2 {
+            let prev = *self.eff_delta_hist.get(self.eff_delta_hist.len() - 2).unwrap();
+            let cur = *self.eff_delta_hist.back().unwrap();
+            self.delta_velocity = cur - prev; // Δt = 1 sn
+        }
+    }
+
+    // ══ AŞAMA 3: Absorption Ratio ════════════════════════════
+    pub fn update_absorption(&amp;mut self, qty: f64, sign: i8) {
+        self.trade_signs.push_back((qty, sign));
+        if self.trade_signs.len() &gt; self.cfg.k_abs {
+            self.trade_signs.pop_front();
+        }
+        let mut buy = 0.0;
+        let mut sell = 0.0;
+        for &amp;(q, s) in &amp;self.trade_signs {
+            if s &gt; 0 { buy += q; } else { sell += q; }
+        }
+        // Abs = pasif alım hacmi / agresif satış hacmi
+        self.absorption = if sell &gt; 0.0 { buy / sell } else { 0.0 };
+    }
+
+    // ══ AŞAMA 4: aVPIN ═══════════════════════════════════════
+    pub fn update_avpin(&amp;mut self, price: f64, qty: f64, sign: i8, ts_ms: u64) {
+        // Parkinson H/L (son saniye içindeki max/min)
+        let sec = ts_ms / 1000;
+        if self.last_park_high == 0.0 {
+            self.last_park_high = price;
+            self.last_park_low = price;
+        }
+        if sec != self.last_delta_time {
+            self.last_park_high = price;
+            self.last_park_low = price;
+        } else {
+            self.last_park_high = self.last_park_high.max(price);
+            self.last_park_low = self.last_park_low.min(price);
+        }
+
+        let h = self.last_park_high.max(price);
+        let l = self.last_park_low.min(price);
+        // Parkinson volatilitesi: sqrt(1/(4·ln2)) · sqrt(avg ln²(H/L))
+        let parkinson = if h &gt; 0.0 &amp;&amp; l &gt; 0.0 &amp;&amp; h &gt; l {
+            let r = (h / l).ln();
+            (1.0 / (4.0 * std::f64::consts::LN_2)).sqrt() * r.abs()
+        } else {
+            0.0
+        };
+
+        if sign &gt; 0 {
+            self.bucket_vbuy.push_back(qty);
+        } else {
+            self.bucket_vsell.push_back(qty);
+        }
+        if self.bucket_vbuy.len() &gt; self.cfg.n_bucket {
+            self.bucket_vbuy.pop_front();
+        }
+        if self.bucket_vsell.len() &gt; self.cfg.n_bucket {
+            self.bucket_vsell.pop_front();
+        }
+
+        // Ortalama trade hacmi (son 1000 trade, bucket listelerinden)
+        let n_trades = (self.bucket_vbuy.len() + self.bucket_vsell.len()).max(1) as f64;
+        let total_vol: f64 = self.bucket_vbuy.iter().sum::&lt;f64&gt;() + self.bucket_vsell.iter().sum::&lt;f64&gt;();
+        let avg_vol = total_vol / n_trades;
+
+        // Dinamik hacim bucket'ı: B_vol = α · σ_parkinson · V̄
+        let b_vol = self.cfg.alpha_bucket * parkinson.max(1e-9) * avg_vol.max(1e-9);
+
+        let sum_buy: f64 = self.bucket_vbuy.iter().sum();
+        let sum_sell: f64 = self.bucket_vsell.iter().sum();
+        let n = self.bucket_vbuy.len().max(self.bucket_vsell.len()).max(1) as f64;
+        self.avpin = (sum_buy - sum_sell).abs() / (n * b_vol.max(1e-9));
+    }
+
+    // ══ AŞAMA 5: Hasbrouck VAR ═══════════════════════════════
+    pub fn update_hasbrouck(&amp;mut self, price: f64, qty: f64, sign: i8) {
+        let r = price.ln() - self.prev_prev_price.ln().max(1e-12).ln();
+        // Basitleştirme: r_t = ln(P_t) - ln(P_{t-1}); prev_price saklanır
+        let r_prev = self.var_r.back().copied().unwrap_or(0.0);
+        let x = (sign as f64) * qty;
+        self.var_r.push_back(r);
+        self.var_x.push_back(x);
+        if self.var_r.len() &gt; 200 {
+            self.var_r.pop_front();
+            self.var_x.pop_front();
+        }
+
+        if self.var_r.len() &lt; 30 {
+            return;
+        }
+        // OLS: r_t = α1·x_t + α2·r_{t-1} + ε
+        let n = self.var_r.len();
+        let (mut s_xx, mut s_xr, mut s_rr, mut s_yr, mut s_yx, mut s_yy) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        for i in 1..n {
+            let xi = self.var_x[i];
+            let r_prev_i = self.var_r[i - 1];
+            let yi = self.var_r[i];
+            s_xx += xi * xi;
+            s_xr += xi * r_prev_i;
+            s_rr += r_prev_i * r_prev_i;
+            s_yr += yi * r_prev_i;
+            s_yx += yi * xi;
+            s_yy += yi * yi;
+        }
+        let denom = s_xx * s_rr - s_xr * s_xr;
+        if denom.abs() &lt; 1e-15 {
+            return;
+        }
+        let alpha1 = (s_yx * s_rr - s_yr * s_xr) / denom;
+        let alpha2 = (s_yy * s_xx - s_yx * s_xr) / denom;
+        // α2'yi regresyon katsayısı olarak düzelt (proxy)
+        let _ = r_prev;
+        self.permanent_impact = alpha1 / (1.0 - alpha2.max(-0.99).min(0.99)).max(1e-9);
+        self.temporary_impact = self.var_r[n - 1] - alpha1 * self.var_x[n - 1] - alpha2 * self.var_r[n - 2];
+    }
+
+    // EfP: agresif trade / toplam L2 derinlik
+    pub fn update_efp(&amp;mut self, qty: f64) {
+        self.efp = if self.last_depth_total &gt; 0.0 { qty / self.last_depth_total } else { 0.0 };
+    }
+
+    // ══ AŞAMA 6: Alpha Basket ════════════════════════════════
+    pub fn compute_signal(&amp;mut self) -&gt; i8 {
+        // Z-skor standardizasyonu (ham değerler → normalize)
+        let z_wlobi = (self.wlobi).tanh();
+        let z_avpin = (self.avpin - 0.5) * 2.0;
+        let z_abs = (self.absorption - 1.0).tanh();
+        let z_effdelta = (self.eff_delta / 1000.0).tanh();
+        let z_perm = (self.permanent_impact / 1e-6).tanh();
+
+        // A_t = γ0 + γ1·(Abs-1) + γ2·(-WLOBI) + γ3·(0.7-aVPIN)
+        //        + γ4·sign(-EffDelta)·1{|ΔV|&lt;θ} - γ5·Perm
+        let not_exhausted = (self.delta_velocity.abs() &lt; self.cfg.theta_vol) as i32 as f64;
+        let a = self.cfg.gamma[0]
+            + self.cfg.gamma[1] * z_abs
+            + self.cfg.gamma[2] * (-z_wlobi)
+            + self.cfg.gamma[3] * (0.7 - z_avpin)
+            + self.cfg.gamma[4] * (-z_effdelta).signum() * not_exhausted
+            - self.cfg.gamma[5] * z_perm;
+
+        self.alpha_score = a;
+        self.p_long = 1.0 / (1.0 + (-a).exp());
+
+        // Kesin karar kuralı
+        if self.avpin &gt;= 0.6 {
+            self.signal = 0; // toksik akışta pasif kal
+        } else if self.p_long &gt; 0.65 {
+            self.signal = 1;
+        } else if self.p_long &lt; 0.35 {
+            self.signal = -1;
+        } else {
+            self.signal = 0;
+        }
+        self.signal
+    }
+
+    // Tüm metrikleri tek adımda tazele
+    pub fn refresh(&amp;mut self) {
+        self.compute_wlobi();
+        self.compute_slopes();
+        self.compute_signal();
+    }
+
+    pub fn process_tick(&amp;mut self, price: f64, qty: f64, is_buyer_maker: bool, ts_ms: u64) {
+        let sign = self.lee_ready_sign(price);
+        self.update_eff_delta(price, qty, sign, ts_ms);
+        self.update_absorption(qty, sign);
+        self.update_avpin(price, qty, sign, ts_ms);
+        self.update_hasbrouck(price, qty, sign);
+        self.update_efp(qty);
+        self.update_tps(ts_ms);
+        let _ = is_buyer_maker; // Lee-Ready yönü is_buyer_maker'ı aşar (mid'e göre)
+        self.refresh();
+    }
+
+    // ══ TPS — saniyedeki trade sayısı ═════════════════════════
+    fn update_tps(&amp;mut self, ts_ms: u64) {
+        self.trade_times.push_back(ts_ms);
+        let window_ms = (self.cfg.tps_window_sec.max(1)) as u64 * 1000;
+        while let Some(&amp;t) = self.trade_times.front() {
+            if ts_ms.saturating_sub(t) &gt; window_ms {
+                self.trade_times.pop_front();
+            } else {
+                break;
+            }
+        }
+        let win = self.cfg.tps_window_sec.max(1) as f64;
+        self.tps = self.trade_times.len() as f64 / win;
+    }
+}
+
+// ══ Korelasyon serisi — pencere bazlı zaman serisi ═════════════
+/// (ts_ms, value) çiftlerini pencere içinde tutar, normalize korelasyon (0-1) hesaplar.
+#[derive(Debug, Clone)]
+pub struct CorrSeries {
+    pub points: VecDeque&lt;(u64, f64)&gt;,
+    window_ms: u64,
+}
+
+impl CorrSeries {
+    pub fn new(window_sec: usize) -&gt; Self {
+        Self {
+            points: VecDeque::new(),
+            window_ms: (window_sec.max(1) as u64) * 1000,
+        }
+    }
+
+    /// pencere süresini güncelle ve eski noktaları kırp
+    pub fn set_window(&amp;mut self, window_sec: usize) {
+        self.window_ms = (window_sec.max(1) as u64) * 1000;
+        self.trim(now_ms());
+    }
+
+    pub fn push(&amp;mut self, ts_ms: u64, value: f64) {
+        self.points.push_back((ts_ms, value));
+        self.trim(ts_ms);
+    }
+
+    fn trim(&amp;mut self, ref_ts: u64) {
+        while let Some(&amp;(t, _)) = self.points.front() {
+            if ref_ts.saturating_sub(t) &gt; self.window_ms {
+                self.points.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Değerleri (korelasyon için) pencere içindeki sırayla döndürür
+    pub fn values(&amp;self) -&gt; Vec&lt;f64&gt; {
+        self.points.iter().map(|&amp;(_, v)| v).collect()
+    }
+}
+
+fn now_ms() -&gt; u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
+
+/// İki seri arasında Pearson korelasyonu. Sonuç [0,1]'e normalize edilir: (r+1)/2.
+/// Yetersiz veri (n&lt;3 veya sabit seri) durumunda 0.0 (ilişkisiz) döndürülür.
+pub fn normalized_corr(a: &amp;[f64], b: &amp;[f64]) -&gt; f64 {
+    let n = a.len().min(b.len());
+    if n &lt; 3 {
+        return 0.0;
+    }
+    let (a, b) = (&amp;a[..n], &amp;b[..n]);
+    let ma = a.iter().sum::&lt;f64&gt;() / n as f64;
+    let mb = b.iter().sum::&lt;f64&gt;() / n as f64;
+    let mut sxy = 0.0;
+    let mut sxx = 0.0;
+    let mut syy = 0.0;
+    for i in 0..n {
+        let dx = a[i] - ma;
+        let dy = b[i] - mb;
+        sxy += dx * dy;
+        sxx += dx * dx;
+        syy += dy * dy;
+    }
+    if sxx &lt; 1e-12 || syy &lt; 1e-12 {
+        return 0.0;
+    }
+    let r = sxy / (sxx.sqrt() * syy.sqrt());
+    (r + 1.0) / 2.0
+}
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-bin-alerts-rs"><code>strategies-engine/breakout-strategy/src/bin/alerts.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-bin-alerts-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! alerts.toml yönetim aracı (Rust) — Python karşılığı: scripts/alerts_cli.py
+//!
+//! Kullanım:
+//!   alerts list
+//!   alerts add --symbol HEIUSDT --condition above --price 0.22 [--voice &quot;...&quot;] [--cooldown 30] [--tolerance 0.0005]
+//!   alerts update --symbol HEIUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice &quot;...&quot;] [--cooldown 30]
+//!   alerts remove --symbol HEIUSDT --condition above --price 0.21628
+
+use std::process::exit;
+
+const CONFIG: &amp;str = concat!(env!(&quot;CARGO_MANIFEST_DIR&quot;), &quot;/../../alerts.toml&quot;);
+
+// ── Basit blok ayrıştırma ────────────────────────────────────
+#[derive(Debug, Clone)]
+struct AlertBlock {
+    symbol: String,
+    condition: String,
+    price: String,
+    tolerance: Option&lt;String&gt;,
+    voice: Option&lt;String&gt;,
+    cooldown: Option&lt;String&gt;,
+}
+
+fn norm_price(v: &amp;str) -&gt; String {
+    match v.trim().parse::&lt;f64&gt;() {
+        Ok(f) =&gt; format!(&quot;{}&quot;, f),
+        Err(_) =&gt; v.trim().to_string(),
+    }
+}
+
+fn parse_blocks(content: &amp;str) -&gt; (Vec&lt;String&gt;, Vec&lt;AlertBlock&gt;) {
+    let mut header = Vec::new();
+    let mut blocks = Vec::new();
+    let mut cur: Option&lt;AlertBlock&gt; = None;
+
+    for line in content.lines() {
+        let t = line.trim();
+        if t.starts_with(&quot;[[alerts]]&quot;) {
+            if let Some(b) = cur.take() {
+                blocks.push(b);
+            }
+            cur = Some(AlertBlock {
+                symbol: String::new(),
+                condition: String::new(),
+                price: String::new(),
+                tolerance: None,
+                voice: None,
+                cooldown: None,
+            });
+            continue;
+        }
+        match &amp;mut cur {
+            Some(b) =&gt; {
+                if t.starts_with(&quot;symbol&quot;) {
+                    b.symbol = val_of(t);
+                } else if t.starts_with(&quot;condition&quot;) {
+                    b.condition = val_of(t);
+                } else if t.starts_with(&quot;price&quot;) {
+                    b.price = val_of(t);
+                } else if t.starts_with(&quot;tolerance_pct&quot;) {
+                    b.tolerance = Some(val_of(t));
+                } else if t.starts_with(&quot;voice&quot;) {
+                    b.voice = Some(val_of(t));
+                } else if t.starts_with(&quot;cooldown_sec&quot;) {
+                    b.cooldown = Some(val_of(t));
+                }
+            }
+            None =&gt; header.push(line.to_string()),
+        }
+    }
+    if let Some(b) = cur.take() {
+        blocks.push(b);
+    }
+    (header, blocks)
+}
+
+fn val_of(line: &amp;str) -&gt; String {
+    let (_, v) = line.split_once('=').unwrap_or((&quot;&quot;, &quot;&quot;));
+    v.trim().trim_matches('&quot;').trim_matches('\'').trim().to_string()
+}
+
+fn render_block(b: &amp;AlertBlock) -&gt; String {
+    let mut out = String::from(&quot;[[alerts]]\n&quot;);
+    out.push_str(&amp;format!(&quot;symbol = \&quot;{}\&quot;\n&quot;, b.symbol));
+    out.push_str(&amp;format!(&quot;condition = \&quot;{}\&quot;\n&quot;, b.condition));
+    out.push_str(&amp;format!(&quot;price = {}\n&quot;, norm_price(&amp;b.price)));
+    if let Some(t) = &amp;b.tolerance {
+        out.push_str(&amp;format!(&quot;tolerance_pct = {}\n&quot;, norm_price(t)));
+    }
+    if let Some(v) = &amp;b.voice {
+        out.push_str(&amp;format!(&quot;voice = \&quot;{}\&quot;\n&quot;, v));
+    }
+    if let Some(c) = &amp;b.cooldown {
+        out.push_str(&amp;format!(&quot;cooldown_sec = {}\n&quot;, c));
+    }
+    out
+}
+
+fn write_config(header: &amp;[String], blocks: &amp;[AlertBlock]) {
+    let mut out = header.join(&quot;\n&quot;);
+    if !out.is_empty() &amp;&amp; !blocks.is_empty() {
+        out.push('\n');
+    }
+    if !blocks.is_empty() {
+        let rendered: Vec&lt;String&gt; = blocks.iter().map(render_block).collect();
+        out.push_str(&amp;rendered.join(&quot;\n&quot;));
+        out.push('\n');
+    }
+    std::fs::write(CONFIG, out).expect(&quot;alerts.toml yazılamadı&quot;);
+}
+
+// ── Komutlar ────────────────────────────────────────────────
+fn cmd_list() {
+    let content = std::fs::read_to_string(CONFIG).unwrap_or_default();
+    let (_, blocks) = parse_blocks(&amp;content);
+    if blocks.is_empty() {
+        println!(&quot;  📭 Alarmsız&quot;);
+        return;
+    }
+    for (i, b) in blocks.iter().enumerate() {
+        let voice = b.voice.clone().unwrap_or_default();
+        let vdesc = if voice.is_empty() { &quot;🔊 beep&quot;.to_string() } else { format!(&quot;🗣️ {voice}&quot;) };
+        let tol = b.tolerance.clone().unwrap_or_else(|| &quot;-&quot;.into());
+        let cd = b.cooldown.clone().unwrap_or_else(|| &quot;-&quot;.into());
+        println!(
+            &quot;  [{}] {:&lt;9} {:&lt;6} fiyat={:&lt;10} tol={} cooldown={}s {}&quot;,
+            i + 1, b.symbol, b.condition, b.price, tol, cd, vdesc
+        );
+    }
+}
+
+fn cmd_add(args: &amp;[String]) {
+    let sym = arg(&amp;args, &quot;--symbol&quot;).unwrap_or_else(|| die(&quot;--symbol gerekli&quot;));
+    let cond = arg(&amp;args, &quot;--condition&quot;).unwrap_or_else(|| die(&quot;--condition gerekli&quot;));
+    let price = arg(&amp;args, &quot;--price&quot;).unwrap_or_else(|| die(&quot;--price gerekli&quot;));
+    let content = std::fs::read_to_string(CONFIG).unwrap_or_default();
+    let (header, mut blocks) = parse_blocks(&amp;content);
+    blocks.push(AlertBlock {
+        symbol: sym.to_uppercase(),
+        condition: cond.to_lowercase(),
+        price: price.to_string(),
+        tolerance: arg(&amp;args, &quot;--tolerance&quot;),
+        voice: arg(&amp;args, &quot;--voice&quot;),
+        cooldown: Some(arg(&amp;args, &quot;--cooldown&quot;).unwrap_or_else(|| &quot;30&quot;.to_string())),
+    });
+    write_config(&amp;header, &amp;blocks);
+    println!(&quot;✅ Eklendi: {} {} {}&quot;, sym.to_uppercase(), cond, price);
+}
+
+fn cmd_update(args: &amp;[String]) {
+    let sym = arg(&amp;args, &quot;--symbol&quot;).unwrap_or_else(|| die(&quot;--symbol gerekli&quot;)).to_uppercase();
+    let cond = arg(&amp;args, &quot;--condition&quot;).unwrap_or_else(|| die(&quot;--condition gerekli&quot;)).to_lowercase();
+    let old = arg(&amp;args, &quot;--old-price&quot;).unwrap_or_else(|| die(&quot;--old-price gerekli&quot;));
+    let content = std::fs::read_to_string(CONFIG).unwrap_or_default();
+    let (header, mut blocks) = parse_blocks(&amp;content);
+    let target = norm_price(&amp;old);
+
+    for b in blocks.iter_mut() {
+        if b.symbol == sym &amp;&amp; b.condition == cond &amp;&amp; norm_price(&amp;b.price) == target {
+            if let Some(p) = arg(&amp;args, &quot;--price&quot;) {
+                b.price = p.to_string();
+            }
+            if let Some(v) = arg(&amp;args, &quot;--voice&quot;) {
+                b.voice = Some(v.to_string());
+            }
+            if let Some(c) = arg(&amp;args, &quot;--cooldown&quot;) {
+                b.cooldown = Some(c.to_string());
+            }
+            if let Some(t) = arg(&amp;args, &quot;--tolerance&quot;) {
+                b.tolerance = Some(t.to_string());
+            }
+            write_config(&amp;header, &amp;blocks);
+            println!(&quot;✅ Güncellendi: {sym} {cond}&quot;);
+            return;
+        }
+    }
+    eprintln!(&quot;❌ Alarm bulunamadı: {sym} {cond} {old}&quot;);
+    exit(1);
+}
+
+fn cmd_remove(args: &amp;[String]) {
+    let sym = arg(&amp;args, &quot;--symbol&quot;).unwrap_or_else(|| die(&quot;--symbol gerekli&quot;)).to_uppercase();
+    let cond = arg(&amp;args, &quot;--condition&quot;).unwrap_or_else(|| die(&quot;--condition gerekli&quot;)).to_lowercase();
+    let price = arg(&amp;args, &quot;--price&quot;).unwrap_or_else(|| die(&quot;--price gerekli&quot;));
+    let content = std::fs::read_to_string(CONFIG).unwrap_or_default();
+    let (header, blocks) = parse_blocks(&amp;content);
+    let target = norm_price(&amp;price);
+    let before = blocks.len();
+    let kept: Vec&lt;AlertBlock&gt; = blocks
+        .into_iter()
+        .filter(|b| !(b.symbol == sym &amp;&amp; b.condition == cond &amp;&amp; norm_price(&amp;b.price) == target))
+        .collect();
+    if kept.len() == before {
+        eprintln!(&quot;❌ Alarm bulunamadı: {sym} {cond} {target}&quot;);
+        exit(1);
+    }
+    write_config(&amp;header, &amp;kept);
+    println!(&quot;✅ Silindi: {sym} {cond} {target}&quot;);
+}
+
+fn arg(args: &amp;[String], name: &amp;str) -&gt; Option&lt;String&gt; {
+    args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
+}
+
+fn die(msg: &amp;str) -&gt; ! {
+    eprintln!(&quot;{msg}&quot;);
+    exit(1);
+}
+
+fn main() {
+    let args: Vec&lt;String&gt; = std::env::args().skip(1).collect();
+    let cmd = args.first().map(|s| s.as_str()).unwrap_or(&quot;list&quot;);
+    match cmd {
+        &quot;list&quot; =&gt; cmd_list(),
+        &quot;add&quot; =&gt; cmd_add(&amp;args[1..]),
+        &quot;update&quot; =&gt; cmd_update(&amp;args[1..]),
+        &quot;remove&quot; =&gt; cmd_remove(&amp;args[1..]),
+        _ =&gt; {
+            eprintln!(&quot;Kullanım: alerts list|add|update|remove&quot;);
+            exit(1);
+        }
+    }
+}
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-bin-listener-rs"><code>strategies-engine/breakout-strategy/src/bin/listener.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-bin-listener-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! LISTENER — DATA MERKEZİ mikro-yapı metrikleri + korelasyon tabloları (Rust).
+//!
+//! Veri kaynakları:
+//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/cycle_finance_ring`): trade/depth + hacim
+//!   - PRICE-FEED (:3004): lastprice (fiyat korelasyonu için)
+//!
+//! Ekran:
+//!   1. Mikro-yapı metrik tablosu (TPS, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP, sinyal)
+//!   2. Fiyat korelasyon tablosu (price-feed lastprice, N sn pencere, normalize 0-1)
+//!   3. Hacim korelasyon tablosu (DATA trade hacmi, N sn pencere, normalize 0-1)
+//!
+//! Pencere süreleri shell'den ayarlanabilir (listenconfig-set):
+//!   corr_price_window_sec, corr_vol_window_sec
+//!
+//! Çıktılar: konsol + /tmp/listener_metrics.json
+
+use breakout_strategy::metrics::{normalized_corr, CorrSeries, DepthLevel, SymbolMetrics};
+use rust_decimal::prelude::ToPrimitive;
+
+use transport::ring_buffer::GenerationalRingBuffer;
+use contracts::events::EventType;
+use serde_json::json;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+const OUT_FILE: &amp;str = &quot;/tmp/listener_metrics.json&quot;;
+const REFRESH_MS: u64 = 2000;
+const PRICE_FEED_URL: &amp;str = &quot;http://127.0.0.1:3004&quot;;
+
+fn decode_symbol(buf: &amp;[u8; 16]) -&gt; String {
+    let len = buf.iter().position(|&amp;c| c == 0).unwrap_or(16);
+    String::from_utf8_lossy(&amp;buf[..len]).to_string().to_uppercase()
+}
+
+/// price-feed'ten periyodik lastprice çeker ve CorrSeries'e yazar.
+fn spawn_price_corr_thread(symbols: Vec&lt;String&gt;, series: Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt;) {
+    std::thread::spawn(move || {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(3))
+            .build()
+            .expect(&quot;reqwest client&quot;);
+        loop {
+            let url = format!(&quot;{PRICE_FEED_URL}/api/lastprice&quot;);
+            if let Ok(resp) = client.get(&amp;url).send() {
+                if let Ok(v) = resp.json::&lt;serde_json::Value&gt;() {
+                    if let Some(prices) = v.get(&quot;prices&quot;).and_then(|p| p.as_object()) {
+                        let now = now_ms();
+                        let mut s = series.lock().unwrap();
+                        for sym in &amp;symbols {
+                            if let Some(p) = prices.get(sym).and_then(|x| x.get(&quot;last&quot;)).and_then(|x| x.as_f64()) {
+                                let e = s.entry(sym.clone()).or_insert_with(|| CorrSeries::new(5));
+                                e.push(now, p);
+                            }
+                        }
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_millis(200));
+        }
+    });
+}
+
+fn now_ms() -&gt; u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
+
+fn main() {
+    println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
+    println!(&quot;  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON&quot;);
+    println!(&quot;  Kaynak: DATA (/dev/shm/cycle_finance_ring) + PRICE-FEED (:3004)&quot;);
+    println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
+
+    let ring = Arc::new(GenerationalRingBuffer::new(160_000));
+    let mut cursor = ring.get_head();
+    let mut symbols: HashMap&lt;String, SymbolMetrics&gt; = HashMap::new();
+
+    let known: Vec&lt;String&gt; = load_symbols();
+
+    // Fiyat korelasyon serileri (price-feed)
+    let price_series: Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt; = Arc::new(Mutex::new(HashMap::new()));
+    spawn_price_corr_thread(known.clone(), price_series.clone());
+
+    // Hacim korelasyon serileri (DATA trade) — sembol → (pencere, değer)
+    let vol_series: Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt; = Arc::new(Mutex::new(HashMap::new()));
+
+    let mut last_render = std::time::Instant::now();
+    let mut tick_count: u64 = 0;
+    let mut depth_count: u64 = 0;
+
+    loop {
+        if let Some(slot) = ring.read_slot(cursor) {
+            if let Some(event) = contracts::wire::decode(&amp;slot.data[..slot.len as usize]) {
+                let sym = decode_symbol(&amp;event.symbol);
+                if !known.iter().any(|k| k == &amp;sym) {
+                    cursor += 1;
+                    continue;
+                }
+                let m = symbols.entry(sym.clone()).or_default();
+
+                match event.payload {
+                    EventType::Trade { price, quantity, timestamp, is_buyer_maker } =&gt; {
+                        let p = price.to_f64().unwrap_or(0.0);
+                        let q = quantity.to_f64().unwrap_or(0.0);
+                        m.process_tick(p, q, is_buyer_maker, timestamp);
+                        // Hacim korelasyonu: trade hacmini pencereye ekle (biriken değer)
+                        {
+                            let mut vs = vol_series.lock().unwrap();
+                            let e = vs.entry(sym.clone()).or_insert_with(|| CorrSeries::new(5));
+                            e.push(now_ms(), q);
+                        }
+                        tick_count += 1;
+                    }
+                    EventType::Orderbook { bids, asks } =&gt; {
+                        let bids_l: Vec&lt;DepthLevel&gt; = bids.iter().take(5)
+                            .map(|(p, q)| DepthLevel { price: p.to_f64().unwrap_or(0.0), qty: q.to_f64().unwrap_or(0.0) })
+                            .collect();
+                        let asks_l: Vec&lt;DepthLevel&gt; = asks.iter().take(5)
+                            .map(|(p, q)| DepthLevel { price: p.to_f64().unwrap_or(0.0), qty: q.to_f64().unwrap_or(0.0) })
+                            .collect();
+                        depth_count += 1;
+                        m.update_depth(&amp;bids_l, &amp;asks_l);
+                        m.refresh();
+                    }
+                    _ =&gt; {}
+                }
+            }
+            cursor += 1;
+        } else {
+            std::thread::sleep(Duration::from_micros(50));
+        }
+
+        if last_render.elapsed().as_millis() as u64 &gt;= REFRESH_MS {
+            for m in symbols.values_mut() {
+                m.reload_config();
+                // korelasyon pencere sürelerini uygula
+                let (pw, vw) = (m.cfg.corr_price_window_sec, m.cfg.corr_vol_window_sec);
+                {
+                    let mut ps = price_series.lock().unwrap();
+                    for e in ps.values_mut() {
+                        e.set_window(pw);
+                    }
+                }
+                {
+                    let mut vs = vol_series.lock().unwrap();
+                    for e in vs.values_mut() {
+                        e.set_window(vw);
+                    }
+                }
+            }
+            render(&amp;symbols, &amp;price_series, &amp;vol_series, tick_count, depth_count);
+            tick_count = 0;
+            depth_count = 0;
+            last_render = std::time::Instant::now();
+        }
+    }
+}
+
+fn load_symbols() -&gt; Vec&lt;String&gt; {
+    let mut syms: Vec&lt;String&gt; = Vec::new();
+    if let Ok(content) = std::fs::read_to_string(concat!(env!(&quot;CARGO_MANIFEST_DIR&quot;), &quot;/../../alerts.toml&quot;)) {
+        for line in content.lines() {
+            let t = line.trim();
+            if let Some(rest) = t.strip_prefix(&quot;symbol&quot;) {
+                if let Some(eq) = rest.find('=') {
+                    let s = rest[eq + 1..].trim().trim_matches('&quot;').trim_matches('\'').trim().to_string();
+                    if !s.is_empty() &amp;&amp; !syms.contains(&amp;s) {
+                        syms.push(s);
+                    }
+                }
+            }
+        }
+    }
+    if !syms.contains(&amp;&quot;HEIUSDT&quot;.to_string()) {
+        syms.push(&quot;HEIUSDT&quot;.to_string());
+    }
+    syms
+}
+
+/// Fiyat/hacim korelasyon matrisini çizer (normalize 0-1).
+fn render_corr(title: &amp;str, symbols: &amp;[String], series: &amp;Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt;) {
+    let s = series.lock().unwrap();
+    println!(&quot;  {title}&quot;);
+    println!(&quot;  {:&lt;9}&quot;, &quot;&quot;);
+    for sym in symbols {
+        print!(&quot;{:&gt;10}&quot;, short(sym));
+    }
+    println!();
+    for a in symbols {
+        print!(&quot;  {:&lt;9}&quot;, short(a));
+        let av = s.get(a).map(|x| x.values()).unwrap_or_default();
+        for b in symbols {
+            let bv = s.get(b).map(|x| x.values()).unwrap_or_default();
+            let c = normalized_corr(&amp;av, &amp;bv);
+            print!(&quot;{:&gt;10.2}&quot;, c);
+        }
+        println!();
+    }
+    println!();
+}
+
+fn short(s: &amp;str) -&gt; String {
+    s.trim_end_matches(&quot;USDT&quot;).to_string()
+}
+
+fn render(symbols: &amp;HashMap&lt;String, SymbolMetrics&gt;,
+          price_series: &amp;Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt;,
+          vol_series: &amp;Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt;,
+          ticks: u64, depth: u64) {
+    print!(&quot;\x1b[2J\x1b[H&quot;);
+    println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
+    println!(&quot;  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON&quot;);
+    println!(&quot;  DATA tick/s: {ticks} | depth/s: {depth} | price-feed: :3004&quot;);
+    println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
+
+    if symbols.is_empty() {
+        println!(&quot;  📭 VERİ BEKLENİYOR — DATA terminali çalışıyor mu?&quot;);
+        return;
+    }
+
+    // ── Mikro-yapı metrik tablosu ──
+    println!(&quot;  {:&lt;9}{:&gt;8}{:&gt;8}{:&gt;8}{:&gt;8}{:&gt;8}{:&gt;8}{:&gt;8}{:&gt;7}{:&gt;8}{:&gt;8}{:&gt;8}&quot;,
+        &quot;SEMBOL&quot;, &quot;TPS&quot;, &quot;WLOBI&quot;, &quot;SLP&quot;, &quot;EFFΔ&quot;, &quot;ΔV&quot;, &quot;ABS&quot;, &quot;aVPIN&quot;, &quot;PERM&quot;, &quot;EfP&quot;, &quot;P(LONG)&quot;, &quot;SİNYAL&quot;);
+    println!(&quot;  {}&quot;, &quot;-&quot;.repeat(96));
+    let mut rows: Vec&lt;(&amp;String, &amp;SymbolMetrics)&gt; = symbols.iter().collect();
+    rows.sort_by_key(|(k, _)| k.clone());
+    for (sym, m) in rows {
+        let signal = match m.signal {
+            1 =&gt; &quot;▲ LONG&quot;,
+            -1 =&gt; &quot;▼ SHORT&quot;,
+            _ =&gt; &quot;· NÖTR&quot;,
+        };
+        println!(
+            &quot;  {:&lt;9}{:&gt;8.1}{:&gt;8.3}{:&gt;8.2}{:&gt;8.2}{:&gt;8.2}{:&gt;8.2}{:&gt;8.3}{:&gt;8.1e}{:&gt;7.3}{:&gt;8.3}{:&gt;8}&quot;,
+            sym, m.tps, m.wlobi, m.slope_ask, m.eff_delta, m.delta_velocity,
+            m.absorption, m.avpin, m.permanent_impact, m.efp, m.p_long, signal
+        );
+    }
+    println!();
+
+    // ── Fiyat korelasyonu (price-feed lastprice) ──
+    let sym_list: Vec&lt;String&gt; = {
+        let mut v: Vec&lt;String&gt; = symbols.keys().cloned().collect();
+        v.sort();
+        v
+    };
+    render_corr(&amp;format!(&quot;📈 FİYAT KORELASYONU (price-feed lastprice)&quot;),
+                &amp;sym_list, price_series);
+    render_corr(&amp;format!(&quot;📊 HACİM KORELASYONU (DATA trade hacmi)&quot;),
+                &amp;sym_list, vol_series);
+
+    println!(&quot;{}&quot;, &quot;-&quot;.repeat(96));
+    let now = chrono::Local::now().format(&quot;%H:%M:%S&quot;).to_string();
+    println!(&quot;  Son güncelleme: {now} | listenconfig-set corr_price_window_sec / corr_vol_window_sec ile pencere değiştir&quot;);
+
+    // ── JSON çıktısı ──
+    let mut out = serde_json::Map::new();
+    for (sym, m) in &amp;*symbols {
+        out.insert(sym.clone(), json!({
+            &quot;tps&quot;: m.tps,
+            &quot;wlobi&quot;: m.wlobi,
+            &quot;slope_ask&quot;: m.slope_ask,
+            &quot;slope_bid&quot;: m.slope_bid,
+            &quot;eff_delta&quot;: m.eff_delta,
+            &quot;delta_velocity&quot;: m.delta_velocity,
+            &quot;absorption&quot;: m.absorption,
+            &quot;idm&quot;: m.idm,
+            &quot;avpin&quot;: m.avpin,
+            &quot;permanent_impact&quot;: m.permanent_impact,
+            &quot;temporary_impact&quot;: m.temporary_impact,
+            &quot;efp&quot;: m.efp,
+            &quot;alpha_score&quot;: m.alpha_score,
+            &quot;p_long&quot;: m.p_long,
+            &quot;signal&quot;: m.signal,
+        }));
+    }
+    let doc = json!({ &quot;timestamp&quot;: now, &quot;metrics&quot;: out });
+    let _ = std::fs::write(OUT_FILE, serde_json::to_string_pretty(&amp;doc).unwrap_or_default());
+}
+</code></pre>
+<h3 id="strategies-engine-breakout-strategy-src-bin-risk-analysis-rs"><code>strategies-engine/breakout-strategy/src/bin/risk_analysis.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-bin-risk-analysis-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Risk analizi (Rust) — market_data.db'deki trades tablosunu SQL ile özetler.
+//!
+//! --watch  : sabit ekranda her N sn'de yenilenir (tmux RISK paneli için).
+//!           clear YAPILMAZ; imleç başa alınıp üzerine yazılır (titreşimsiz).
+//! WATCH_SEC: yenileme süresi (varsayılan 5 sn).
+
+use rusqlite::Connection;
+use std::time::Duration;
+
+#[derive(Debug)]
+struct Row {
+    symbol: String,
+    count: i64,
+    volume: f64,
+    min: f64,
+    max: f64,
+}
+
+fn render() {
+    let conn = match Connection::open(&quot;data-engine/data/market_data.db&quot;) {
+        Ok(c) =&gt; c,
+        Err(e) =&gt; {
+            eprintln!(&quot;❌ Veritabanı açılamadı: {e}&quot;);
+            return;
+        }
+    };
+
+    let query = &quot;
+        SELECT symbol, COUNT(*) as cnt,
+               SUM(price * quantity) as volume,
+               MIN(price) as min_p,
+               MAX(price) as max_p
+        FROM trades
+        GROUP BY symbol
+        HAVING cnt &gt; 50
+        ORDER BY volume DESC
+    &quot;;
+
+    let mut stmt = match conn.prepare(query) {
+        Ok(s) =&gt; s,
+        Err(_) =&gt; {
+            println!(&quot;Yeterli veri bulunamadı.&quot;);
+            return;
+        }
+    };
+
+    let rows: Vec&lt;Row&gt; = match stmt.query_map([], |r| {
+        Ok(Row {
+            symbol: r.get(0)?,
+            count: r.get(1)?,
+            volume: r.get(2)?,
+            min: r.get(3)?,
+            max: r.get(4)?,
+        })
+    }) {
+        Ok(iter) =&gt; iter.filter_map(|x| x.ok()).collect(),
+        Err(_) =&gt; vec![],
+    };
+
+    if rows.is_empty() {
+        println!(&quot;Yeterli veri bulunamadı.&quot;);
+        return;
+    }
+
+    let rows: Vec&lt;(Row, f64)&gt; = rows
+        .into_iter()
+        .map(|r| {
+            let vol = if r.min &gt; 0.0 { ((r.max - r.min) / r.min) * 100.0 } else { 0.0 };
+            (r, vol)
+        })
+        .collect();
+
+    println!(&quot;=== 📊 PİYASA HACİM VE RİSK DAĞILIMI (EN ÇOK İŞLEM GÖREN 15 PARİTE) ===&quot;);
+    println!(&quot;  {:&lt;10}{:&lt;12}{:&lt;16}{:&lt;14}{:&lt;14}{:&lt;18}&quot;, &quot;PARİTE&quot;, &quot;İŞLEM&quot;, &quot;HACİM_USDT&quot;, &quot;MİN&quot;, &quot;MAKS&quot;, &quot;VOLATİLİTE_%&quot;);
+    for (r, vol) in rows.iter().take(15) {
+        println!(
+            &quot;  {:&lt;10}{:&lt;12}{:&lt;16.2}{:&lt;14.2}{:&lt;14.2}{:&lt;18.2}&quot;,
+            r.symbol, r.count, r.volume, r.min, r.max, vol
+        );
+    }
+
+    let mut sorted: Vec&lt;&amp;(Row, f64)&gt; = rows.iter().collect();
+    sorted.sort_by(|a, b| b.1.partial_cmp(&amp;a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    println!(&quot;\n=== ⚠️ EN YÜKSEK RİSK / VOLATİLİTE İÇEREN 10 PARİTE ===&quot;);
+    println!(&quot;  {:&lt;10}{:&lt;12}{:&lt;18}{:&lt;16}&quot;, &quot;PARİTE&quot;, &quot;İŞLEM&quot;, &quot;VOLATİLİTE_%&quot;, &quot;HACİM_USDT&quot;);
+    for (r, vol) in sorted.iter().take(10) {
+        println!(&quot;  {:&lt;10}{:&lt;12}{:&lt;18.2}{:&lt;16.2}&quot;, r.symbol, r.count, vol, r.volume);
+    }
+}
+
+fn main() {
+    let watch = std::env::args().any(|a| a == &quot;--watch&quot;);
+    let watch_sec: u64 = std::env::var(&quot;WATCH_SEC&quot;)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(5);
+
+    if !watch {
+        render();
+        return;
+    }
+
+    // Sabit ekran: ilk render tam boyutla çizilir; sonrakiler imleç başa alınır.
+    print!(&quot;\x1b[2J\x1b[H&quot;); // başta bir kez temizle
+    render();
+    loop {
+        std::thread::sleep(Duration::from_secs(watch_sec));
+        print!(&quot;\x1b[H&quot;); // imleç en üste
+        render();
+    }
+}
+</code></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#e0ecff',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>
+
