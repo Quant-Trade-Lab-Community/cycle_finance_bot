@@ -43,6 +43,18 @@ pub fn show_splash_with(metin: &str, total_ms: u64) {
     let toplam_harf = chars.len();
     let step_ms = (total / toplam_harf as u64).max(1);
 
+    // Arka planda futuristik ses çal
+    let audio_child = std::process::Command::new("ffplay")
+        .args(&[
+            "-nodisp",
+            "-autoexit",
+            "/home/smhvz/Downloads/UI Sounds_ Futuristic sound effects example.mp3",
+        ])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok();
+
     let font = FIGfont::standard().expect("FIGlet standart font yüklenemedi!");
 
     let (term_width, term_height) = if let Some((Width(w), Height(h))) = terminal_size() {
@@ -111,6 +123,11 @@ pub fn show_splash_with(metin: &str, total_ms: u64) {
     // Enter bekle
     let mut buf = String::new();
     let _ = stdin().read_line(&mut buf);
+
+    // Eğer ses hala çalıyorsa kapat
+    if let Some(mut child) = audio_child {
+        let _ = child.kill();
+    }
 
     let _ = write!(out, "{CLEAR}{RESET}");
     let _ = out.flush();
