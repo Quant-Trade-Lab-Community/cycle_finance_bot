@@ -13,7 +13,7 @@ use std::time::Duration;
 use terminal_size::{terminal_size, Height, Width};
 
 /// Toplam yükleme süresi (ms)
-const LOAD_MS: u64 = 3000;
+const LOAD_MS: u64 = 14721;
 
 /// Varsayılan metin
 const SPLASH_TEXT: &str = "CYCLE FINANCE";
