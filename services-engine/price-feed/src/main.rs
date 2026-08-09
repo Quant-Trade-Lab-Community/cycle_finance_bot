@@ -24,8 +24,8 @@ use flume::Sender;
 use futures_util::{SinkExt, StreamExt};
 use parking_lot::RwLock;
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::events::{EventType, OwnedEvent};
-use proje_core::tick::EventParser;
+use transport::events::{EventType, OwnedEvent};
+use pipeline::tick::EventParser;
 use rust_decimal::prelude::ToPrimitive;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -177,11 +177,11 @@ async fn fetch_premium_index(client: &reqwest::Client, symbols: &[String], state
 
 // ── Parser + ring buffer + state güncelleme — DATA ile aynı ─
 fn ingest(rx: flume::Receiver<Vec<u8>>, ring: Arc<GenerationalRingBuffer>, state: Arc<RwLock<FeedState>>) {
-    let mut validator = proje_core::validator::DataValidator::new();
+    let mut validator = pipeline::validator::DataValidator::new();
     let mut total = 0usize;
     let mut ok = 0usize;
     let mut last_report = std::time::Instant::now();
-    let mut frame_buf = [0u8; contracts::wire::MAX_FRAME_SIZE];
+    let mut frame_buf = [0u8; transport::wire::MAX_FRAME_SIZE];
 
     while let Ok(mut bytes) = rx.recv() {
         if let Some(ev) = EventParser::parse(&mut bytes) {
@@ -189,7 +189,7 @@ fn ingest(rx: flume::Receiver<Vec<u8>>, ring: Arc<GenerationalRingBuffer>, state
                 continue;
             }
             // DATA ile aynı: ring'e typed binary yazılır (ham JSON değil).
-            if let Some(len) = contracts::wire::encode(&ev, &mut frame_buf) {
+            if let Some(len) = transport::wire::encode(&ev, &mut frame_buf) {
                 ring.push(&frame_buf[..len]);
             }
             update_state(&state, &ev);

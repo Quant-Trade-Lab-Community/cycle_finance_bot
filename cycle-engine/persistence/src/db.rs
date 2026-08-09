@@ -2,7 +2,7 @@ use rusqlite::{Connection, params};
 use flume::Receiver;
 use std::time::{Instant, Duration};
 use rust_decimal::prelude::*;
-use contracts::events::{OwnedEvent, EventType};
+use transport::events::{OwnedEvent, EventType};
 
 pub fn start_db_writer(rx: Receiver<OwnedEvent>) {
     std::fs::create_dir_all("data-engine/data").ok();

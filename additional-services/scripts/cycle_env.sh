@@ -196,7 +196,7 @@ cycle-status() {
   "$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh" status
 }
 cycle-build() {
-  cd "$CYCLE_ROOT" && cargo build -p core -p paper-service -p alert-service -p breakout-strategy
+  cd "$CYCLE_ROOT" && cargo build -p engine -p paper-service -p alert-service -p breakout-strategy
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
@@ -260,9 +260,9 @@ _core_mode_pid() {
 data-start() {
   _start_guard
   if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
-  cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
+  cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
   rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
-  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/core" Enter
+  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/engine" Enter
   echo "✅ DATA başlatıldı (sekme 1 — 📡 DATA)"
 }
 data-stop() {
@@ -275,8 +275,8 @@ data-stop() {
 strategy-start() {
   _start_guard
   if _core_mode_pid STRATEGY &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor (pid: $(_core_mode_pid STRATEGY))"; return 1; fi
-  cd "$CYCLE_ROOT" && cargo build -p core 2>&1 | tail -1
-  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && RUN_MODE=STRATEGY ./target/debug/core" Enter
+  cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
+  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && RUN_MODE=STRATEGY ./target/debug/engine" Enter
   echo "✅ STRATEGY başlatıldı (pane 0.0)"
 }
 strategy-stop() {
@@ -549,10 +549,10 @@ pricefeed-log() {
 #  DATA TERMİNALİ
 # ============================================================
 data-live() {
-  cd "$CYCLE_ROOT" && RUN_MODE=DATA ./target/debug/core
+  cd "$CYCLE_ROOT" && RUN_MODE=DATA ./target/debug/engine
 }
 data-backtest() {
-  cd "$CYCLE_ROOT" && RUN_MODE=BACKTEST CSV_PATH="./test_data.csv" ./target/debug/core
+  cd "$CYCLE_ROOT" && RUN_MODE=BACKTEST CSV_PATH="./test_data.csv" ./target/debug/engine
 }
 data-log() {
   tail -f /tmp/data_terminal.log
@@ -625,7 +625,7 @@ paper-cli() {
 # Not: strategy-start/stop artık "SİSTEMLERİ TEK TEK AÇ/KAPAT" bölümünde
 # (arka planda, pid dosyalı). correlation-start foreground çalıştırır.
 correlation-start() {
-  cd "$CYCLE_ROOT" && RUN_MODE=CORRELATION ./target/debug/core
+  cd "$CYCLE_ROOT" && RUN_MODE=CORRELATION ./target/debug/engine
 }
 
 # ============================================================

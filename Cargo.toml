@@ -1,9 +1,11 @@
 [workspace]
 members = [
-    "cycle-engine/contracts",
+    "cycle-engine/gateway",
+    "cycle-engine/pipeline",
     "cycle-engine/transport",
-    "cycle-engine/core",
-    "cycle-engine/adapter",
+    "cycle-engine/engine",
+    "cycle-engine/persistence",
+    "cycle-engine/infra",
     "cycle-engine/splash",
     "additional-services/os-utils",
     "data-engine/cold-storage",

@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rust_decimal = { workspace = true }
 libc = { workspace = true }
 memmap2 = { workspace = true }
-rust_decimal = { workspace = true }

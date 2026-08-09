@@ -1,0 +1,14 @@
+[package]
+name = "infra"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core_affinity = { workspace = true }
+libc = { workspace = true }
+memmap2 = { workspace = true }
+sha3 = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+redis = { workspace = true }
+tokio = { workspace = true }

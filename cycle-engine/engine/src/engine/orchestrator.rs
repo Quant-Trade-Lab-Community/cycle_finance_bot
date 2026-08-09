@@ -3,7 +3,7 @@ use transport::ring_buffer::GenerationalRingBuffer;
 use strategies_engine::trait_def::{Strategy, Signal};
 use risk_engine::engine::RiskEngine;
 use risk_engine::types::{OrderIntent, OrderKind, RiskDecision, Side};
-use crate::timer::tsc::TscTimer;
+use infra::timer::tsc::TscTimer;
 use crossbeam_channel::Sender;
 use rust_decimal::Decimal;
 

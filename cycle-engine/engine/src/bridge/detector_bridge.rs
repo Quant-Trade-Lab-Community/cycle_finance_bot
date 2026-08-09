@@ -11,8 +11,8 @@
 //!   - Geride kalan (overwritten) slotlar `read_slot` generational check ile
 //!     atlanır — hiçbir zaman yarım/tutarsız veri işlenmez.
 
-use contracts::events::{EventType, OwnedEvent};
-use contracts::wire;
+use transport::events::{EventType, OwnedEvent};
+use transport::wire;
 use rust_decimal::Decimal;
 use transport::ring_buffer::{GenerationalRingBuffer, MarketDataSlot};
 use std::time::Duration;

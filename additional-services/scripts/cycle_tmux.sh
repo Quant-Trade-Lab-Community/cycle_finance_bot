@@ -102,7 +102,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p cycle-splash -p core -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p ai-engine -p exec-console 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p cycle-splash -p engine -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p ai-engine -p exec-console 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -148,7 +148,7 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 echo '🧠  STRATEGY TERMİNALİ  (PyO3)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 3
-cd $ROOT && RUN_MODE=STRATEGY $BIN/core
+cd $ROOT && RUN_MODE=STRATEGY $BIN/engine
 " Enter
 
 # ── Pencere 1: LISTENER ─────────────────────────────────────
@@ -181,7 +181,7 @@ tmux send-keys -t "$SESSION:4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📡  DATA TERMİNALİ  (Binance WS)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-cd $ROOT && RUN_MODE=DATA $BIN/core
+cd $ROOT && RUN_MODE=DATA $BIN/engine
 " Enter
 
 # ── Pencere 5: ALERT ────────────────────────────────────────

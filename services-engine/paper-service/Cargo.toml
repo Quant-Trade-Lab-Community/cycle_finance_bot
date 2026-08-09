@@ -6,8 +6,7 @@ default-run = "paper-service"
 
 [dependencies]
 tokio = { workspace = true }
-core = { path = "../../cycle-engine/core" }
-contracts = { path = "../../cycle-engine/contracts" }
+engine = { path = "../../cycle-engine/engine" }
 transport = { path = "../../cycle-engine/transport" }
 execution-engine = { path = "../../execution-engine" }
 rust_decimal = { workspace = true }

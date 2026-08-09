@@ -14,8 +14,8 @@ use rusqlite::{Connection, params};
 use tracing::{warn, info};
 
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::wire;
-use contracts::events::EventType;
+use transport::wire;
+use transport::events::EventType;
 
 use crate::types::{FluidError, FluidResult, InflowData};
 

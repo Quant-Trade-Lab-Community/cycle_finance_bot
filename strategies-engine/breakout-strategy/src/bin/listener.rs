@@ -18,7 +18,7 @@ use breakout_strategy::metrics::{normalized_corr, CorrSeries, DepthLevel, Symbol
 use rust_decimal::prelude::ToPrimitive;
 
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::events::EventType;
+use transport::events::EventType;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -93,7 +93,7 @@ fn main() {
 
     loop {
         if let Some(slot) = ring.read_slot(cursor) {
-            if let Some(event) = contracts::wire::decode(&slot.data[..slot.len as usize]) {
+            if let Some(event) = transport::wire::decode(&slot.data[..slot.len as usize]) {
                 let sym = decode_symbol(&event.symbol);
                 if !known.iter().any(|k| k == &sym) {
                     cursor += 1;

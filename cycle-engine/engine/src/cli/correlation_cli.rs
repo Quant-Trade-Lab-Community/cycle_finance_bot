@@ -3,8 +3,8 @@ use chrono::{Local, TimeZone};
 use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::wire;
-use contracts::events::EventType;
+use transport::wire;
+use transport::events::EventType;
 
 struct TradeRecord {
     timestamp: u64,

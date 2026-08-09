@@ -1,0 +1,10 @@
+[package]
+name = "pipeline"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+transport = { path = "../transport" }
+simd-json = { workspace = true }
+rust_decimal = { workspace = true }
+flume = { workspace = true }

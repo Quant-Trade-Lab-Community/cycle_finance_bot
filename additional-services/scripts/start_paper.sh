@@ -19,7 +19,7 @@ ADMIN_PASS="${PAPER_ADMIN_PASS:-changeme123}"
 INITIAL_USDT="${PAPER_INITIAL_USDT:-10000}"
 
 echo "=== Derleniyor... ==="
-cargo build $BUILD_ARGS -p core -p paper-service
+cargo build $BUILD_ARGS -p engine -p paper-service
 
 echo "=== Eski süreçler kapatılıyor (varsa) ==="
 pkill -x core 2>/dev/null || true
@@ -31,7 +31,7 @@ sleep 1
 rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
 
 echo "=== DATA terminali başlatılıyor (Binance Futures WS) ==="
-setsid env RUN_MODE=DATA "$BIN/core" > /tmp/data_terminal.log 2>&1 < /dev/null &
+setsid env RUN_MODE=DATA "$BIN/engine" > /tmp/data_terminal.log 2>&1 < /dev/null &
 disown
 
 echo "=== paper-service başlatılıyor (REST API + Actor) ==="

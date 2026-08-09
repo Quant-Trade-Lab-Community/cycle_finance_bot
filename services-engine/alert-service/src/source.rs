@@ -17,8 +17,8 @@ pub fn spawn_ring_source(sink: PriceSink) {
 
         loop {
             if let Some(slot) = gen_ring.read_slot(cursor) {
-                if let Some(event) = contracts::wire::decode(&slot.data[..slot.len as usize]) {
-                    use contracts::events::EventType;
+                if let Some(event) = transport::wire::decode(&slot.data[..slot.len as usize]) {
+                    use transport::events::EventType;
                     match event.payload {
                         EventType::Trade { price, .. } => {
                             let sym = decode_symbol(&event.symbol);
@@ -85,8 +85,8 @@ pub async fn spawn_binance_source(sink: PriceSink, symbols: Vec<String>) {
         if let Ok(Message::Text(text)) = msg {
             let bytes = text.into_bytes();
             let mut owned = bytes;
-            if let Some(event) = proje_core::tick::EventParser::parse(&mut owned) {
-                use contracts::events::EventType;
+            if let Some(event) = pipeline::tick::EventParser::parse(&mut owned) {
+                use transport::events::EventType;
                 if let EventType::Trade { price, .. } = event.payload {
                     let sym = decode_symbol(&event.symbol);
                     let _ = sink.send((sym, price));
@@ -113,8 +113,8 @@ pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
 
         loop {
             if let Some(slot) = gen_ring.read_slot(cursor) {
-                if let Some(event) = contracts::wire::decode(&slot.data[..slot.len as usize]) {
-                    use contracts::events::EventType;
+                if let Some(event) = transport::wire::decode(&slot.data[..slot.len as usize]) {
+                    use transport::events::EventType;
                     let sym = decode_symbol(&event.symbol);
                     if sym.is_empty() { cursor += 1; continue; }
                     match event.payload {

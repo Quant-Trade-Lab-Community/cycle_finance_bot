@@ -1,0 +1,42 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "engine"
+
+[features]
+default = ["binance_v5"]
+binance_v5 = []
+binance_v6 = []
+
+[dependencies]
+gateway = { path = "../gateway" }
+pipeline = { path = "../pipeline" }
+transport = { path = "../transport" }
+persistence = { path = "../persistence" }
+infra = { path = "../infra" }
+os-utils = { path = "../../additional-services/os-utils" }
+execution-engine = { path = "../../execution-engine" }
+risk-engine = { path = "../../risk-engine" }
+strategies-engine = { path = "../../strategies-engine" }
+tokio = { workspace = true }
+flume = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam-channel = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+rustyline = { workspace = true }
+chrono = { workspace = true }
+reqwest = { workspace = true }
+dotenvy = { workspace = true }
+
+[dev-dependencies]
+criterion = "0.4"
+proptest = { workspace = true }
+
+[[bench]]
+name = "tick_benchmark"
+harness = false

@@ -18,8 +18,8 @@
 //!                                   detect-ms (:3002) → kırılım → sinyal (sembol+yön)
 //! ```
 
-use contracts::events::{EventType, OwnedEvent};
-use contracts::wire;
+use transport::events::{EventType, OwnedEvent};
+use transport::wire;
 use rust_decimal::prelude::*;
 use serde_json::Value;
 use std::env;

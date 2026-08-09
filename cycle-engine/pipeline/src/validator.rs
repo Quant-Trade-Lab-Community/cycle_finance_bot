@@ -1,4 +1,4 @@
-use contracts::events::{OwnedEvent, EventType};
+use transport::events::{OwnedEvent, EventType};
 use rust_decimal::Decimal;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};

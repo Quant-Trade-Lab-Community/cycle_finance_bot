@@ -12,8 +12,8 @@ serde_json = { workspace = true }
 axum = { workspace = true }
 reqwest = { workspace = true }
 parking_lot = { workspace = true }
-proje_core = { package = "core", path = "../../cycle-engine/core" }
-contracts = { path = "../../cycle-engine/contracts" }
+engine = { path = "../../cycle-engine/engine" }
+pipeline = { path = "../../cycle-engine/pipeline" }
 transport = { path = "../../cycle-engine/transport" }
 rust_decimal = { workspace = true }
 flume = { workspace = true }

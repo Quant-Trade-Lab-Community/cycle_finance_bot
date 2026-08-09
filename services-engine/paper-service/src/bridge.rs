@@ -8,7 +8,7 @@
 
 use transport::order_ring::{IpcOrderSide, IpcOrderType, OrderRingBuffer};
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::events::EventType;
+use transport::events::EventType;
 use execution_engine::order::{OrderPositionSide, OrderRequest, OrderSide, OrderType};
 use execution_engine::paper::actor::ActorCommand;
 use rust_decimal::Decimal;
@@ -32,7 +32,7 @@ fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
 
         loop {
             if let Some(slot) = gen_ring.read_slot(cursor) {
-                if let Some(event) = contracts::wire::decode(&slot.data[..slot.len as usize]) {
+                if let Some(event) = transport::wire::decode(&slot.data[..slot.len as usize]) {
                     let symbol = decode_symbol(&event.symbol);
                     match event.payload {
                         EventType::Trade { price, .. } => {

@@ -1,9 +1,9 @@
-use proje_core::tick::EventParser;
-use proje_core::queue::LockFreeDispatcher;
+use pipeline::tick::EventParser;
+use pipeline::queue::LockFreeDispatcher;
 use std::thread;
 use std::time::Instant;
 use os_utils::set_rt_thread_priority;
-use adapter::binance::start_binance_ws_client;
+use gateway::binance::start_binance_ws_client;
 use transport::ring_buffer::GenerationalRingBuffer;
 
 #[tokio::main]
@@ -17,7 +17,7 @@ async fn main() {
         
         let (db_tx, db_rx) = flume::bounded(1_000_000); 
         thread::spawn(move || {
-            proje_core::db::start_db_writer(db_rx);
+            persistence::db::start_db_writer(db_rx);
         });
 
         let dispatcher = LockFreeDispatcher::new();
@@ -32,8 +32,8 @@ async fn main() {
             let mut db_drop_count = 0u64;
             let mut total_parse_time = std::time::Duration::new(0, 0);
             let mut last_report = Instant::now();
-            let mut validator = proje_core::validator::DataValidator::new();
-            let mut frame_buf = [0u8; contracts::wire::MAX_FRAME_SIZE];
+            let mut validator = pipeline::validator::DataValidator::new();
+            let mut frame_buf = [0u8; transport::wire::MAX_FRAME_SIZE];
             
             while let Ok(mut bytes) = rx.recv() {
                 let start_parse = Instant::now();
@@ -41,10 +41,10 @@ async fn main() {
                 // Ring'e artık typed binary (wire::encode) yazılır — kopya yoktur.
                 if let Some(owned_event) = EventParser::parse(&mut bytes) {
                     if !validator.is_valid(&owned_event) { invalid_count += 1; continue; }
-                    if matches!(owned_event.payload, contracts::events::EventType::Orderbook { .. }) {
+                    if matches!(owned_event.payload, transport::events::EventType::Orderbook { .. }) {
                         depth_count += 1;
                     }
-                    if let Some(len) = contracts::wire::encode(&owned_event, &mut frame_buf) {
+                    if let Some(len) = transport::wire::encode(&owned_event, &mut frame_buf) {
                         gen_ring_data.push(&frame_buf[..len]);
                     }
                     if db_tx.try_send(owned_event).is_err() {
@@ -76,24 +76,24 @@ async fn main() {
     }
 
     if run_mode == "PAPER" {
-        proje_core::cli::paper_cli::start_paper_cli();
+        engine::cli::paper_cli::start_paper_cli();
         return;
     }
 
     if run_mode == "STRATEGY" {
         println!("🚀 Başlatılıyor: STRATEJI KONSOLU");
-        proje_core::cli::strategy_cli::start_strategy_cli();
+        engine::cli::strategy_cli::start_strategy_cli();
         return;
     }
 
     if run_mode == "BACKTEST" {
         let csv_path = std::env::var("CSV_PATH").unwrap_or_else(|_| concat!(env!("CARGO_MANIFEST_DIR"), "/../../test_data.csv").to_string());
-        proje_core::engine::backtester::start_backtester(&csv_path);
+        engine::engine::backtester::start_backtester(&csv_path);
         return;
     }
 
     if run_mode == "CORRELATION" {
-        proje_core::cli::correlation_cli::start_correlation_cli();
+        engine::cli::correlation_cli::start_correlation_cli();
         return;
     }
 

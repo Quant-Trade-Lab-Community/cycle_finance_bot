@@ -6,8 +6,8 @@
 //!   cargo run -p scout-service --bin probe -- --once # son N slot'u dök
 
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::events::EventType;
-use contracts::wire::decode;
+use transport::events::EventType;
+use transport::wire::decode;
 use std::time::Duration;
 
 const RING_NAME: &str = "/cycle_finance_scout";

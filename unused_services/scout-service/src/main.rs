@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use transport::ring_buffer::GenerationalRingBuffer;
-use contracts::events::OwnedEvent;
+use transport::events::OwnedEvent;
 use rust_decimal::Decimal;
 use serde_json::Value;
 use tokio::task::JoinHandle;
@@ -40,12 +40,12 @@ impl ScoutRing {
     fn new() -> Self {
         Self {
             ring: GenerationalRingBuffer::with_name(RING_NAME, RING_CAPACITY),
-            frame_buf: vec![0u8; contracts::wire::MAX_FRAME_SIZE],
+            frame_buf: vec![0u8; transport::wire::MAX_FRAME_SIZE],
         }
     }
 
     fn push(&mut self, ev: &OwnedEvent) {
-        if let Some(len) = contracts::wire::encode(ev, &mut self.frame_buf) {
+        if let Some(len) = transport::wire::encode(ev, &mut self.frame_buf) {
             self.ring.push(&self.frame_buf[..len]);
         }
     }

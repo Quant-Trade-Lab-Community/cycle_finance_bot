@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rust_decimal::prelude::*;
-use contracts::events::OwnedEvent;
-use proje_core::tick::EventParser;
-use contracts::wire;
+use transport::events::OwnedEvent;
+use pipeline::tick::EventParser;
+use transport::wire;
 
 fn bench_tick_parsing(c: &mut Criterion) {
     let payload = b"{\"stream\":\"btcusdt@trade\",\"data\":{\"e\":\"trade\",\"E\":1766800000000,\"s\":\"BTCUSDT\",\"t\":123,\"p\":\"50000.0\",\"q\":\"1.5\",\"T\":1620000000000,\"m\":false}}".to_vec();

@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
 use simd_json;
 use simd_json::prelude::*;
-use contracts::events::OwnedEvent;
+use transport::events::OwnedEvent;
 
 pub struct EventParser;
 

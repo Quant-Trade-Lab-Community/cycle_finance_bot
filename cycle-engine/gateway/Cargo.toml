@@ -1,5 +1,5 @@
 [package]
-name = "adapter"
+name = "gateway"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,11 +8,5 @@ tokio-tungstenite = { workspace = true }
 futures-util = { workspace = true }
 tokio = { workspace = true }
 flume = { workspace = true }
-reqwest = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
-redis = { workspace = true }
-
-[dev-dependencies]
-testcontainers = "0.14"
-wiremock = "0.5"
