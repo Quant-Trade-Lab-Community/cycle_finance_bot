@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🏗️ Cycle Finance — Proje Dokümantasyon Portalı</title>
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1100px; margin-left: auto; margin-right: auto;
+    background: #f8fafc;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0f172a; color: #e2e8f0; }
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #2563eb 100%);
+    color: #fff; border-radius: 14px; padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .hero h1 { margin: 0 0 0.5rem; font-size: 1.9rem; border: none; }
+  .hero p { margin: 0.3rem 0; color: #cbd5e1; font-size: 1.02rem; }
+  .hero .badges { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .badge {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    padding: 0.25rem 0.8rem; border-radius: 999px; font-size: 0.82rem; color: #e2e8f0;
+  }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.4rem; }
+  @media (prefers-color-scheme: dark) { h2 { border-bottom-color: #334155; } }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem; margin: 1.5rem 0;
+  }
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 1.1rem 1.2rem; text-decoration: none; color: inherit;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card { background: #1e293b; border-color: #334155; }
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.14); border-color: #2563eb; }
+  .card .icon { font-size: 1.6rem; }
+  .card .name { font-weight: 700; font-size: 1.05rem; }
+  .card .desc { font-size: 0.88rem; color: #64748b; }
+  @media (prefers-color-scheme: dark) { .card .desc { color: #94a3b8; } }
+  .card .meta { font-size: 0.78rem; color: #2563eb; font-weight: 600; margin-top: auto; }
+  .card.more { border-style: dashed; justify-content: center; align-items: center; text-align: center; color: #2563eb; }
+  pre.mermaid { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #1e293b; border-color: #334155; } }
+  code { background: #e2e8f0; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #334155; color: #e2e8f0; } }
+  ul { padding-left: 1.4rem; }
+  .pipeline { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+  .pl { background: #2563eb; color: #fff; padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+  .arr { color: #94a3b8; }
+  a { color: #2563eb; }
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #cbd5e1; color: #64748b; font-size: 0.85rem; }
+  @media (prefers-color-scheme: dark) { footer { border-top-color: #334155; color: #94a3b8; } }
+</style>
+</head>
+<body>
+<nav class="sitenav">
+  <span class="brand">📚 Cycle Finance Docs</span>
+  <a href="index.html" class="active">🏠 Ana Sayfa</a>
+  <a href="PROJE_KOKU_KAYNAK_KODU.html">🏗️ Kök</a>
+  <a href="CYCLE_ENGINE_KAYNAK_KODU.html">🏛️ Cycle</a>
+  <a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a>
+  <a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a>
+  <a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">🎯 Strategies</a>
+  <a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a>
+  <a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a>
+  <a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">🔧 Ek Servis</a>
+  <a href="AI_ENGINE_KAYNAK_KODU.html">🤖 AI</a>
+  <a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a>
+</nav>
+
+<div class="hero">
+  <h1>🏗️ Cycle Finance — Proje Dokümantasyon Portalı</h1>
+  <p>Binance USDT-M Futures için düşük gecikmeli (HFT) bir Rust ticaret sistemi.</p>
+  <p>Bu site, projenin <strong>tüm modüllerinin</strong> tam kaynak kodunu, klasör/dosya sözlüğünü ve
+     mermaid akış diyagramlarıyla detaylı analizini tek bir yerden sunar.</p>
+  <div class="badges">
+    <span class="badge">🦀 Rust</span>
+    <span class="badge">⚡ HFT / Düşük gecikme</span>
+    <span class="badge">🧵 21 workspace üyesi</span>
+    <span class="badge">🔄 IPC: /dev/shm ring buffer</span>
+    <span class="badge">🤖 LLM ajanları (ai-engine)</span>
+  </div>
+</div>
+
+<h2>🌐 Uçtan Uca Mimari</h2>
+<div class="pipeline">
+  <span class="pl">Binance WS</span><span class="arr">→</span>
+  <span class="pl">cycle-engine (adapter+core)</span><span class="arr">→</span>
+  <span class="pl">/dev/shm ring'ler</span><span class="arr">→</span>
+  <span class="pl">detect-ms · calc-ind · ai-engine</span><span class="arr">→</span>
+  <span class="pl">risk-engine</span><span class="arr">→</span>
+  <span class="pl">execution-engine / paper-service</span><span class="arr">→</span>
+  <span class="pl">data-engine (soğuk depo)</span>
+</div>
+
+<pre class="mermaid">
+flowchart TD
+    subgraph borsa["Borsa"]
+        ws["Binance Futures WebSocket"]
+    end
+
+    subgraph giris["Veri Girişi"]
+        adapter["adapter · WS client"]
+        core["core · simdjson parser + validator"]
+    end
+
+    subgraph ipc["/dev/shm ring'ler"]
+        ring1["cycle_finance_ring"]
+        ring2["cycle_finance_pricefeed"]
+        ring3["cycle_finance_calc"]
+        ring4["cycle_finance_orders"]
+    end
+
+    subgraph analiz["Analiz Katmanı"]
+        dm["detect-ms :3002"]
+        ci["calc-ind :3007"]
+        ai2["ai-engine"]
+    end
+
+    subgraph riskk["Risk Katmanı"]
+        rke["risk-engine"]
+        rwk["risk-worker :3011"]
+        rcfg["risk.toml"]
+    end
+
+    subgraph icra["İcra Katmanı"]
+        exe["execution-engine :3010"]
+        pap["paper-service :8080"]
+    end
+
+    subgraph depo["Veri Kaydı"]
+        cold["cold-storage"]
+        data["data-engine/data · SQLite"]
+    end
+
+    subgraph unused["unused_services · workspace'ten exclude"]
+        u1["detect-liquidity"]
+        u2["detect-pattern"]
+        u3["detect-trb"]
+        u4["detect-wyckoff"]
+        u5["scout-service"]
+    end
+
+    ws -->|"fiyat + derinlik"| adapter
+    adapter --> core
+    core -->|"wire encode"| ring1
+    ring1 -->|"IPC"| ring2
+    ring1 -->|"batch yazım"| data
+    ring2 -->|"event-by-event"| dm
+    ring2 -->|"fiyat bağlamı"| ai2
+    dm -->|"OHLCV isteği"| ci
+    ci -->|"binary sonuç"| ring3
+    ring3 -->|"indikatör"| dm
+    ring3 -->|"indikatör"| ai2
+    dm -->|"piyasa yapısı raporu"| ai2
+    dm --> rke
+    ai2 --> rke
+    rcfg -->|"limitler · hot-reload"| rke
+    rwk -->|"VaR + korelasyon parametreleri"| rke
+    rke -->|"pre-trade onayı"| exe
+    rke -->|"pre-trade onayı"| pap
+    ai2 -->|"sinyal"| ring4
+    ring4 -->|"emir"| pap
+    exe -->|"fill geri beslemesi"| rke
+    exe -->|"gerçek emir"| ws
+    pap -->|"event store"| data
+    data --> cold
+</pre>
+
+<h2>📂 Modüller</h2>
+<p>Her modül kartı, o modülün <strong>tam kaynak kodu + detaylı analiz</strong> sayfasına gider.</p>
+
+<div class="grid">
+  <a class="card" href="PROJE_KOKU_KAYNAK_KODU.html">
+    <span class="icon">🏗️</span>
+    <span class="name">Proje Kökü (Workspace)</span>
+    <span class="desc">Cargo.toml (21 üyeli workspace + tek-sürüm bağımlılıkları), README, install.sh, ai/alerts/risk.toml, CI pipeline.</span>
+    <span class="meta">PROJE_KOKU_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="CYCLE_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🏛️</span>
+    <span class="name">Cycle Engine (Çekirdek)</span>
+    <span class="desc">5 katmanlı yazılımsal çekirdek: contracts (wire codec), transport (ring buffer IPC), core (simdjson parser + orchestrator), adapter (Binance/Redis/ClickHouse/Vault), splash.</span>
+    <span class="meta">CYCLE_ENGINE_KAYNAK_KODU.html · 44 mermaid diyagramı</span>
+  </a>
+  <a class="card" href="EXECUTION_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🚀</span>
+    <span class="name">Execution Engine</span>
+    <span class="desc">Binance USDT-M Futures canlı emir yürütme: tek-yazıcı actor, preflight doğrulama, idempotency, imza, user-data stream → hesap snapshot.</span>
+    <span class="meta">EXECUTION_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="SERVICES_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🧩</span>
+    <span class="name">Services Engine</span>
+    <span class="desc">8 yardımcı servis: price-feed, calc-ind, detect-ms, ohlcv-engine, stream-ohlcv, alert-service, paper-service (:8080), exec-console.</span>
+    <span class="meta">SERVICES_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="STRATEGIES_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🎯</span>
+    <span class="name">Strategies Engine</span>
+    <span class="desc">Strateji sözleşmesi (trait_def) ve ilk canlı strateji breakout-strategy: fiyat ring'i → seviye → kırılım → sinyal.</span>
+    <span class="meta">STRATEGIES_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="RISK_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🛡️</span>
+    <span class="name">Risk Engine</span>
+    <span class="desc">Merkezi risk motoru: 13 adımlı pre-trade kural zinciri, risk-worker (VaR/exposure/likidite), fail-closed ilke, otomatik kill switch.</span>
+    <span class="meta">RISK_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="DATA_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">💾</span>
+    <span class="name">Data Engine</span>
+    <span class="desc">Soğuk veri katmanı: cold-storage (kalıcı kapanış verisi) + cold-starter (soğuk başlangıç, EMA hazırlama, replay → canlı geçiş).</span>
+    <span class="meta">DATA_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">
+    <span class="icon">🔧</span>
+    <span class="name">Additional Services</span>
+    <span class="desc">OS-utils (config), scripts (cycle_tmux.sh orchestration, monitor.sh, start/stop_paper, GDPR erasure), k8s chaos, formal verification (TLA+).</span>
+    <span class="meta">ADDITIONAL_SERVICES_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="AI_ENGINE_KAYNAK_KODU.html">
+    <span class="icon">🤖</span>
+    <span class="name">AI Engine</span>
+    <span class="desc">LLM ajan katmanı: 3 ajan (sinyal/risk/duygu) paralel karar, koordinatör sentezi, RiskGate doğrulaması, paper/live icra.</span>
+    <span class="meta">AI_ENGINE_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card" href="UNUSED_SERVICES_KAYNAK_KODU.html">
+    <span class="icon">🗄️</span>
+    <span class="name">Unused Services</span>
+    <span class="desc">Workspace'ten exclude edilmiş eski detektörler: detect-liquidity, detect-pattern, detect-trb (TRB), detect-wyckoff (faz analizi), scout-service.</span>
+    <span class="meta">UNUSED_SERVICES_KAYNAK_KODU.html</span>
+  </a>
+  <a class="card more" href="PROJE_DOKUMANTASYONU.md">
+    <span class="icon">📄</span>
+    <span class="name">PROJE_DOKUMANTASYONU.md</span>
+    <span class="desc">Projenin kapsamlı markdown dokümantasyonu (971KB).</span>
+    <span class="meta">Ayrıntılı MD dokümanı →</span>
+  </a>
+</div>
+
+<h2>📌 Hızlı Başlangıç</h2>
+<ul>
+  <li><strong>Ana doküman:</strong> <code>PROJE_DOKUMANTASYONU.md</code> — proje genel bakış, kurulum, kullanım.</li>
+  <li><strong>Çekirdek motor:</strong> <code>CYCLE_ENGINE_KAYNAK_KODU.html</code> — 5 katmanlı mimari ve hız zinciri.</li>
+  <li><strong>Risk mimarisi:</strong> <code>RISK_ENGINE_MIMARISI.md</code> — ayrıntılı risk motoru tasarımı.</li>
+  <li><strong>Servis orchestration:</strong> <code>ADDITIONAL_SERVICES_KAYNAK_KODU.html</code> içinde <code>cycle_tmux.sh</code>.</li>
+</ul>
+
+<footer>
+  Cycle Finance — Rust HFT ticaret sistemi · Tüm dokümanlar <code>docs/</code> dizininde üretildi.
+  Mermaid diyagramları için internet bağlantısı gerekir (cdn.jsdelivr.net).
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#e0ecff',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>

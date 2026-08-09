@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🤖 AI Engine — Tam Kaynak + Detaylı Analiz</title>
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.45;
+  }
+  pre.mermaid { background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #0f172a; border-color: #334155; } }
+  code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #1e293b; color: #e2e8f0; } }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #334155; } }
+  th { background: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { th { background: #1e293b; } }
+  h1 { border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.75rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 a, h2 a, h3 a, h4 a { color: inherit; }
+  .headerlink { opacity: 0.35; margin-left: 0.3rem; font-size: 0.8em; }
+  .headerlink:hover { opacity: 1; }
+  .topnav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;
+  }
+  @media (prefers-color-scheme: dark) { .topnav { background: #0f172a; border-color: #334155; } }
+  .topnav a { padding: 0.2rem 0.8rem; border-radius: 6px; background: #e2e8f0; color: inherit; }
+  @media (prefers-color-scheme: dark) { .topnav a { background: #1e293b; } }
+  .topnav a:hover { background: #2563eb; color: white; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 2rem 0; }
+  section.detay { border-top: 4px solid #2563eb; margin-top: 3rem; padding-top: 1rem; }
+
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+<nav class="sitenav"><span class="brand">📚 Cycle Finance Docs</span><a href="index.html">🏠 Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">🏗️ Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html">🏛️ Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">🎯 Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">🔧 Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html" class="active">🤖 AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a></nav>
+<nav class="topnav">
+  <strong>📑 Bölümler:</strong>
+  <a href="#dizin-agac">🌳 Dizin Ağacı</a>
+  <a href="#klasor-ve-dosya-sozlugu">📖 Klasör Sözlüğü</a>
+  <a href="#detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)</a>
+  <a href="#tam-kaynak-kodu">📄 Tam Kaynak Kodu</a>
+</nav>
+
+<h1 id="ai-engine-tam-kaynak-kodu-detayl-analiz">🤖 AI Engine — Tam Kaynak Kodu + Detaylı Analiz<a class="headerlink" href="#ai-engine-tam-kaynak-kodu-detayl-analiz" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><code>ai-engine/</code>. Bu doküman dizin ağacını, klasör/dosya sözlüğünü, her dosyanın <strong>tam kaynak kodunu</strong> ve <strong>detaylı analizini</strong> (mermaid akış diyagramlarıyla) içerir. Tarih: 2026-08-09</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#dizin-agac">Dizin Ağacı</a></li>
+<li><a href="#klasor-ve-dosya-sozlugu">Klasör ve Dosya Sözlüğü</a></li>
+<li><a href="#detayl-analiz-mermaid">Detaylı Analiz (mermaid)</a></li>
+<li><a href="#tam-kaynak-kodu">Tam Kaynak Kodu</a></li>
+</ul>
+<hr />
+<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link">&para;</a></h2>
+<pre><code>ai-engine/
+├── Cargo.toml
+    ├── src/config.rs
+    ├── src/context.rs
+    ├── src/gates.rs
+    ├── src/lib.rs
+    ├── src/main.rs
+        ├── src/agents/coordinator.rs
+        ├── src/agents/mod.rs
+        ├── src/agents/risk.rs
+        ├── src/agents/sentiment.rs
+        ├── src/agents/signal.rs
+        ├── src/executor/live.rs
+        ├── src/executor/mod.rs
+        ├── src/executor/paper.rs
+        ├── src/llm/anthropic.rs
+        ├── src/llm/mod.rs
+        ├── src/llm/openai.rs
+</code></pre>
+<hr />
+<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><code>ai-engine/</code> — <strong>Genel amaç:</strong> LLM ajan katmanı. Bağlamı toplar (fiyat, indikatör, pazar yapısı, pozisyon), üç ajan (sinyal/risk/duygu) paralel karar üretir, koordinatör sentezler, güvenlik kapıları (RiskGate) doğrular ve emri paper ring / canlı execution'a iletir.
+| Klasör / Dosya | Anlamı |
+|---|---|
+| <code>ai-engine/</code> | Cycle Finance'ın LLM tabanlı ajan katmanı: bağlam toplama, ajan kararları, risk kapısı ve paper/live icra. |
+| <code>Cargo.toml</code> | Crate tanımı; workspace bağımlılıkları (axum, tokio, serde, rust_decimal, reqwest) ve yerel crates (transport, risk-engine, calc-ind). |
+| <code>src/main.rs</code> | Daemon girişi; HTTP status API (127.0.0.1:3110) ve sembol bazlı ana karar döngüsü (<code>run_cycle</code>). |
+| <code>src/lib.rs</code> | Ortak veri tipleri: <code>Action</code>, <code>PriceSnapshot</code>, <code>MarketContext</code>, <code>SignalOutput</code>, <code>RiskOutput</code>, <code>SentimentOutput</code>, <code>FinalDecision</code>. |
+| <code>src/config.rs</code> | <code>ai.toml</code> yükleme ve varsayılanlar; providers, schedule, execution, risk, context bölümleri. |
+| <code>src/context.rs</code> | <code>ContextBuilder</code> — price-feed, calc-ind, detect-ms, paper hesabı ve haber kaynağından <code>MarketContext</code> üretir. |
+| <code>src/gates.rs</code> | <code>RiskGate</code> — RiskEngine politikası + agent veto + deterministik boyut sınırı; onaylanan kararı executor'a iletir. |
+| <code>src/agents/mod.rs</code> | Ajan arayüzü (<code>Agent</code> trait), <code>AgentRole</code>, <code>AgentOutput</code> tipleri ve ortak ayrıştırma yardımcıları. |
+| <code>src/agents/signal.rs</code> | Strateji/sinyal ajanı — LLM'den BUY/SELL/HOLD yönü, güven ve miktar üretir. |
+| <code>src/agents/risk.rs</code> | Risk/anomali ajanı — risk skoru + <code>veto</code> bayrağı üretir (fail-safe). |
+| <code>src/agents/sentiment.rs</code> | Duygu ajanı — haber başlıklarından -1..+1 sentiment ve trend terimleri çıkarır. |
+| <code>src/agents/coordinator.rs</code> | Koordinatör ajan — sinyal/risk/duygu çıktılarını tek nihai karara indirger; risk vetosu önceliklidir. |
+| <code>src/executor/mod.rs</code> | <code>Executor</code> — mode (paper/live/both/none) ve approval (auto/human HITL) politikasını uygular. |
+| <code>src/executor/paper.rs</code> | Paper icra — emri <code>/cycle_finance_orders</code> ring'ine yazar (STRATEGY → EXECUTION yolu). |
+| <code>src/executor/live.rs</code> | Canlı icra — executiond :3010 REST client (JWT login + emir POST). |
+| <code>src/llm/mod.rs</code> | <code>LlmProvider</code> trait, <code>LlmError</code> ve config'e göre provider üreten <code>make_provider</code> fabrikası. |
+| <code>src/llm/openai.rs</code> | OpenAI Chat Completions istemcisi (JSON object structured output). |
+| <code>src/llm/anthropic.rs</code> | Anthropic Messages API istemcisi (JSON structured output). |</p>
+</blockquote>
+<hr />
+<hr />
+<h2 id="detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)<a class="headerlink" href="#detayl-analiz-mermaid" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09</p>
+</blockquote>
+<h3 id="cargo-toml"><code>Cargo.toml</code><a class="headerlink" href="#cargo-toml" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Crate adı <code>ai-engine</code>, lib adı <code>ai_engine</code> ve edition 2021 olarak tanımlıdır. Bağımlılıkların tamamı workspace'ten (<code>workspace = true</code>) devralınır: axum (HTTP API), tokio (async), serde/serde_json (LLM JSON), rust_decimal (hassas fiyat/miktar). Yerel crates'e <code>path</code> ile bağlanır: <code>transport</code> (order ring shm), <code>risk-engine</code> (RiskEngine politikası) ve <code>calc-ind</code> (indikatör istemcisi).
+<strong>Neden kullandık:</strong>
+- Workspace devralımı sürüm çakışmalarını tek noktadan yönetir.
+- <code>path</code> bağımlılıkları motoru monorepo'nun diğer bileşenlerine sıkı bağlar.
+- rust_decimal, fiyat/miktar hesabında float hatası riskini ortadan kaldırır.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;ai-engine crate&quot;] --&gt; B[&quot;workspace crates&quot;]
+    A --&gt; C[&quot;yerel crates&quot;]
+    B --&gt; D[&quot;axum, tokio, serde, reqwest&quot;]
+    C --&gt; E[&quot;transport: order ring&quot;]
+    C --&gt; F[&quot;risk-engine: RiskEngine&quot;]
+    C --&gt; G[&quot;calc-ind: indikatörler&quot;]
+</pre>
+<h3 id="src-main-rs"><code>src/main.rs</code><a class="headerlink" href="#src-main-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Daemon giriş noktasıdır; önce <code>AiConfig::load()</code> ile ayarları yükler, <code>make_provider</code> ile LLM provider'ını kurar (yoksa fail-safe HOLD modu ilan eder), ardından <code>ContextBuilder</code>, <code>RiskGate</code>, <code>Executor</code>, <code>Coordinator</code> ve ajanları inşa eder. Arka planda axum ile <code>/api/health</code> ve <code>/api/status</code> HTTP uçlarını spawn eder. Ana döngüde <code>run_cycle</code> her <code>interval_secs</code>'te çalışır: her sembol için bağlam kurulur, sağlıksız fiyat kaynağı atlanır, üç ajan paralel çalıştırılır, koordinatör karar verir, risk gate'inden geçirilir ve sonuç özeti <code>RunSummary</code> olarak saklanır.
+<strong>Neden kullandık:</strong>
+- Bağımsız daemon olarak çalışıp HFT ring altyapısıyla HTTP/shm üzerinden haberleşir.
+- HTTP status API ile sistem gözlemi ve operasyonel kontrol sağlar.
+- Provider yokluğunda çalışmaya devam edip fail-safe HOLD üretir (hiç durmaz).</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;main: dotenv + AiConfig::load&quot;] --&gt; B[&quot;make_provider&quot;]
+    B --&gt; C{&quot;provider var mı?&quot;}
+    C --&gt;|&quot;evet&quot;| D[&quot;LLM ajan modu&quot;]
+    C --&gt;|&quot;hayır&quot;| E[&quot;fail-safe HOLD modu&quot;]
+    B --&gt; F[&quot;ContextBuilder + RiskGate + Executor + Coordinator&quot;]
+    F --&gt; G[&quot;HTTP API spawn :3110&quot;]
+    G --&gt; H[&quot;ana döngü run_cycle&quot;]
+    H --&gt; I[&quot;her sembol için context.build&quot;]
+    I --&gt; J{&quot;is_healthy?&quot;}
+    J --&gt;|&quot;hayır&quot;| K[&quot;atla&quot;]
+    J --&gt;|&quot;evet&quot;| L[&quot;3 ajan paralel çalışır&quot;]
+    L --&gt; M[&quot;coordinator.decide&quot;]
+    M --&gt; N[&quot;risk_gate.process&quot;]
+    N --&gt; O[&quot;sonucu RunSummary sakla&quot;]
+    O --&gt; P[&quot;sleep interval_secs&quot;]
+    P --&gt; H
+</pre>
+<h3 id="src-lib-rs"><code>src/lib.rs</code><a class="headerlink" href="#src-lib-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Motorun veri sözlüğüdür. <code>Action</code> (Buy/Sell/Hold) ve <code>is_trade</code> yardımcısı sinyal yönünü tanımlar. <code>PriceSnapshot</code>, <code>IndicatorSnapshot</code>, <code>StructureSnapshot</code> dış servislerden gelen bağlam verisini; <code>MarketContext</code> bunların hepsini tek pakette birleştirir (<code>is_healthy</code> sağlık kontrolü ve <code>to_compact_json</code> token-verimli serileştirme sunar). <code>SignalOutput</code>, <code>RiskOutput</code>, <code>SentimentOutput</code> ajan çıktılarını; <code>FinalDecision</code> koordinatörün nihai kararını temsil eder. <code>now_ms</code> zaman damgası üretir.
+<strong>Neden kullandık:</strong>
+- Tüm ajanlar ve katmanlar aynı tipleri paylaşır; serileştirme tek noktadan yönetilir.
+- <code>to_compact_json</code>, LLM çağrılarında token maliyetini düşürür.
+- <code>FinalDecision::hold</code> ile hızlı güvenli varsayılan karar üretimi mümkündür.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;MarketContext&quot;] --&gt; B[&quot;PriceSnapshot&quot;]
+    A --&gt; C[&quot;IndicatorSnapshot&quot;]
+    A --&gt; D[&quot;StructureSnapshot&quot;]
+    A --&gt; E[&quot;AccountSnapshot&quot;]
+    A --&gt; F[&quot;recent_news&quot;]
+    G[&quot;SignalOutput&quot;] --&gt; H[&quot;FinalDecision&quot;]
+    I[&quot;RiskOutput&quot;] --&gt; H
+    J[&quot;SentimentOutput&quot;] --&gt; H
+    H --&gt; K[&quot;Action&quot;]
+</pre>
+<h3 id="src-config-rs"><code>src/config.rs</code><a class="headerlink" href="#src-config-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>ai.toml</code> dosyasını (veya <code>AI_CONFIG</code> env'i) yükler; dosya yoksa veya parse hatası olursa güvenli varsayılanlara döner. <code>AiConfig</code> beş bölümden oluşur: <code>providers</code> (openai/anthropic/none, model, temperature, max_tokens, timeout), <code>schedule</code> (interval, semboller, onay bekleme süresi), <code>execution</code> (paper/live/both/none, auto/human onay, execd/paper kimlikleri, max_notional_usdt), <code>risk</code> (kapı açık mı, anomaly_veto, risk.toml yolu, başlangıç bakiye) ve <code>context</code> (servis URL'leri, aralıklar). LLM API anahtarları env'den (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>) okunur. Testler varsayılanların ve TOML ayrıştırmanın doğruluğunu doğrular.
+<strong>Neden kullandık:</strong>
+- Tüm motor davranışı tek TOML dosyasından yapılandırılabilir.
+- Varsayılanlara dönüş, yanlış konfigürasyonda bile motorun çalışmasını garanti eder.
+- Hassas bilgiler (anahtar, şifre) config'e değil env'e ayrıştırılır.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;AiConfig::load&quot;] --&gt; B{&quot;AI_CONFIG env?&quot;}
+    B --&gt;|&quot;evet&quot;| C[&quot;AI_CONFIG yolunu kullan&quot;]
+    B --&gt;|&quot;hayır&quot;| D[&quot;./ai.toml&quot;]
+    C --&gt; E[&quot;read + toml parse&quot;]
+    D --&gt; E
+    E --&gt; F{&quot;parse başarılı?&quot;}
+    F --&gt;|&quot;evet&quot;| G[&quot;AiConfig&quot;]
+    F --&gt;|&quot;hayır&quot;| H[&quot;varsayılan AiConfig&quot;]
+    G --&gt; I[&quot;providers + schedule + execution + risk + context&quot;]
+    I --&gt; J[&quot;env'den API anahtarları&quot;]
+</pre>
+<h3 id="src-context-rs"><code>src/context.rs</code><a class="headerlink" href="#src-context-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>ContextBuilder</code>, sembol başına <code>MarketContext</code> üretir. Fiyatı price-feed :3004 <code>GET /api/lastprice/{symbol}</code>'den; indikatörleri calc-ind :3007'den (rsi, macd, bbands, vwap, atr her biri ayrı async task; ring sonucu 64MB stack'li ayrı thread ile okunur); piyasa yapısını detect-ms :3002'den alır. Hesap durumunu paper :8080'e JWT ile login olup balance/positions uçlarından çeker; opsiyonel <code>news_feed_url</code>'den haber başlıklarını toplar. Fiyat ve yapı paralel (<code>tokio::join!</code>) getirilir; hata durumlarında boş/varsayılan snapshot döner (asla panik).
+<strong>Neden kullandık:</strong>
+- Mevcut ring + REST altyapısını tek bağlam paketine birleştirir (ajanlara tek JSON satırı).
+- <code>tokio::join!</code> ve paralel spawn ile gecikme minimize edilir (HFT bağlamı).
+- Her kaynak hata toleranslıdır; tek kaynak düşse bile bağlam üretilmeye devam eder.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;ContextBuilder.build(symbol)&quot;] --&gt; B[&quot;fetch_price :3004&quot;]
+    A --&gt; C[&quot;fetch_indicators :3007&quot;]
+    A --&gt; D[&quot;fetch_structure :3002&quot;]
+    B --&gt; E[&quot;tokio::join&quot;]
+    C --&gt; E
+    D --&gt; E
+    E --&gt; F[&quot;fetch_account :8080 JWT&quot;]
+    F --&gt; G[&quot;fetch_news opsiyonel&quot;]
+    G --&gt; H[&quot;MarketContext&quot;]
+    H --&gt; I{&quot;is_healthy?&quot;}
+    I --&gt;|&quot;evet&quot;| J[&quot;ajanlara gönder&quot;]
+    I --&gt;|&quot;hayır&quot;| K[&quot;sembol atlanır&quot;]
+</pre>
+<h3 id="src-gates-rs"><code>src/gates.rs</code><a class="headerlink" href="#src-gates-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>RiskGate</code> nihai kararı denetim zincirinden geçirir: önce HOLD ve veto bayrakları elenir; <code>anomaly_veto</code> açıksa <code>risk_score &gt;= 0.8</code> otomatik reddedilir. Ardından deterministik boyut sınırı uygulanır: <code>quantity = min(quantity, max_notional / mark_price)</code>; sıfıra düşen miktar Held olur. Emir <code>OrderIntent</code>'e çevrilir, <code>RiskEngine::evaluate</code>'den (risk.toml politikası) geçer ve onaylanırsa executor'a aktarılır. <code>on_mark</code> ile canlı mark fiyatı risk motoruna beslenir (stale-mark reddini önler). Sonuç <code>GateOutcome</code> (Executed/Held/Rejected) olarak raporlanır.
+<strong>Neden kullandık:</strong>
+- LLM kararı ile gerçek emir arasına deterministik güvenlik kapısı koyar.
+- RiskEngine politikası + veto + boyut limiti üçlüsü çok katmanlı savunma sağlar.
+- HOLD/veto/risk-skoru durumlarında emir hiç dışarı çıkmaz (fail-safe).</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;process(decision, mark, executor)&quot;] --&gt; B{&quot;action == HOLD?&quot;}
+    B --&gt;|&quot;evet&quot;| C[&quot;Held: HOLD&quot;]
+    B --&gt;|&quot;hayır&quot;| D{&quot;decision.veto?&quot;}
+    D --&gt;|&quot;evet&quot;| E[&quot;Rejected: agent veto&quot;]
+    D --&gt;|&quot;hayır&quot;| F{&quot;risk_score &gt;= 0.8 ve anomaly_veto?&quot;}
+    F --&gt;|&quot;evet&quot;| G[&quot;Rejected: anomaly_veto&quot;]
+    F --&gt;|&quot;hayır&quot;| H[&quot;boyut sınırı: min(qty, max_notional/mark)&quot;]
+    H --&gt; I{&quot;qty &lt;= 0?&quot;}
+    I --&gt;|&quot;evet&quot;| J[&quot;Held: boyut 0&quot;]
+    I --&gt;|&quot;hayır&quot;| K[&quot;OrderIntent oluştur&quot;]
+    K --&gt; L{&quot;RiskEngine kapalı?&quot;}
+    L --&gt;|&quot;evet&quot;| M[&quot;doğrudan onay&quot;]
+    L --&gt;|&quot;hayır&quot;| N{&quot;evaluate sonucu?&quot;}
+    N --&gt;|&quot;Rejected&quot;| O[&quot;Rejected: risk-gate&quot;]
+    N --&gt;|&quot;Approved&quot;| M
+    M --&gt; P[&quot;executor.execute&quot;]
+    P --&gt; Q{&quot;sonuç?&quot;}
+    Q --&gt;|&quot;Ok&quot;| R[&quot;Executed&quot;]
+    Q --&gt;|&quot;Err&quot;| S[&quot;Rejected&quot;]
+</pre>
+<h3 id="src-agents-mod-rs"><code>src/agents/mod.rs</code><a class="headerlink" href="#src-agents-mod-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Ajan mimarisinin çekirdeğidir. <code>Agent</code> trait'i (<code>id</code>, <code>role</code>, <code>async run</code>) tüm ajanların ortak sözleşmesidir; <code>AgentRole</code> (Signal/Risk/Sentiment/Coordinator) rol etiketini, <code>AgentOutput</code> enum'u ajanların ürettiği tipli çıktıyı taşır. <code>parse_action</code> JSON yön string'ini <code>Action</code>'a çevirir, <code>clamp_confidence</code> ve <code>clamp_risk</code> LLM çıktılarını geçerli aralıklara sıkıştırır.
+<strong>Neden kullandık:</strong>
+- Tek tip trait sayesinde ajanlar yeni eklenebilir/bağımsız test edilebilir.
+- <code>AgentOutput</code> sayesinde ana döngü çıktı türlerini güvenle match'leyebilir.
+- Sıkıştırma fonksiyonları LLM'in aralık dışı değer üretmesini nötralize eder.</p>
+<pre class="mermaid">flowchart LR
+    A[&quot;Agent trait&quot;] --&gt; B[&quot;SignalAgent id=1&quot;]
+    A --&gt; C[&quot;RiskAgent id=2&quot;]
+    A --&gt; D[&quot;SentimentAgent id=3&quot;]
+    A --&gt; E[&quot;Coordinator id=4&quot;]
+    B --&gt; F[&quot;AgentOutput::Signal&quot;]
+    C --&gt; G[&quot;AgentOutput::Risk&quot;]
+    D --&gt; H[&quot;AgentOutput::Sentiment&quot;]
+    F --&gt; I[&quot;parse_action + clamp yardımcıları&quot;]
+    G --&gt; I
+    H --&gt; I
+</pre>
+<h3 id="src-agents-signal-rs"><code>src/agents/signal.rs</code><a class="headerlink" href="#src-agents-signal-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Strateji ajanı, <code>MarketContext</code>'i compact JSON olarak LLM'e gönderir; sistem promptu BTC/ETH/SOL/HEIUSDT vadeli işlemler için yalnızca yüksek güvenli fırsatlarda BUY/SELL, belirsizlikte HOLD istemektedir (yapı ve indikatörler çelişiyorsa HOLD). LLM yanıtı <code>parse_signal</code> ile ayrıştırılır: <code>quantity == 0</code> ise aksiyon zorla HOLD yapılır, güven 0..1'e sıkıştırılır. LLM yoksa veya hata verirse <code>SignalOutput::default()</code> (HOLD) döner.
+<strong>Neden kullandık:</strong>
+- Yön kararını doğal dil kurallarıyla LLM'e bırakarak geleneksel indikatör matrisini esnetir.
+- Fail-safe varsayılan (HOLD) sayesinde LLM arızasında asla sinyal üretilmez.
+- Prompt kuralları (çelişkide HOLD) kör alım-satımı önler.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;SignalAgent.run(ctx)&quot;] --&gt; B{&quot;provider var mı?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;SignalOutput::default (HOLD)&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;llm_run: SYSTEM_PROMPT + compact JSON&quot;]
+    D --&gt; E{&quot;LLM başarılı?&quot;}
+    E --&gt;|&quot;hayır&quot;| F[&quot;HOLD varsayılan&quot;]
+    E --&gt;|&quot;evet&quot;| G[&quot;parse_signal&quot;]
+    G --&gt; H{&quot;quantity == 0?&quot;}
+    H --&gt;|&quot;evet&quot;| I[&quot;action = HOLD&quot;]
+    H --&gt;|&quot;hayır&quot;| J[&quot;güven 0..1 clamp&quot;]
+    I --&gt; K[&quot;AgentOutput::Signal&quot;]
+    J --&gt; K
+</pre>
+<h3 id="src-agents-risk-rs"><code>src/agents/risk.rs</code><a class="headerlink" href="#src-agents-risk-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Risk ajanı, piyasa bağlamından risk postürü üretir: aşırı volatilite (atr orantısız), kritik seviyelere dayanma (detect-ms level'larına yakınlık) ve anormal indikatör değerleri durumunda <code>veto=true</code> döndürmesi prompt ile istenir. LLM yanıtı <code>parse_risk</code> ile ayrıştırılır: risk skoru 0..1'e sıkıştırılır, <code>max_size_bps</code> 0..10000 ile sınırlanır, veto bayrağı korunur. LLM yoksa/hata varsa nötr (risk_score 0.5, veto=false) döner.
+<strong>Neden kullandık:</strong>
+- LLM'in piyasa yapısını yorumlayarak insan benzeri risk sezgisi üretmesi amaçlanır.
+- <code>veto</code> mekanizması koordinatör kararını tamamen iptal edebilen fail-safe anahtardır.
+- Nötr varsayılan "fail-open değil, tarafsız" prensibiyle sistemi güvenli tutar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;RiskAgent.run(ctx)&quot;] --&gt; B{&quot;provider var mı?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;neutral_risk 0.5&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;complete_json(SYSTEM_PROMPT, bağlam)&quot;]
+    D --&gt; E{&quot;LLM başarılı?&quot;}
+    E --&gt;|&quot;hayır&quot;| C
+    E --&gt;|&quot;evet&quot;| F[&quot;parse_risk&quot;]
+    F --&gt; G[&quot;risk_score 0..1 clamp&quot;]
+    F --&gt; H[&quot;max_size_bps 0..10000&quot;]
+    F --&gt; I[&quot;veto korunur&quot;]
+    G --&gt; J[&quot;AgentOutput::Risk&quot;]
+    I --&gt; J
+</pre>
+<h3 id="src-agents-sentiment-rs"><code>src/agents/sentiment.rs</code><a class="headerlink" href="#src-agents-sentiment-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Duygu ajanı, <code>ctx.recent_news</code> içindeki haber başlıklarını birleştirip LLM'e gönderir; -1.0..+1.0 sentiment, trend terimleri ve önyargı (bulut/boğa/nötr/ayı) döndürmesi istenir. Haber listesi boşsa veya LLM yoksa/hata verirse nötr <code>SentimentOutput::default()</code> döner. <code>parse_sentiment</code> çıktıyı -1..1 aralığına sıkıştırır.
+<strong>Neden kullandık:</strong>
+- Haber akışından piyasa duyarlılığı çıkararak koordinatörün kararını zenginleştirir.
+- Haber kaynağı yokken bile sistem nötr kalarak bozulmaz.
+- Koordinatör fallback'te negatif sentimentte miktarı küçültme kararında bu çıktıyı kullanır.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;SentimentAgent.run(ctx)&quot;] --&gt; B{&quot;provider var ve haber boş değil?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;SentimentOutput::default&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;haber başlıklarını birleştir&quot;]
+    D --&gt; E[&quot;complete_json(SYSTEM_PROMPT, haberler)&quot;]
+    E --&gt; F{&quot;LLM başarılı?&quot;}
+    F --&gt;|&quot;hayır&quot;| C
+    F --&gt;|&quot;evet&quot;| G[&quot;parse_sentiment&quot;]
+    G --&gt; H[&quot;sentiment -1..1 clamp&quot;]
+    H --&gt; I[&quot;trending_terms + bias&quot;]
+    I --&gt; J[&quot;AgentOutput::Sentiment&quot;]
+</pre>
+<h3 id="src-agents-coordinator-rs"><code>src/agents/coordinator.rs</code><a class="headerlink" href="#src-agents-coordinator-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Koordinatör ajan, üç ajanın çıktısını (signal, risk, sentiment) JSON paketinde LLM'e sunar ve tek <code>FinalDecision</code> üretmesini ister. Kurallar prompt'ta sabittir: risk vetosu varsa HOLD + quantity 0; sinyal güveni &gt;= 0.5 altında HOLD; sentiment zıtsa miktar küçültülür; riskli yapıda HOLD. LLM kararı her zaman risk veto kontrolünden geçer (fail-safe öncelik). LLM yoksa/hata varsa deterministik <code>fallback</code> çalışır: veto veya düşük güven → HOLD; aksi halde sinyal kararı alınır ve sentiment &lt; -0.3 ise miktar %50 azaltılır. <code>parse_final</code> ham JSON'u güvenli <code>FinalDecision</code>'a çevirir (miktar 0 → HOLD).
+<strong>Neden kullandık:</strong>
+- Çoklu ajan görüşünü tek, uygulanabilir karara indirger.
+- LLM ve deterministik fallback çift yolu, provider kesintisinde bile karar üretimini sürdürür.
+- Risk veto önceliği, en kısıtlayıcı ajanın görüşünü her koşulda uygular.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;Coordinator.decide(ctx, signal, risk, sentiment)&quot;] --&gt; B{&quot;provider var mı?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;deterministik fallback&quot;]
+    B --&gt;|&quot;evet&quot;| D[&quot;llm_decide: JSON paketi&quot;]
+    D --&gt; E{&quot;LLM başarılı?&quot;}
+    E --&gt;|&quot;hayır&quot;| C
+    E --&gt;|&quot;evet&quot;| F[&quot;parse_final&quot;]
+    F --&gt; G{&quot;risk.veto?&quot;}
+    G --&gt;|&quot;evet&quot;| H[&quot;HOLD + quantity 0 + RATIONALE&quot;]
+    G --&gt;|&quot;hayır&quot;| I[&quot;FinalDecision&quot;]
+    C --&gt; J{&quot;risk.veto veya güven &lt; 0.5?&quot;}
+    J --&gt;|&quot;evet&quot;| K[&quot;HOLD&quot;]
+    J --&gt;|&quot;hayır&quot;| L{&quot;sentiment &lt; -0.3?&quot;}
+    L --&gt;|&quot;evet&quot;| M[&quot;qty %50 azalt&quot;]
+    L --&gt;|&quot;hayır&quot;| N[&quot;sinyal kararını al&quot;]
+    M --&gt; O[&quot;FinalDecision&quot;]
+    N --&gt; O
+    I --&gt; P[&quot;RiskGate.process&quot;]
+    O --&gt; P
+</pre>
+<h3 id="src-executor-mod-rs"><code>src/executor/mod.rs</code><a class="headerlink" href="#src-executor-mod-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> <code>Executor</code>, gate'ten onaylı emri fiilen dışarıya gönderen soyut katmandır. <code>mode</code> (paper/live/both/none) hangi hedefe gidileceğini; <code>approval</code> (auto/human) ise HITL politikasını belirler. <code>human</code> modunda emir <code>/tmp/ai_pending.json</code>'a yazılır ve <code>/tmp/ai_approve.txt</code> dosyasına "approve/reject" yazılana kadar <code>approval_wait_secs</code> boyunca bekler; zaman aşımı fail-safe reddir. <code>both</code> modunda paper ve live sıralı çalıştırılır; paper başarısızsa iptal edilir.
+<strong>Neden kullandık:</strong>
+- Tek <code>execute</code> arayüzüyle paper/live geçişi tamamen config'e bağlanır.
+- HITL onayı dosya tabanlı basit bir mekanizmayla insan kontrolü sağlar.
+- Zaman aşımı ve red durumları emir göndermeyi güvenle durdurur.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;Executor.execute(symbol, action, qty, price)&quot;] --&gt; B{&quot;action trade mi?&quot;}
+    B --&gt;|&quot;hayır&quot;| C[&quot;Err HOLD&quot;]
+    B --&gt;|&quot;evet&quot;| D{&quot;approval == human?&quot;}
+    D --&gt;|&quot;evet&quot;| E[&quot;await_approval: pending + bekle&quot;]
+    E --&gt; F{&quot;onay?&quot;}
+    F --&gt;|&quot;approve&quot;| G[&quot;devam&quot;]
+    F --&gt;|&quot;reject/zaman aşımı&quot;| H[&quot;Err fail-safe&quot;]
+    D --&gt;|&quot;hayır&quot;| G
+    G --&gt; I{&quot;mode?&quot;}
+    I --&gt;|&quot;none&quot;| J[&quot;Err izleme modu&quot;]
+    I --&gt;|&quot;paper&quot;| K[&quot;PaperExecutor&quot;]
+    I --&gt;|&quot;live&quot;| L[&quot;LiveExecutor&quot;]
+    I --&gt;|&quot;both&quot;| M[&quot;paper + live sıralı&quot;]
+    K --&gt; N[&quot;Result&quot;]
+    L --&gt; N
+    M --&gt; N
+</pre>
+<h3 id="src-executor-paper-rs"><code>src/executor/paper.rs</code><a class="headerlink" href="#src-executor-paper-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Paper icra, emri <code>/cycle_finance_orders</code> adlı shared-memory order ring'ine yazar; paper-service bridge bunu alıp aktöre iletir (STRATEGY → EXECUTION yolu). <code>OrderRingBuffer::new</code> <code>catch_unwind</code> ile sarılır; ring açılamazsa panik yerine <code>None</code> döner. Emir, fiyat verilmişse Limit, değilse Market tipiyle, sembol ve miktar baytlarıyla ring'e <code>push</code> edilir ve onay mesajı döner.
+<strong>Neden kullandık:</strong>
+- Gerçek canlı piyasaya dokunmadan tüm emir yaşam döngüsünü uçtan uca test eder.
+- shm ring, ajan katmanı ile paper service arasında düşük gecikmeli IPC sağlar.
+- <code>catch_unwind</code> ile altyapı hatasında daemon çökmeden devam eder.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;PaperExecutor.execute&quot;] --&gt; B{&quot;action?&quot;}
+    B --&gt;|&quot;HOLD&quot;| C[&quot;Err HOLD&quot;]
+    B --&gt;|&quot;BUY/SELL&quot;| D[&quot;side belirle&quot;]
+    D --&gt; E{&quot;price var mı?&quot;}
+    E --&gt;|&quot;evet&quot;| F[&quot;IpcOrderType::Limit&quot;]
+    E --&gt;|&quot;hayır&quot;| G[&quot;IpcOrderType::Market&quot;]
+    F --&gt; H[&quot;ring.push(symbol, side, type, qty)&quot;]
+    G --&gt; H
+    H --&gt; I[&quot;onay mesajı&quot;]
+</pre>
+<h3 id="src-executor-live-rs"><code>src/executor/live.rs</code><a class="headerlink" href="#src-executor-live-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Canlı icra, executiond :3010'un REST API'sine JWT ile bağlanan client'tır. <code>execute</code> önce <code>/api/v1/auth/login</code> ile token alır, ardından <code>/api/v1/orders</code>'a <code>client_order_id</code> (ai_ + ts) ile emir JSON'unu <code>Bearer</code> yetkisiyle POST eder. Yanıt başarılıysa durum + gövde döner; değilse hata mesajı üretilir.
+<strong>Neden kullandık:</strong>
+- Canlı emir gönderimini executiond hizmetine delege ederek gerçek borsa entegrasyonunu ayrıştırır.
+- JWT auth, emir uçlarına yetkisiz erişimi engeller.
+- Hata durumlarında detaylı yanıt gövdesiyle operatöre geri bildirim verir.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;LiveExecutor.execute&quot;] --&gt; B[&quot;login: POST /api/v1/auth/login&quot;]
+    B --&gt; C{&quot;access_token?&quot;}
+    C --&gt;|&quot;hayır&quot;| D[&quot;Err login&quot;]
+    C --&gt;|&quot;evet&quot;| E[&quot;emir JSON'u oluştur&quot;]
+    E --&gt; F[&quot;POST /api/v1/orders (Bearer)&quot;]
+    F --&gt; G{&quot;HTTP başarılı?&quot;}
+    G --&gt;|&quot;evet&quot;| H[&quot;✅ LIVE executiond&quot;]
+    G --&gt;|&quot;hayır&quot;| I[&quot;❌ hata&quot;]
+</pre>
+<h3 id="src-llm-mod-rs"><code>src/llm/mod.rs</code><a class="headerlink" href="#src-llm-mod-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> LLM katmanının soyutlamasıdır. <code>LlmProvider</code> trait'i <code>name()</code> ve <code>complete_json(system, user)</code> ile provider-agnostik tek arayüz sunar; tüm ajanlar bu trait üzerinden konuşur. <code>LlmError</code> ayrıntılı hata tiplerini (NoProvider/Http/Status/Parse/Timeout) taşır. <code>make_provider</code> config'deki <code>provider</code> alanına ve env anahtarlarına göre OpenAI veya Anthropic provider'ını <code>Arc&lt;dyn LlmProvider&gt;</code> olarak üretir; <code>none</code> veya anahtar eksikse <code>None</code> döner.
+<strong>Neden kullandık:</strong>
+- OpenAI/Anthropic geçişini tek config değişkenine indirger (satıcı bağımlılığı azalır).
+- Ajanlar tüm hata tiplerini tek <code>LlmError</code> altında yönetir.
+- <code>None</code> dönüşü ajanları fail-safe varsayılanlara yönlendirir (asla kör emir).</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;make_provider(cfg)&quot;] --&gt; B{&quot;provider?&quot;}
+    B --&gt;|&quot;openai&quot;| C{&quot;OPENAI_API_KEY var mı?&quot;}
+    B --&gt;|&quot;anthropic&quot;| D{&quot;ANTHROPIC_API_KEY var mı?&quot;}
+    B --&gt;|&quot;diğer&quot;| E[&quot;None&quot;]
+    C --&gt;|&quot;evet&quot;| F[&quot;Arc OpenAiProvider&quot;]
+    C --&gt;|&quot;hayır&quot;| E
+    D --&gt;|&quot;evet&quot;| G[&quot;Arc AnthropicProvider&quot;]
+    D --&gt;|&quot;hayır&quot;| E
+    F --&gt; H[&quot;Agent'lar complete_json çağırır&quot;]
+    G --&gt; H
+    E --&gt; I[&quot;fail-safe varsayılanlar&quot;]
+</pre>
+<h3 id="src-llm-openai-rs"><code>src/llm/openai.rs</code><a class="headerlink" href="#src-llm-openai-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> OpenAI Chat Completions istemcisidir. İstek gövdesinde <code>response_format: {type: json_object}</code> ile structured output zorlanır; system + user mesajları <code>https://api.openai.com/v1/chat/completions</code>'a <code>Bearer</code> auth ile gönderilir. Yanıt <code>choices[0].message.content</code>'ten okunur ve gömülü JSON metni <code>serde_json::from_str</code> ile değer tipine çevrilir. Tüm istek <code>timeout</code> ile sarılıdır; durum kodu başarısızsa <code>LlmError::Status</code> döner.
+<strong>Neden kullandık:</strong>
+- <code>json_object</code> response format, LLM'in şema dışı çıktı üretme ihtimalini azaltır.
+- Gömülü JSON'un ayrıştırılması agent'ların doğrudan kendi tiplerine çözmesini sağlar.
+- Timeout sarmalayıcı, yavaş yanıtların HFT döngüsünü kilitlemesini önler.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;OpenAiProvider.complete_json&quot;] --&gt; B[&quot;gövde: model + messages + json_object&quot;]
+    B --&gt; C[&quot;POST api.openai.com/v1/chat/completions&quot;]
+    C --&gt; D[&quot;timeout sarmalayıcı&quot;]
+    D --&gt; E{&quot;HTTP başarılı?&quot;}
+    E --&gt;|&quot;hayır&quot;| F[&quot;LlmError::Status/Http&quot;]
+    E --&gt;|&quot;evet&quot;| G[&quot;choices[0].message.content&quot;]
+    G --&gt; H[&quot;gömülü JSON string&quot;]
+    H --&gt; I[&quot;serde_json::from_str&quot;]
+    I --&gt; J{&quot;parse?&quot;}
+    J --&gt;|&quot;evet&quot;| K[&quot;serde_json::Value&quot;]
+    J --&gt;|&quot;hayır&quot;| L[&quot;LlmError::Parse&quot;]
+</pre>
+<h3 id="src-llm-anthropic-rs"><code>src/llm/anthropic.rs</code><a class="headerlink" href="#src-llm-anthropic-rs" title="Permanent link">&para;</a></h3>
+<p><strong>Detaylı açıklama:</strong> Anthropic Messages API istemcisidir. İstek <code>system</code> alanı ve tek user mesajıyla <code>https://api.anthropic.com/v1/messages</code>'e <code>x-api-key</code> + <code>anthropic-version</code> başlıklarıyla gönderilir; user mesajına "Tek JSON nesnesiyle yanıtla" talimatı eklenir. Yanıt <code>content[0].text</code>'ten alınır ve gömülü JSON metni değer tipine çevrilir. Tüm istek <code>timeout</code> ile sarılıdır.
+<strong>Neden kullandık:</strong>
+- Anthropic'in <code>system</code> alanı, sistem promptlarının ayrı kanalda verilmesini sağlar.
+- <code>content[0].text</code> üzerinden gömülü JSON çözümü ajan tipleriyle birebir uyumludur.
+- Aynı <code>LlmProvider</code> trait'i altında OpenAI ile simetrik kullanım sunar.</p>
+<pre class="mermaid">flowchart TD
+    A[&quot;AnthropicProvider.complete_json&quot;] --&gt; B[&quot;gövde: model + system + messages&quot;]
+    B --&gt; C[&quot;POST api.anthropic.com/v1/messages&quot;]
+    C --&gt; D[&quot;x-api-key + anthropic-version&quot;]
+    D --&gt; E[&quot;timeout sarmalayıcı&quot;]
+    E --&gt; F{&quot;HTTP başarılı?&quot;}
+    F --&gt;|&quot;hayır&quot;| G[&quot;LlmError::Status/Http&quot;]
+    F --&gt;|&quot;evet&quot;| H[&quot;content[0].text&quot;]
+    H --&gt; I[&quot;gömülü JSON string&quot;]
+    I --&gt; J[&quot;serde_json::from_str&quot;]
+    J --&gt; K{&quot;parse?&quot;}
+    K --&gt;|&quot;evet&quot;| L[&quot;serde_json::Value&quot;]
+    K --&gt;|&quot;hayır&quot;| M[&quot;LlmError::Parse&quot;]
+</pre>
+<hr />
+<h2 id="ozet">Özet<a class="headerlink" href="#ozet" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>17 dosya analiz edildi</strong> (1 Cargo.toml + 16 Rust dosyası: main.rs, lib.rs, config.rs, context.rs, gates.rs, agents/mod.rs + 4 ajan, executor/mod.rs + 2 icra, llm/mod.rs + 2 provider).</li>
+<li><strong>17 mermaid diyagramı</strong> oluşturuldu (her dosya için bir tane; kritik akışlar: ajan koordinasyonu, güvenlik kapıları, LLM çağrı akışı, icra ve bağlam toplama dahil).</li>
+</ul>
+<hr />
+<h2 id="tam-kaynak-kodu">📄 Tam Kaynak Kodu<a class="headerlink" href="#tam-kaynak-kodu" title="Permanent link">&para;</a></h2>
+<h3 id="ai-engine-cargo-toml"><code>ai-engine/Cargo.toml</code><a class="headerlink" href="#ai-engine-cargo-toml" title="Permanent link">&para;</a></h3>
+<pre><code class="language-toml">[package]
+name = &quot;ai-engine&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+
+[lib]
+name = &quot;ai_engine&quot;
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+reqwest = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+transport = { path = &quot;../cycle-engine/transport&quot; }
+risk-engine = { path = &quot;../risk-engine&quot; }
+calc-ind = { version = &quot;0.1.0&quot;, path = &quot;../services-engine/calc-ind&quot; }
+</code></pre>
+<h3 id="ai-engine-src-config-rs"><code>ai-engine/src/config.rs</code><a class="headerlink" href="#ai-engine-src-config-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! AI Engine konfigürasyonu — `ai.toml` yükleme ve varsayılanlar.
+
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
+
+/// Kök config. `ai.toml` dosyasından yüklenir (yoksa varsayılan).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct AiConfig {
+    pub providers: ProvidersConfig,
+    pub schedule: ScheduleConfig,
+    pub execution: ExecutionConfig,
+    pub risk: RiskGateConfig,
+    pub context: ContextConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ProvidersConfig {
+    /// openai | anthropic | none
+    pub provider: String,
+    pub openai_model: String,
+    pub anthropic_model: String,
+    pub temperature: f64,
+    pub max_tokens: u32,
+    pub timeout_secs: u64,
+}
+
+impl Default for ProvidersConfig {
+    fn default() -&gt; Self {
+        Self {
+            provider: &quot;none&quot;.into(),
+            openai_model: &quot;gpt-4o-mini&quot;.into(),
+            anthropic_model: &quot;claude-sonnet-4-20250514&quot;.into(),
+            temperature: 0.2,
+            max_tokens: 2048,
+            timeout_secs: 60,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ScheduleConfig {
+    pub interval_secs: u64,
+    pub symbols: Vec&lt;String&gt;,
+    pub approval_wait_secs: u64,
+}
+
+impl Default for ScheduleConfig {
+    fn default() -&gt; Self {
+        Self {
+            interval_secs: 60,
+            symbols: vec![
+                &quot;BTCUSDT&quot;.into(),
+                &quot;ETHUSDT&quot;.into(),
+                &quot;SOLUSDT&quot;.into(),
+                &quot;HEIUSDT&quot;.into(),
+            ],
+            approval_wait_secs: 60,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ExecutionConfig {
+    /// paper | live | both | none
+    pub mode: String,
+    /// auto | human (HITL onayı)
+    pub approval: String,
+    pub execd_url: String,
+    pub execd_user: String,
+    pub execd_password: String,
+    pub paper_url: String,
+    pub paper_admin_user: String,
+    pub paper_admin_pass: String,
+    /// Deterministik emir boyutu sınırı (USDT).
+    pub max_notional_usdt: f64,
+}
+
+impl Default for ExecutionConfig {
+    fn default() -&gt; Self {
+        Self {
+            mode: &quot;paper&quot;.into(),
+            approval: &quot;auto&quot;.into(),
+            execd_url: &quot;http://127.0.0.1:3010&quot;.into(),
+            execd_user: &quot;admin&quot;.into(),
+            execd_password: &quot;changeme123&quot;.into(),
+            paper_url: &quot;http://127.0.0.1:8080&quot;.into(),
+            paper_admin_user: &quot;admin&quot;.into(),
+            paper_admin_pass: &quot;changeme123&quot;.into(),
+            max_notional_usdt: 1_000.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct RiskGateConfig {
+    pub enable_risk_gate: bool,
+    pub anomaly_veto: bool,
+    pub risk_config_path: String,
+    pub initial_balance_usdt: f64,
+}
+
+impl Default for RiskGateConfig {
+    fn default() -&gt; Self {
+        Self {
+            enable_risk_gate: true,
+            anomaly_veto: true,
+            risk_config_path: &quot;risk.toml&quot;.into(),
+            initial_balance_usdt: 100_000.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct ContextConfig {
+    pub price_feed_url: String,
+    pub detect_ms_url: String,
+    pub calc_ind_url: String,
+    /// İsteğe bağlı haber kaynağı (boş ise duygu agent'ı nötr kalır).
+    pub news_feed_url: String,
+    pub indicator_interval: String,
+    pub structure_interval: String,
+    pub structure_limit: u32,
+}
+
+impl Default for ContextConfig {
+    fn default() -&gt; Self {
+        Self {
+            price_feed_url: &quot;http://127.0.0.1:3004&quot;.into(),
+            detect_ms_url: &quot;http://127.0.0.1:3002&quot;.into(),
+            calc_ind_url: &quot;http://127.0.0.1:3007&quot;.into(),
+            news_feed_url: String::new(),
+            indicator_interval: &quot;1m&quot;.into(),
+            structure_interval: &quot;1m&quot;.into(),
+            structure_limit: 100,
+        }
+    }
+}
+
+impl AiConfig {
+    /// `AI_CONFIG` env'inden veya `./ai.toml`'dan yükler; dosya yoksa varsayılan.
+    pub fn load() -&gt; Self {
+        let path = Self::resolve_path();
+        Self::load_from(&amp;path)
+    }
+
+    pub fn resolve_path() -&gt; PathBuf {
+        std::env::var(&quot;AI_CONFIG&quot;)
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from(&quot;ai.toml&quot;))
+    }
+
+    pub fn load_from(path: &amp;Path) -&gt; Self {
+        match std::fs::read_to_string(path) {
+            Ok(content) =&gt; toml::from_str::&lt;AiConfig&gt;(&amp;content)
+                .unwrap_or_else(|e| {
+                    eprintln!(&quot;⚠️  ai.toml parse hatası ({e}) — varsayılan config kullanılıyor&quot;);
+                    AiConfig::default()
+                }),
+            Err(_) =&gt; AiConfig::default(),
+        }
+    }
+
+    /// LLM API anahtarlarını env'den okur.
+    pub fn openai_api_key() -&gt; Option&lt;String&gt; {
+        std::env::var(&quot;OPENAI_API_KEY&quot;).ok().filter(|k| !k.is_empty())
+    }
+
+    pub fn anthropic_api_key() -&gt; Option&lt;String&gt; {
+        std::env::var(&quot;ANTHROPIC_API_KEY&quot;).ok().filter(|k| !k.is_empty())
+    }
+}
+
+impl Default for AiConfig {
+    fn default() -&gt; Self {
+        Self {
+            providers: ProvidersConfig::default(),
+            schedule: ScheduleConfig::default(),
+            execution: ExecutionConfig::default(),
+            risk: RiskGateConfig::default(),
+            context: ContextConfig::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn defaults_are_sane() {
+        let c = AiConfig::default();
+        assert_eq!(c.providers.provider, &quot;none&quot;);
+        assert_eq!(c.schedule.interval_secs, 60);
+        assert_eq!(c.execution.mode, &quot;paper&quot;);
+        assert!(!c.schedule.symbols.is_empty());
+    }
+
+    #[test]
+    fn parses_toml() {
+        let toml = r#&quot;
+[providers]
+provider = &quot;openai&quot;
+openai_model = &quot;gpt-4o&quot;
+
+[schedule]
+interval_secs = 30
+symbols = [&quot;BTCUSDT&quot;, &quot;ETHUSDT&quot;]
+
+[execution]
+mode = &quot;both&quot;
+approval = &quot;human&quot;
+max_notional_usdt = 500
+
+[risk]
+enable_risk_gate = true
+anomaly_veto = true
+&quot;#;
+        let c: AiConfig = toml::from_str(toml).expect(&quot;toml parse&quot;);
+        assert_eq!(c.providers.provider, &quot;openai&quot;);
+        assert_eq!(c.schedule.interval_secs, 30);
+        assert_eq!(c.execution.mode, &quot;both&quot;);
+        assert_eq!(c.execution.approval, &quot;human&quot;);
+        assert_eq!(c.execution.max_notional_usdt, 500.0);
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-context-rs"><code>ai-engine/src/context.rs</code><a class="headerlink" href="#ai-engine-src-context-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Bağlam toplayıcı — mevcut ring'lerden ve REST servislerinden sembol başına
+//! birleşik `MarketContext` üretir.
+//!
+//! Kaynaklar:
+//!   - fiyat    : price-feed :3004  `GET /api/lastprice/{symbol}`
+//!   - indik.   : calc-ind   :3007  `POST /api/calc` + `/cycle_finance_calc` ring okuma
+//!   - yapı     : detect-ms  :3002  `GET /api/ms?symbol=&amp;interval=&amp;limit=`
+//!   - hesap    : paper      :8080  (JWT) `GET /api/v1/account/{balance,positions}`
+//!   - haber    : `news_feed_url` (opsiyonel)
+
+use crate::config::AiConfig;
+use crate::{AccountSnapshot, IndicatorSnapshot, MarketContext, PositionSummary, PriceSnapshot, StructureSnapshot, now_ms};
+use serde::Deserialize;
+use std::collections::HashMap;
+
+const INDICATORS: &amp;[&amp;str] = &amp;[&quot;rsi&quot;, &quot;macd&quot;, &quot;bbands&quot;, &quot;vwap&quot;, &quot;atr&quot;];
+
+pub struct ContextBuilder {
+    client: reqwest::Client,
+    price_feed_url: String,
+    detect_ms_url: String,
+    calc_ind_url: String,
+    news_feed_url: String,
+    indicator_interval: String,
+    structure_interval: String,
+    structure_limit: u32,
+    paper_url: String,
+    paper_user: String,
+    paper_pass: String,
+}
+
+impl ContextBuilder {
+    pub fn new(cfg: &amp;AiConfig) -&gt; Self {
+        let paper_url = std::env::var(&quot;PAPER_API_ADDR&quot;).unwrap_or_else(|_| cfg.execution.paper_url.clone());
+        Self {
+            client: reqwest::Client::new(),
+            price_feed_url: cfg.context.price_feed_url.clone(),
+            detect_ms_url: cfg.context.detect_ms_url.clone(),
+            calc_ind_url: cfg.context.calc_ind_url.clone(),
+            news_feed_url: cfg.context.news_feed_url.clone(),
+            indicator_interval: cfg.context.indicator_interval.clone(),
+            structure_interval: cfg.context.structure_interval.clone(),
+            structure_limit: cfg.context.structure_limit,
+            paper_user: std::env::var(&quot;PAPER_ADMIN_USER&quot;).unwrap_or_else(|_| cfg.execution.paper_admin_user.clone()),
+            paper_pass: std::env::var(&quot;PAPER_ADMIN_PASS&quot;).unwrap_or_else(|_| cfg.execution.paper_admin_pass.clone()),
+            paper_url,
+        }
+    }
+
+    pub async fn build(&amp;self, symbol: &amp;str, all_symbols: &amp;[String]) -&gt; MarketContext {
+        let price = self.fetch_price(symbol).await;
+        let (indicators, structure) = tokio::join!(
+            self.fetch_indicators(symbol),
+            self.fetch_structure(symbol),
+        );
+        let account = self.fetch_account(all_symbols).await;
+        let recent_news = self.fetch_news().await;
+
+        MarketContext {
+            generated_at_ms: now_ms(),
+            price,
+            indicators,
+            structure,
+            account,
+            recent_news,
+        }
+    }
+
+    // ── Fiyat ──────────────────────────────────────────────────────
+    async fn fetch_price(&amp;self, symbol: &amp;str) -&gt; PriceSnapshot {
+        let url = format!(&quot;{}/api/lastprice/{}&quot;, self.price_feed_url, symbol);
+        let resp = self.client.get(&amp;url).send().await;
+        let v: serde_json::Value = match resp {
+            Ok(r) =&gt; match r.json().await {
+                Ok(v) =&gt; v,
+                Err(_) =&gt; return PriceSnapshot::default(),
+            },
+            Err(_) =&gt; return PriceSnapshot::default(),
+        };
+        let price = &amp;v[&quot;price&quot;];
+        PriceSnapshot {
+            symbol: v[&quot;symbol&quot;].as_str().unwrap_or(symbol).to_string(),
+            last: price[&quot;last&quot;].as_f64().unwrap_or(0.0),
+            mark: price[&quot;mark&quot;].as_f64().unwrap_or(0.0),
+            bid: price[&quot;bid&quot;].as_f64().unwrap_or(0.0),
+            ask: price[&quot;ask&quot;].as_f64().unwrap_or(0.0),
+            ts: price[&quot;ts&quot;].as_u64().unwrap_or(0),
+        }
+    }
+
+    // ── İndikatörler (calc-ind + ring) ─────────────────────────────
+    async fn fetch_indicators(&amp;self, symbol: &amp;str) -&gt; IndicatorSnapshot {
+        let mut out = IndicatorSnapshot { symbol: symbol.to_string(), ..Default::default() };
+
+        let mut handles = Vec::new();
+        for ind in INDICATORS {
+            let symbol = symbol.to_string();
+            let interval = self.indicator_interval.clone();
+            let addr = self.calc_ind_url.clone();
+            handles.push(tokio::spawn(async move {
+                let req = calc_ind::IndRequest::new(&amp;symbol, &amp;interval, None, None, ind);
+                let outcome = calc_ind::client::request(&amp;addr, &amp;req).await.map_err(|e| e.to_string());
+                match outcome {
+                    Ok(id) =&gt; {
+                        // read_result her slot'ta 1MB CalcSlot kopyalar; tokio blocking
+                        // pool'unun 2MB stack'i taşmaz — geniş stack'li ayrı thread kullan.
+                        let handle = std::thread::Builder::new()
+                            .name(&quot;calc-ring-read&quot;.into())
+                            .stack_size(64 * 1024 * 1024)
+                            .spawn(move || calc_ind::client::read_result(id, 2, 50))
+                            .map(|h| h.join().ok().flatten())
+                            .unwrap_or(None);
+                        (ind.to_string(), handle)
+                    }
+                    Err(_) =&gt; (ind.to_string(), None),
+                }
+            }));
+        }
+
+        for h in handles {
+            if let Ok((name, res)) = h.await {
+                if let Some(res) = res {
+                    fill_indicators(&amp;mut out, &amp;name, &amp;res.series);
+                }
+            }
+        }
+        out
+    }
+
+    // ── Piyasa yapısı (detect-ms) ──────────────────────────────────
+    async fn fetch_structure(&amp;self, symbol: &amp;str) -&gt; StructureSnapshot {
+        let url = format!(
+            &quot;{}/api/ms?symbol={}&amp;interval={}&amp;limit={}&quot;,
+            self.detect_ms_url, symbol, self.structure_interval, self.structure_limit
+        );
+        let mut out = StructureSnapshot { symbol: symbol.to_string(), ..Default::default() };
+        let Ok(resp) = self.client.get(&amp;url).send().await else {
+            return out;
+        };
+        let Ok(v) = resp.json::&lt;serde_json::Value&gt;().await else {
+            return out;
+        };
+        let ms: Option&lt;MsmpResponse&gt; = serde_json::from_value(v).ok();
+        let Some(ms) = ms else { return out };
+
+        out.ats = ms.ats;
+        out.hurst = ms.hurst;
+        out.r_squared = ms.r_squared;
+        out.trend_label = ms.trend_label;
+        out.confluence_index = ms.confluence_index;
+        out.vwap = ms.vwap;
+        out.poc = ms.poc;
+        out.bsl_ssl_ratio = ms.bsl_ssl_ratio;
+        out.atr = ms.atr;
+        out.current_price = ms.current_price;
+        out.levels = ms
+            .levels
+            .iter()
+            .take(8)
+            .map(|l| format!(&quot;{}@{} pri:{}&quot;, l.level_type, l.price, l.priority_score))
+            .collect();
+        out
+    }
+
+    // ── Hesap durumu (paper JWT) ───────────────────────────────────
+    async fn fetch_account(&amp;self, symbols: &amp;[String]) -&gt; Option&lt;AccountSnapshot&gt; {
+        let token = self.paper_token().await?;
+        let auth = format!(&quot;Bearer {}&quot;, token);
+
+        let bal_url = format!(&quot;{}/api/v1/account/balance&quot;, self.paper_url);
+        let pos_url = format!(&quot;{}/api/v1/account/positions&quot;, self.paper_url);
+
+        let bal_fut = self.client.get(&amp;bal_url).header(&quot;Authorization&quot;, &amp;auth).send();
+        let pos_fut = self.client.get(&amp;pos_url).header(&quot;Authorization&quot;, &amp;auth).send();
+
+        let (bal, pos) = tokio::join!(bal_fut, pos_fut);
+        let bal_v: serde_json::Value = bal.ok()?.json().await.ok()?;
+        let pos_v: serde_json::Value = pos.ok()?.json().await.ok()?;
+
+        let mut positions = Vec::new();
+        if let Some(arr) = pos_v[&quot;positions&quot;].as_array() {
+            for p in arr {
+                let symbol = p[&quot;symbol&quot;].as_str().unwrap_or(&quot;&quot;).to_string();
+                if !symbols.is_empty() &amp;&amp; !symbols.contains(&amp;symbol) {
+                    continue;
+                }
+                let qty = p[&quot;quantity&quot;].as_f64().or_else(|| p[&quot;positionAmt&quot;].as_f64()).unwrap_or(0.0);
+                if qty.abs() &lt; 1e-9 {
+                    continue;
+                }
+                positions.push(PositionSummary {
+                    symbol,
+                    side: p[&quot;side&quot;].as_str().or_else(|| p[&quot;positionSide&quot;].as_str()).unwrap_or(&quot;&quot;).to_string(),
+                    quantity: qty,
+                    entry_price: p[&quot;entry_price&quot;].as_f64().or_else(|| p[&quot;entryPrice&quot;].as_f64()).unwrap_or(0.0),
+                    unrealized_pnl: p[&quot;unrealized_pnl&quot;].as_f64().unwrap_or(0.0),
+                });
+            }
+        }
+
+        Some(AccountSnapshot {
+            equity: bal_v[&quot;equity&quot;].as_str().and_then(|s| s.parse().ok()),
+            cash_balance: bal_v[&quot;cash_balance&quot;].as_str().and_then(|s| s.parse().ok()),
+            positions,
+        })
+    }
+
+    async fn paper_token(&amp;self) -&gt; Option&lt;String&gt; {
+        let url = format!(&quot;{}/api/v1/auth/login&quot;, self.paper_url);
+        let body = serde_json::json!({
+            &quot;username&quot;: self.paper_user,
+            &quot;password&quot;: self.paper_pass,
+        });
+        let resp = self.client.post(&amp;url).json(&amp;body).send().await.ok()?;
+        let v: serde_json::Value = resp.json().await.ok()?;
+        v[&quot;access_token&quot;].as_str().map(str::to_string)
+    }
+
+    // ── Haber (opsiyonel dış kaynak) ───────────────────────────────
+    async fn fetch_news(&amp;self) -&gt; Vec&lt;String&gt; {
+        if self.news_feed_url.trim().is_empty() {
+            return Vec::new();
+        }
+        let Ok(resp) = self.client.get(&amp;self.news_feed_url).send().await else {
+            return Vec::new();
+        };
+        let Ok(v) = resp.json::&lt;serde_json::Value&gt;().await else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        if let Some(arr) = v.as_array() {
+            for item in arr {
+                if let Some(t) = item[&quot;title&quot;].as_str().or_else(|| item.as_str()) {
+                    out.push(t.to_string());
+                }
+            }
+        } else if let Some(arr) = v[&quot;articles&quot;].as_array() {
+            for item in arr {
+                if let Some(t) = item[&quot;title&quot;].as_str() {
+                    out.push(t.to_string());
+                }
+            }
+        }
+        out
+    }
+}
+
+fn fill_indicators(out: &amp;mut IndicatorSnapshot, name: &amp;str, series: &amp;HashMap&lt;String, Vec&lt;Option&lt;f64&gt;&gt;&gt;) {
+    let last = |key: &amp;str| -&gt; Option&lt;f64&gt; {
+        series
+            .get(key)
+            .and_then(|v| v.iter().rev().find_map(|x| *x))
+    };
+    match name {
+        &quot;rsi&quot; =&gt; {
+            if let Some(v) = last(&quot;rsi&quot;) {
+                out.rsi = Some(v);
+            }
+        }
+        &quot;macd&quot; =&gt; {
+            out.macd = last(&quot;macd&quot;).or_else(|| last(&quot;value&quot;));
+            out.macd_signal = last(&quot;signal&quot;);
+        }
+        &quot;bbands&quot; =&gt; {
+            out.bbands_upper = last(&quot;upper&quot;);
+            out.bbands_middle = last(&quot;middle&quot;);
+            out.bbands_lower = last(&quot;lower&quot;);
+            out.sma20 = out.bbands_middle;
+        }
+        &quot;vwap&quot; =&gt; out.vwap = last(&quot;vwap&quot;),
+        &quot;atr&quot; =&gt; out.atr = last(&quot;atr&quot;),
+        _ =&gt; {}
+    }
+}
+
+/// detect-ms raporunun f64 sürümü (Decimal → f64 çözülür).
+#[derive(Debug, Default, Deserialize)]
+struct MsmpResponse {
+    ats: Option&lt;f64&gt;,
+    hurst: Option&lt;f64&gt;,
+    r_squared: Option&lt;f64&gt;,
+    trend_label: Option&lt;String&gt;,
+    confluence_index: Option&lt;f64&gt;,
+    vwap: Option&lt;f64&gt;,
+    poc: Option&lt;f64&gt;,
+    bsl_ssl_ratio: Option&lt;f64&gt;,
+    atr: Option&lt;f64&gt;,
+    levels: Vec&lt;MsmpLevel&gt;,
+    current_price: Option&lt;f64&gt;,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct MsmpLevel {
+    level_type: String,
+    price: f64,
+    priority_score: f64,
+}
+</code></pre>
+<h3 id="ai-engine-src-gates-rs"><code>ai-engine/src/gates.rs</code><a class="headerlink" href="#ai-engine-src-gates-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Risk kapısı — `RiskEngine` (risk.toml politikası) + deterministik boyut kırpma
+//! + agent veto kuralları. Onaylanan kararlar executor'a gider.
+
+use crate::config::AiConfig;
+use crate::executor::Executor;
+use crate::{Action, FinalDecision};
+use risk_engine::engine::RiskEngine;
+use risk_engine::types::{MarkPrice, OrderIntent, OrderKind, Side};
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use std::path::Path;
+
+/// Gate sonucu — denetim izi/ekran için.
+pub enum GateOutcome {
+    Executed(String),
+    Held(String),
+    Rejected(String),
+}
+
+impl std::fmt::Display for GateOutcome {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            GateOutcome::Executed(msg) =&gt; write!(f, &quot;İCRA EDİLDİ: {msg}&quot;),
+            GateOutcome::Held(msg) =&gt; write!(f, &quot;BEKLEMEDE: {msg}&quot;),
+            GateOutcome::Rejected(msg) =&gt; write!(f, &quot;REDDEDİLDİ: {msg}&quot;),
+        }
+    }
+}
+
+pub struct RiskGate {
+    engine: Option&lt;RiskEngine&gt;,
+    anomaly_veto: bool,
+    max_notional: Decimal,
+}
+
+impl RiskGate {
+    pub fn new(cfg: &amp;AiConfig) -&gt; Self {
+        let engine = if cfg.risk.enable_risk_gate {
+            let policy = risk_engine::config::load_risk_config_from(Path::new(&amp;cfg.risk.risk_config_path))
+                .unwrap_or_default();
+            let balance = Decimal::from_f64(cfg.risk.initial_balance_usdt)
+                .unwrap_or(Decimal::from(100_000));
+            Some(RiskEngine::with_policy(balance, policy))
+        } else {
+            None
+        };
+        Self {
+            engine,
+            anomaly_veto: cfg.risk.anomaly_veto,
+            max_notional: Decimal::from_f64(cfg.execution.max_notional_usdt)
+                .unwrap_or(Decimal::from(1_000)),
+        }
+    }
+
+    /// Risk engine'ine canlı mark fiyatı besler (stale-mark reddini önler).
+    pub fn on_mark(&amp;self, symbol: &amp;str, price: f64) {
+        if let Some(eng) = &amp;self.engine {
+            let p = Decimal::from_f64(price).unwrap_or_default();
+            if p.is_zero() {
+                return;
+            }
+            eng.on_mark(&amp;MarkPrice {
+                symbol: symbol.to_string(),
+                price: p,
+                ts_ms: crate::now_ms(),
+            });
+        }
+    }
+
+    /// Kararı gate'ten geçirir; onaylanırsa executor'a iletir.
+    pub async fn process(
+        &amp;self,
+        decision: &amp;FinalDecision,
+        mark_price: Decimal,
+        executor: &amp;Executor,
+    ) -&gt; GateOutcome {
+        if decision.action == Action::Hold {
+            return GateOutcome::Held(format!(&quot;HOLD — {}&quot;, decision.rationale));
+        }
+        if decision.veto {
+            return GateOutcome::Rejected(&quot;agent veto&quot;.into());
+        }
+
+        // Yüksek risk skoru + anomaly_veto açıksa otomatik red.
+        if self.anomaly_veto &amp;&amp; decision.risk_score &gt;= 0.8 {
+            return GateOutcome::Rejected(format!(
+                &quot;risk_score {:.2} &gt;= 0.8 (anomaly_veto)&quot;,
+                decision.risk_score
+            ));
+        }
+
+        // Deterministik boyut sınırı: max_notional_usdt / mark.
+        let mut quantity = decision.quantity;
+        if mark_price.is_sign_positive() {
+            let cap = self.max_notional / mark_price;
+            quantity = quantity.min(cap);
+        }
+        if quantity.is_zero() || quantity.is_sign_negative() {
+            return GateOutcome::Held(&quot;boyut sınırı sonrası miktar 0&quot;.into());
+        }
+
+        let side = match decision.action {
+            Action::Buy =&gt; Some(Side::Buy),
+            Action::Sell =&gt; Some(Side::Sell),
+            Action::Hold =&gt; None,
+        };
+        let Some(side) = side else {
+            return GateOutcome::Held(&quot;HOLD&quot;.into());
+        };
+
+        let intent = OrderIntent {
+            strategy_id: 900,
+            symbol: decision.symbol.clone(),
+            side,
+            quantity,
+            price: decision.target_price,
+            kind: if decision.target_price.is_some() {
+                OrderKind::Limit
+            } else {
+                OrderKind::Market
+            },
+            reduce_only: false,
+            close_position: false,
+            leverage: None,
+        };
+
+        // RiskEngine onayı (kapalıysa doğrudan onaylı).
+        if let Some(eng) = &amp;self.engine {
+            match eng.evaluate(intent) {
+                risk_engine::types::RiskDecision::Rejected { reason, .. } =&gt; {
+                    return GateOutcome::Rejected(format!(&quot;risk-gate: {}&quot;, reason.describe()));
+                }
+                risk_engine::types::RiskDecision::Approved { .. } =&gt; {}
+            }
+        }
+
+        match executor
+            .execute(&amp;decision.symbol, decision.action, quantity, decision.target_price)
+            .await
+        {
+            Ok(msg) =&gt; GateOutcome::Executed(msg),
+            Err(e) =&gt; GateOutcome::Rejected(e),
+        }
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-lib-rs"><code>ai-engine/src/lib.rs</code><a class="headerlink" href="#ai-engine-src-lib-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! AI Agent Engine — Cycle Finance yapay zeka katmanı.
+//!
+//! LLM agent'ları mevcut altyapıdan (ring'ler + REST servisleri) bağlam toplar,
+//! strateji/risk/duygu analizi yapar, koordinatör kararı sentezler ve emri
+//! risk kapısından geçirip paper (order ring) veya canlı (executiond) icra eder.
+
+pub mod agents;
+pub mod config;
+pub mod context;
+pub mod executor;
+pub mod gates;
+pub mod llm;
+
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+
+/// Sinyal yönü.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = &quot;SCREAMING_SNAKE_CASE&quot;)]
+pub enum Action {
+    Buy,
+    Sell,
+    Hold,
+}
+
+impl Action {
+    pub fn as_str(&amp;self) -&gt; &amp;'static str {
+        match self {
+            Action::Buy =&gt; &quot;BUY&quot;,
+            Action::Sell =&gt; &quot;SELL&quot;,
+            Action::Hold =&gt; &quot;HOLD&quot;,
+        }
+    }
+
+    pub fn is_trade(&amp;self) -&gt; bool {
+        !matches!(self, Action::Hold)
+    }
+}
+
+/// Anlık fiyat anlık görüntüsü (price-feed kaynağı).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PriceSnapshot {
+    pub symbol: String,
+    pub last: f64,
+    pub mark: f64,
+    pub bid: f64,
+    pub ask: f64,
+    pub ts: u64,
+}
+
+/// İndikatör özeti (calc-ind / ferro_ta_core).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct IndicatorSnapshot {
+    pub symbol: String,
+    pub rsi: Option&lt;f64&gt;,
+    pub macd: Option&lt;f64&gt;,
+    pub macd_signal: Option&lt;f64&gt;,
+    pub bbands_upper: Option&lt;f64&gt;,
+    pub bbands_middle: Option&lt;f64&gt;,
+    pub bbands_lower: Option&lt;f64&gt;,
+    pub vwap: Option&lt;f64&gt;,
+    pub atr: Option&lt;f64&gt;,
+    pub sma20: Option&lt;f64&gt;,
+    pub ema50: Option&lt;f64&gt;,
+}
+
+/// Piyasa yapısı özeti (detect-ms MSMP 2.0).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct StructureSnapshot {
+    pub symbol: String,
+    pub ats: Option&lt;f64&gt;,
+    pub hurst: Option&lt;f64&gt;,
+    pub r_squared: Option&lt;f64&gt;,
+    pub trend_label: Option&lt;String&gt;,
+    pub confluence_index: Option&lt;f64&gt;,
+    pub vwap: Option&lt;f64&gt;,
+    pub poc: Option&lt;f64&gt;,
+    pub bsl_ssl_ratio: Option&lt;f64&gt;,
+    pub atr: Option&lt;f64&gt;,
+    pub levels: Vec&lt;String&gt;,
+    pub current_price: Option&lt;f64&gt;,
+}
+
+/// Açık pozisyon özeti (paper/executiond kaynağı).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PositionSummary {
+    pub symbol: String,
+    pub side: String,
+    pub quantity: f64,
+    pub entry_price: f64,
+    pub unrealized_pnl: f64,
+}
+
+/// Hesap özeti.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AccountSnapshot {
+    pub equity: Option&lt;f64&gt;,
+    pub cash_balance: Option&lt;f64&gt;,
+    pub positions: Vec&lt;PositionSummary&gt;,
+}
+
+/// Tek sembol için agent'lara verilen birleşik bağlam.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct MarketContext {
+    pub generated_at_ms: u64,
+    pub price: PriceSnapshot,
+    pub indicators: IndicatorSnapshot,
+    pub structure: StructureSnapshot,
+    pub account: Option&lt;AccountSnapshot&gt;,
+    pub recent_news: Vec&lt;String&gt;,
+}
+
+impl MarketContext {
+    /// Fiyat kaynağı sağlıklı mı? (değilse agent'ları çalıştırma)
+    pub fn is_healthy(&amp;self) -&gt; bool {
+        self.price.last &gt; 0.0 &amp;&amp; self.price.ts &gt; 0
+    }
+
+    /// Agent'lara token-verimli tek JSON satırı.
+    pub fn to_compact_json(&amp;self) -&gt; String {
+        serde_json::to_string(self).unwrap_or_else(|_| &quot;{}&quot;.into())
+    }
+}
+
+/// Strateji/sinyal agent'ı çıktısı.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SignalOutput {
+    pub symbol: String,
+    pub action: Action,
+    /// 0.0 .. 1.0
+    pub confidence: f64,
+    /// Baz-coin cinsinden miktar.
+    pub quantity: Decimal,
+    #[serde(default)]
+    pub target_price: Option&lt;Decimal&gt;,
+    #[serde(default)]
+    pub stop_loss: Option&lt;Decimal&gt;,
+    pub rationale: String,
+}
+
+impl Default for SignalOutput {
+    fn default() -&gt; Self {
+        Self {
+            symbol: String::new(),
+            action: Action::Hold,
+            confidence: 0.0,
+            quantity: Decimal::ZERO,
+            target_price: None,
+            stop_loss: None,
+            rationale: &quot;LLM kullanılamıyor — beklemede&quot;.into(),
+        }
+    }
+}
+
+/// Risk/anomali agent'ı çıktısı.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RiskOutput {
+    /// 0.0 (çok güvenli) .. 1.0 (çok riskli)
+    pub risk_score: f64,
+    /// true ise koordinatör kararı iptal edilir (fail-safe).
+    pub veto: bool,
+    /// Maksimum emir boyutu (baz puan; 10000 = %100).
+    pub max_size_bps: Option&lt;u32&gt;,
+    pub flags: Vec&lt;String&gt;,
+}
+
+/// Duygu/sentiment agent'ı çıktısı.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SentimentOutput {
+    /// -1.0 (çok negatif) .. +1.0 (çok pozitif)
+    pub sentiment: f64,
+    pub trending_terms: Vec&lt;String&gt;,
+    pub bias: String,
+}
+
+/// Koordinatörün ürettiği nihai karar.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FinalDecision {
+    pub symbol: String,
+    pub action: Action,
+    pub confidence: f64,
+    pub quantity: Decimal,
+    #[serde(default)]
+    pub target_price: Option&lt;Decimal&gt;,
+    #[serde(default)]
+    pub stop_loss: Option&lt;Decimal&gt;,
+    pub risk_score: f64,
+    pub sentiment: f64,
+    /// true ise emir gönderilmez.
+    pub veto: bool,
+    pub rationale: String,
+    pub ts_ms: u64,
+}
+
+impl FinalDecision {
+    pub fn hold(symbol: &amp;str, rationale: &amp;str) -&gt; Self {
+        Self {
+            symbol: symbol.to_string(),
+            action: Action::Hold,
+            confidence: 0.0,
+            quantity: Decimal::ZERO,
+            target_price: None,
+            stop_loss: None,
+            risk_score: 0.5,
+            sentiment: 0.0,
+            veto: false,
+            rationale: rationale.to_string(),
+            ts_ms: now_ms(),
+        }
+    }
+}
+
+/// Unix epoch milisaniye.
+pub fn now_ms() -&gt; u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+</code></pre>
+<h3 id="ai-engine-src-main-rs"><code>ai-engine/src/main.rs</code><a class="headerlink" href="#ai-engine-src-main-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! AI Engine — Cycle Finance yapay zeka agent katmanı (daemon).
+//!
+//! Periyodik döngü: sembol bağlamını toplar → agent'lar paralel çalışır →
+//! koordinatör karar verir → risk gate → icra (paper ring / executiond).
+//!
+//! HTTP:
+//!   GET /api/health   → durum
+//!   GET /api/status   → son döngü özeti
+
+use ai_engine::agents::Agent;
+use ai_engine::agents::{AgentOutput, AgentRole};
+use ai_engine::agents::coordinator::Coordinator;
+use ai_engine::agents::risk::RiskAgent;
+use ai_engine::agents::sentiment::SentimentAgent;
+use ai_engine::agents::signal::SignalAgent;
+use ai_engine::config::AiConfig;
+use ai_engine::context::ContextBuilder;
+use ai_engine::executor::Executor;
+use ai_engine::gates::{GateOutcome, RiskGate};
+use ai_engine::llm::{LlmProvider, make_provider};
+use ai_engine::FinalDecision;
+use axum::{extract::State, routing::get, Json, Router};
+use parking_lot::RwLock;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use serde::Serialize;
+use std::sync::Arc;
+use std::time::Duration;
+
+const HTTP_ADDR: &amp;str = &quot;127.0.0.1:3110&quot;;
+
+#[derive(Clone, Serialize)]
+struct DecisionView {
+    symbol: String,
+    action: String,
+    confidence: f64,
+    quantity: String,
+    risk_score: f64,
+    sentiment: f64,
+    veto: bool,
+    rationale: String,
+    outcome: String,
+}
+
+#[derive(Clone, Serialize)]
+struct RunSummary {
+    run_id: u64,
+    ts_ms: u64,
+    provider: String,
+    decisions: Vec&lt;DecisionView&gt;,
+}
+
+struct AppState {
+    started_at: u64,
+    provider_name: String,
+    last_run: RwLock&lt;Option&lt;RunSummary&gt;&gt;,
+}
+
+#[tokio::main]
+async fn main() {
+    dotenvy::dotenv().ok();
+    let cfg = AiConfig::load();
+
+    println!(&quot;═══════════════════════════════════════════════════&quot;);
+    println!(&quot;  🤖 AI ENGINE — LLM Agent Katmanı&quot;);
+    println!(&quot;  Semboller  : {}&quot;, cfg.schedule.symbols.join(&quot;, &quot;));
+    println!(&quot;  Periyot    : {} sn&quot;, cfg.schedule.interval_secs);
+    println!(&quot;  İcra modu  : {} (onay: {})&quot;, cfg.execution.mode, cfg.execution.approval);
+    println!(&quot;═══════════════════════════════════════════════════&quot;);
+
+    let provider = make_provider(&amp;cfg);
+    match &amp;provider {
+        Some(p) =&gt; println!(&quot;🤖 LLM provider: {} ({})&quot;, p.name(), model_name(&amp;cfg)),
+        None =&gt; println!(
+            &quot;🤖 LLM provider yok → fail-safe HOLD modu.\n   ai.toml [providers] provider + OPENAI_API_KEY/ANTHROPIC_API_KEY ayarlayın.&quot;
+        ),
+    }
+
+    let context_builder = ContextBuilder::new(&amp;cfg);
+    let risk_gate = RiskGate::new(&amp;cfg);
+    let executor = Executor::new(&amp;cfg);
+    let coordinator = Coordinator::new(provider.clone());
+    let risk_agent = Arc::new(RiskAgent::new(provider.clone()));
+    let sentiment_agent = Arc::new(SentimentAgent::new(provider.clone()));
+
+    let app_state = Arc::new(AppState {
+        started_at: ai_engine::now_ms(),
+        provider_name: provider.as_ref().map(|p| p.name().to_string()).unwrap_or_else(|| &quot;none&quot;.into()),
+        last_run: RwLock::new(None),
+    });
+
+    // ── HTTP status API ──────────────────────────────────────────
+    let router_state = app_state.clone();
+    tokio::spawn(async move {
+        let app = Router::new()
+            .route(&quot;/api/health&quot;, get(health))
+            .route(&quot;/api/status&quot;, get(status))
+            .with_state(router_state);
+        let listener = tokio::net::TcpListener::bind(HTTP_ADDR)
+            .await
+            .expect(&quot;ai-engine port bind&quot;);
+        axum::serve(listener, app).await.expect(&quot;ai-engine serve&quot;);
+    });
+
+    // ── Ana döngü ────────────────────────────────────────────────
+    let mut run_id: u64 = 0;
+    loop {
+        run_id += 1;
+        let summary = run_cycle(
+            run_id,
+            &amp;cfg,
+            &amp;provider,
+            &amp;context_builder,
+            &amp;risk_gate,
+            &amp;executor,
+            &amp;coordinator,
+            &amp;risk_agent,
+            &amp;sentiment_agent,
+        )
+        .await;
+        *app_state.last_run.write() = Some(summary);
+        tokio::time::sleep(Duration::from_secs(cfg.schedule.interval_secs)).await;
+    }
+}
+
+fn model_name(cfg: &amp;AiConfig) -&gt; String {
+    match cfg.providers.provider.to_ascii_lowercase().as_str() {
+        &quot;openai&quot; =&gt; cfg.providers.openai_model.clone(),
+        &quot;anthropic&quot; =&gt; cfg.providers.anthropic_model.clone(),
+        _ =&gt; &quot;—&quot;.into(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn run_cycle(
+    run_id: u64,
+    cfg: &amp;AiConfig,
+    provider: &amp;Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;,
+    context_builder: &amp;ContextBuilder,
+    risk_gate: &amp;RiskGate,
+    executor: &amp;Executor,
+    coordinator: &amp;Coordinator,
+    risk_agent: &amp;Arc&lt;RiskAgent&gt;,
+    sentiment_agent: &amp;Arc&lt;SentimentAgent&gt;,
+) -&gt; RunSummary {
+    println!(&quot;\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&quot;);
+    println!(&quot;🔁 DÖNGÜ #{run_id} @ {}&quot;, ai_engine::now_ms());
+    let mut decisions = Vec::new();
+
+    for symbol in &amp;cfg.schedule.symbols {
+        let ctx = context_builder.build(symbol, &amp;cfg.schedule.symbols).await;
+
+        if !ctx.is_healthy() {
+            println!(&quot;⚠️  {symbol}: fiyat kaynağı sağlıksız — atlandı (price-feed çalışıyor mu?)&quot;);
+            continue;
+        }
+
+        let mark = ctx.price.mark.max(ctx.price.last);
+        risk_gate.on_mark(symbol, mark);
+
+        let signal_agent = SignalAgent::new(provider.clone(), symbol);
+        let signal_out = signal_agent.run(&amp;ctx).await;
+        let risk_out = risk_agent.run(&amp;ctx).await;
+        let sentiment_out = sentiment_agent.run(&amp;ctx).await;
+
+        let (signal, risk, sentiment) = match (signal_out, risk_out, sentiment_out) {
+            (AgentOutput::Signal(s), AgentOutput::Risk(r), AgentOutput::Sentiment(se)) =&gt; (s, r, se),
+            _ =&gt; unreachable!(&quot;agent çıktı türleri sabittir&quot;),
+        };
+
+        println!(
+            &quot;  🧠 {symbol} sinyal: {} (güven {:.2}, qty {}) | ⚠️ risk: {:.2} veto:{} | 📰 duygu: {:.2}&quot;,
+            signal.action.as_str(),
+            signal.confidence,
+            signal.quantity,
+            risk.risk_score,
+            risk.veto,
+            sentiment.sentiment
+        );
+
+        let decision = coordinator.decide(&amp;ctx, &amp;signal, &amp;risk, &amp;sentiment).await;
+        let mark_dec = Decimal::from_f64(mark).unwrap_or_default();
+        let outcome = risk_gate.process(&amp;decision, mark_dec, executor).await;
+
+        println!(&quot;  🤖 [{symbol}] {}&quot;, outcome);
+        decisions.push(decision_view(&amp;decision, &amp;outcome));
+    }
+
+    RunSummary {
+        run_id,
+        ts_ms: ai_engine::now_ms(),
+        provider: provider.as_ref().map(|p| p.name().to_string()).unwrap_or_else(|| &quot;none&quot;.into()),
+        decisions,
+    }
+}
+
+fn decision_view(d: &amp;FinalDecision, outcome: &amp;GateOutcome) -&gt; DecisionView {
+    let outcome_str = match outcome {
+        GateOutcome::Executed(m) =&gt; format!(&quot;executed: {m}&quot;),
+        GateOutcome::Held(m) =&gt; format!(&quot;held: {m}&quot;),
+        GateOutcome::Rejected(m) =&gt; format!(&quot;rejected: {m}&quot;),
+    };
+    DecisionView {
+        symbol: d.symbol.clone(),
+        action: d.action.as_str().to_string(),
+        confidence: d.confidence,
+        quantity: d.quantity.to_string(),
+        risk_score: d.risk_score,
+        sentiment: d.sentiment,
+        veto: d.veto,
+        rationale: d.rationale.clone(),
+        outcome: outcome_str,
+    }
+}
+
+async fn health(State(state): State&lt;Arc&lt;AppState&gt;&gt;) -&gt; Json&lt;serde_json::Value&gt; {
+    let has_run = state.last_run.read().is_some();
+    Json(serde_json::json!({
+        &quot;status&quot;: &quot;ok&quot;,
+        &quot;provider&quot;: state.provider_name,
+        &quot;started_at&quot;: state.started_at,
+        &quot;last_run&quot;: has_run,
+        &quot;agents&quot;: [
+            AgentRole::Signal.as_str(),
+            AgentRole::Risk.as_str(),
+            AgentRole::Sentiment.as_str(),
+            AgentRole::Coordinator.as_str(),
+        ],
+    }))
+}
+
+async fn status(State(state): State&lt;Arc&lt;AppState&gt;&gt;) -&gt; Json&lt;serde_json::Value&gt; {
+    match state.last_run.read().as_ref() {
+        Some(s) =&gt; Json(serde_json::to_value(s).unwrap_or_default()),
+        None =&gt; Json(serde_json::json!({ &quot;run_id&quot;: 0, &quot;note&quot;: &quot;henüz döngü çalışmadı&quot; })),
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-agents-coordinator-rs"><code>ai-engine/src/agents/coordinator.rs</code><a class="headerlink" href="#ai-engine-src-agents-coordinator-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Koordinatör agent'ı — sinyal/risk/duygu çıktılarını sentezleyip nihai kararı üretir.
+//! Risk agent'ının vetosu her zaman önceliklidir (fail-safe).
+
+use super::{clamp_confidence, parse_action};
+use crate::llm::LlmProvider;
+use crate::{Action, FinalDecision, MarketContext, RiskOutput, SentimentOutput, SignalOutput, now_ms};
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use serde::Deserialize;
+use std::sync::Arc;
+
+const SYSTEM_PROMPT: &amp;str = r#&quot;Sen Cycle Finance'in baş koordinatörüsün.
+Strateji analisti, risk analisti ve sentiment analistinin çıktılarını tek karara indirge.
+Kurallar:
+1. risk analisti VETO=true verdiyse karar HOLD olmalı, quantity 0.
+2. Strateji BUY/SELL ve güven &gt;= 0.5 ise onaylayabilirsin; altında HOLD.
+3. Sentiment strateji yönüyle zıtsa quantity'yi küçült (veya HOLD).
+4. Fiyat/yapı riskliyse HOLD.
+Şu JSON şemasına BİREBİR uy, başka hiçbir şey yazma:
+{&quot;action&quot;:&quot;BUY|SELL|HOLD&quot;,&quot;confidence&quot;:0.0..1.0,&quot;quantity&quot;:sayı_pozitif,&quot;target_price&quot;:sayı_veya_null,&quot;stop_loss&quot;:sayı_veya_null,&quot;rationale&quot;:&quot;kısa Türkçe gerekçe&quot;}&quot;#;
+
+pub struct Coordinator {
+    provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;,
+}
+
+impl Coordinator {
+    pub fn new(provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;) -&gt; Self {
+        Self { provider }
+    }
+
+    pub async fn decide(
+        &amp;self,
+        ctx: &amp;MarketContext,
+        signal: &amp;SignalOutput,
+        risk: &amp;RiskOutput,
+        sentiment: &amp;SentimentOutput,
+    ) -&gt; FinalDecision {
+        match &amp;self.provider {
+            Some(p) =&gt; match self.llm_decide(p, ctx, signal, risk, sentiment).await {
+                Ok(mut d) =&gt; {
+                    // Risk vetosu her zaman öncelikli.
+                    if risk.veto {
+                        d.action = Action::Hold;
+                        d.quantity = Decimal::ZERO;
+                        d.rationale = format!(&quot;RISK VETO — {}&quot;, risk.flags.join(&quot;, &quot;));
+                    }
+                    d
+                }
+                Err(e) =&gt; {
+                    eprintln!(&quot;⚠️  [coordinator] LLM hatası: {e}&quot;);
+                    fallback(signal, risk, sentiment, &amp;ctx.price.symbol)
+                }
+            },
+            None =&gt; fallback(signal, risk, sentiment, &amp;ctx.price.symbol),
+        }
+    }
+
+    async fn llm_decide(
+        &amp;self,
+        provider: &amp;Arc&lt;dyn LlmProvider&gt;,
+        ctx: &amp;MarketContext,
+        signal: &amp;SignalOutput,
+        risk: &amp;RiskOutput,
+        sentiment: &amp;SentimentOutput,
+    ) -&gt; Result&lt;FinalDecision, crate::llm::LlmError&gt; {
+        let input = serde_json::json!({
+            &quot;baglam&quot;: ctx.to_compact_json(),
+            &quot;strateji&quot;: signal,
+            &quot;risk&quot;: risk,
+            &quot;sentiment&quot;: sentiment,
+        });
+        let user = format!(&quot;AGENT ÇIKTILARI (JSON):\n{}\n\nNİHAİ KARAR (JSON):&quot;, serde_json::to_string(&amp;input).unwrap_or_default());
+        let v = provider.complete_json(SYSTEM_PROMPT, &amp;user).await?;
+        Ok(parse_final(&amp;v, &amp;ctx.price.symbol))
+    }
+}
+
+fn fallback(signal: &amp;SignalOutput, risk: &amp;RiskOutput, sentiment: &amp;SentimentOutput, symbol: &amp;str) -&gt; FinalDecision {
+    let veto = risk.veto;
+    let trade = signal.action.is_trade() &amp;&amp; signal.confidence &gt;= 0.5 &amp;&amp; !signal.quantity.is_zero();
+
+    if veto || !trade {
+        return FinalDecision::hold(
+            symbol,
+            if veto {
+                &quot;RISK VETO (deterministik) — emir gönderilmedi&quot;
+            } else {
+                &quot;Düşük güven veya HOLD (deterministik)&quot;
+            },
+        );
+    }
+
+    // Sentiment zıtsa miktarı %50 azalt.
+    let mut qty = signal.quantity;
+    if sentiment.sentiment &lt; -0.3 {
+        qty = qty * Decimal::new(5, 1);
+    }
+
+    FinalDecision {
+        symbol: symbol.to_string(),
+        action: signal.action,
+        confidence: signal.confidence,
+        quantity: qty,
+        target_price: signal.target_price,
+        stop_loss: signal.stop_loss,
+        risk_score: risk.risk_score,
+        sentiment: sentiment.sentiment,
+        veto,
+        rationale: signal.rationale.clone(),
+        ts_ms: now_ms(),
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct RawFinal {
+    action: Option&lt;String&gt;,
+    confidence: Option&lt;f64&gt;,
+    quantity: Option&lt;f64&gt;,
+    target_price: Option&lt;f64&gt;,
+    stop_loss: Option&lt;f64&gt;,
+    rationale: Option&lt;String&gt;,
+}
+
+fn parse_final(v: &amp;serde_json::Value, symbol: &amp;str) -&gt; FinalDecision {
+    let raw: RawFinal = serde_json::from_value(v.clone()).unwrap_or_default();
+    let action = raw.action.as_deref().map(parse_action).unwrap_or(Action::Hold);
+    let quantity = raw.quantity.and_then(Decimal::from_f64).unwrap_or(Decimal::ZERO).abs();
+    let action = if quantity.is_zero() { Action::Hold } else { action };
+
+    FinalDecision {
+        symbol: symbol.to_string(),
+        action,
+        confidence: clamp_confidence(raw.confidence),
+        quantity,
+        target_price: raw.target_price.and_then(Decimal::from_f64),
+        stop_loss: raw.stop_loss.and_then(Decimal::from_f64),
+        risk_score: 0.5,
+        sentiment: 0.0,
+        veto: false,
+        rationale: raw.rationale.unwrap_or_else(|| &quot;—&quot;.into()),
+        ts_ms: now_ms(),
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-agents-mod-rs"><code>ai-engine/src/agents/mod.rs</code><a class="headerlink" href="#ai-engine-src-agents-mod-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Agent'lar — her biri tek rol üstlenir, `MarketContext` alır, yapılandırılmış
+//! çıktı üretir. LLM yoksa fail-safe varsayılana dönerler.
+
+pub mod coordinator;
+pub mod risk;
+pub mod sentiment;
+pub mod signal;
+
+use crate::{Action, MarketContext, RiskOutput, SentimentOutput, SignalOutput};
+use async_trait::async_trait;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AgentRole {
+    Signal,
+    Risk,
+    Sentiment,
+    Coordinator,
+}
+
+impl AgentRole {
+    pub fn as_str(&amp;self) -&gt; &amp;'static str {
+        match self {
+            AgentRole::Signal =&gt; &quot;SIGNAL&quot;,
+            AgentRole::Risk =&gt; &quot;RISK&quot;,
+            AgentRole::Sentiment =&gt; &quot;SENTIMENT&quot;,
+            AgentRole::Coordinator =&gt; &quot;COORDINATOR&quot;,
+        }
+    }
+}
+
+/// Bir agent'ın ürettiği çıktı.
+#[derive(Debug)]
+pub enum AgentOutput {
+    Signal(SignalOutput),
+    Risk(RiskOutput),
+    Sentiment(SentimentOutput),
+}
+
+/// Ortak agent arayüzü.
+#[async_trait]
+pub trait Agent: Send + Sync {
+    fn id(&amp;self) -&gt; u32;
+    fn role(&amp;self) -&gt; AgentRole;
+    async fn run(&amp;self, ctx: &amp;MarketContext) -&gt; AgentOutput;
+}
+
+/// JSON'daki yön string'ini `Action`'a çevirir.
+pub(crate) fn parse_action(s: &amp;str) -&gt; Action {
+    match s.trim().to_uppercase().as_str() {
+        &quot;BUY&quot; | &quot;LONG&quot; =&gt; Action::Buy,
+        &quot;SELL&quot; | &quot;SHORT&quot; =&gt; Action::Sell,
+        _ =&gt; Action::Hold,
+    }
+}
+
+pub(crate) fn clamp_confidence(x: Option&lt;f64&gt;) -&gt; f64 {
+    x.unwrap_or(0.0).clamp(0.0, 1.0)
+}
+
+pub(crate) fn clamp_risk(x: Option&lt;f64&gt;) -&gt; f64 {
+    x.unwrap_or(0.5).clamp(0.0, 1.0)
+}
+</code></pre>
+<h3 id="ai-engine-src-agents-risk-rs"><code>ai-engine/src/agents/risk.rs</code><a class="headerlink" href="#ai-engine-src-agents-risk-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Risk/anomali agent'ı — piyasa yapısı ve indikatör bağlamından risk postürü üretir.
+//! `veto=true` ise koordinatör kararı iptal edilir (fail-safe).
+
+use super::{Agent, AgentOutput, AgentRole, clamp_risk};
+use crate::llm::LlmProvider;
+use crate::{MarketContext, RiskOutput};
+use async_trait::async_trait;
+use serde::Deserialize;
+use std::sync::Arc;
+
+const SYSTEM_PROMPT: &amp;str = r#&quot;Sen Cycle Finance'in risk analistisin.
+Verilen piyasa bağlamına göre risk skoru üret. Aşağıdaki durumlarda VETO=true döndür (fail-safe):
+- aşırı volatilite (atr orantısız / fiyat çok hızlı hareketli),
+- kritik seviyelere dayanma (fiyat, detect-ms seviyelerine çok yakın),
+- anormal indikatör değerleri (rsi aşırı bölgelerde + aşırı geniş bantlar).
+Şu JSON şemasına BİREBİR uy, başka hiçbir şey yazma:
+{&quot;risk_score&quot;:0.0..1.0,&quot;veto&quot;:true|false,&quot;max_size_bps&quot;:10000_veya_altı,&quot;flags&quot;:[&quot;kısa etiketler&quot;],&quot;rationale&quot;:&quot;kısa Türkçe gerekçe&quot;}&quot;#;
+
+pub struct RiskAgent {
+    provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;,
+}
+
+impl RiskAgent {
+    pub fn new(provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;) -&gt; Self {
+        Self { provider }
+    }
+}
+
+#[async_trait]
+impl Agent for RiskAgent {
+    fn id(&amp;self) -&gt; u32 {
+        2
+    }
+
+    fn role(&amp;self) -&gt; AgentRole {
+        AgentRole::Risk
+    }
+
+    async fn run(&amp;self, ctx: &amp;MarketContext) -&gt; AgentOutput {
+        let out = match &amp;self.provider {
+            Some(p) =&gt; match p
+                .complete_json(SYSTEM_PROMPT, &amp;format!(&quot;BAĞLAM (JSON):\n{}&quot;, ctx.to_compact_json()))
+                .await
+            {
+                Ok(v) =&gt; parse_risk(&amp;v),
+                Err(e) =&gt; {
+                    eprintln!(&quot;⚠️  [risk] LLM hatası: {e}&quot;);
+                    neutral_risk()
+                }
+            },
+            None =&gt; neutral_risk(),
+        };
+        AgentOutput::Risk(out)
+    }
+}
+
+/// LLM yoksa nötr (0.5) risk postürü — fail-open değil, tarafsız.
+fn neutral_risk() -&gt; RiskOutput {
+    RiskOutput {
+        risk_score: 0.5,
+        veto: false,
+        max_size_bps: None,
+        flags: vec![&quot;llm-off&quot;.into()],
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct RawRisk {
+    risk_score: Option&lt;f64&gt;,
+    veto: Option&lt;bool&gt;,
+    max_size_bps: Option&lt;f64&gt;,
+    flags: Option&lt;Vec&lt;String&gt;&gt;,
+    #[allow(dead_code)]
+    rationale: Option&lt;String&gt;,
+}
+
+fn parse_risk(v: &amp;serde_json::Value) -&gt; RiskOutput {
+    let raw: RawRisk = serde_json::from_value(v.clone()).unwrap_or_default();
+    RiskOutput {
+        risk_score: clamp_risk(raw.risk_score),
+        veto: raw.veto.unwrap_or(false),
+        max_size_bps: raw
+            .max_size_bps
+            .filter(|x| x.is_finite() &amp;&amp; *x &gt; 0.0)
+            .map(|x| x.min(10_000.0) as u32),
+        flags: raw.flags.unwrap_or_default(),
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-agents-sentiment-rs"><code>ai-engine/src/agents/sentiment.rs</code><a class="headerlink" href="#ai-engine-src-agents-sentiment-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Duygu/sentiment agent'ı — dış haber kaynağından piyasa duyarlılığını çıkarır.
+//! Haber yoksa veya LLM kapalıysa nötr (0.0) döner.
+
+use super::{Agent, AgentOutput, AgentRole};
+use crate::llm::LlmProvider;
+use crate::{MarketContext, SentimentOutput};
+use async_trait::async_trait;
+use serde::Deserialize;
+use std::sync::Arc;
+
+const SYSTEM_PROMPT: &amp;str = r#&quot;Sen kripto haber sentiment analistisin.
+Verilen haber başlıklarından piyasa duyarlılığını -1.0..+1.0 arası ölçekte ver.
+(+1 çok pozitif, -1 çok negatif). Şu JSON şemasına BİREBİR uy:
+{&quot;sentiment&quot;:-1.0..1.0,&quot;trending_terms&quot;:[&quot;anahtar kelimeler&quot;],&quot;bias&quot;:&quot;bulut|boğa|nötr|ayı&quot;}&quot;#;
+
+pub struct SentimentAgent {
+    provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;,
+}
+
+impl SentimentAgent {
+    pub fn new(provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;) -&gt; Self {
+        Self { provider }
+    }
+}
+
+#[async_trait]
+impl Agent for SentimentAgent {
+    fn id(&amp;self) -&gt; u32 {
+        3
+    }
+
+    fn role(&amp;self) -&gt; AgentRole {
+        AgentRole::Sentiment
+    }
+
+    async fn run(&amp;self, ctx: &amp;MarketContext) -&gt; AgentOutput {
+        let out = match &amp;self.provider {
+            Some(p) if !ctx.recent_news.is_empty() =&gt; {
+                let news = ctx.recent_news.join(&quot;\n- &quot;);
+                match p
+                    .complete_json(SYSTEM_PROMPT, &amp;format!(&quot;HABERLER:\n- {news}\n\nSENTIMENT (JSON):&quot;))
+                    .await
+                {
+                    Ok(v) =&gt; parse_sentiment(&amp;v),
+                    Err(e) =&gt; {
+                        eprintln!(&quot;⚠️  [sentiment] LLM hatası: {e}&quot;);
+                        SentimentOutput::default()
+                    }
+                }
+            }
+            _ =&gt; SentimentOutput::default(),
+        };
+        AgentOutput::Sentiment(out)
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct RawSentiment {
+    sentiment: Option&lt;f64&gt;,
+    trending_terms: Option&lt;Vec&lt;String&gt;&gt;,
+    bias: Option&lt;String&gt;,
+}
+
+fn parse_sentiment(v: &amp;serde_json::Value) -&gt; SentimentOutput {
+    let raw: RawSentiment = serde_json::from_value(v.clone()).unwrap_or_default();
+    SentimentOutput {
+        sentiment: raw.sentiment.unwrap_or(0.0).clamp(-1.0, 1.0),
+        trending_terms: raw.trending_terms.unwrap_or_default(),
+        bias: raw.bias.unwrap_or_else(|| &quot;nötr&quot;.into()),
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-agents-signal-rs"><code>ai-engine/src/agents/signal.rs</code><a class="headerlink" href="#ai-engine-src-agents-signal-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Strateji/sinyal agent'ı — fiyat, indikatör ve yapı bağlamından alım/satım kararı.
+
+use super::{Agent, AgentOutput, AgentRole, clamp_confidence, parse_action};
+use crate::llm::LlmProvider;
+use crate::{Action, MarketContext, SignalOutput};
+use async_trait::async_trait;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use serde::Deserialize;
+use std::sync::Arc;
+
+const SYSTEM_PROMPT: &amp;str = r#&quot;Sen Cycle Finance'in strateji/sinyal analistisin.
+Verilen piyasa bağlamına göre BTC/ETH/SOL/HEIUSDT vadeli işlem için yön kararı ver.
+Sadece yüksek güvenli fırsatlarda BUY/SELL ver; belirsizlikte HOLD.
+Kural: yapı (detect-ms ats/trend) ile indikatörler (rsi/macd/bbands/vwap/atr) çelişiyorsa HOLD.
+Şu JSON şemasına BİREBİR uy, başka hiçbir şey yazma:
+{&quot;action&quot;:&quot;BUY|SELL|HOLD&quot;,&quot;confidence&quot;:0.0..1.0,&quot;quantity&quot;:sayı_pozitif,&quot;target_price&quot;:sayı_veya_null,&quot;stop_loss&quot;:sayı_veya_null,&quot;rationale&quot;:&quot;kısa Türkçe gerekçe&quot;}&quot;#;
+
+pub struct SignalAgent {
+    provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;,
+    symbol: String,
+}
+
+impl SignalAgent {
+    pub fn new(provider: Option&lt;Arc&lt;dyn LlmProvider&gt;&gt;, symbol: &amp;str) -&gt; Self {
+        Self {
+            provider,
+            symbol: symbol.to_string(),
+        }
+    }
+}
+
+#[async_trait]
+impl Agent for SignalAgent {
+    fn id(&amp;self) -&gt; u32 {
+        1
+    }
+
+    fn role(&amp;self) -&gt; AgentRole {
+        AgentRole::Signal
+    }
+
+    async fn run(&amp;self, ctx: &amp;MarketContext) -&gt; AgentOutput {
+        let mut out = SignalOutput::default();
+        out.symbol = self.symbol.clone();
+        let out = match &amp;self.provider {
+            Some(p) =&gt; self.llm_run(p, ctx).await,
+            None =&gt; out,
+        };
+        AgentOutput::Signal(out)
+    }
+}
+
+impl SignalAgent {
+    async fn llm_run(&amp;self, provider: &amp;Arc&lt;dyn LlmProvider&gt;, ctx: &amp;MarketContext) -&gt; SignalOutput {
+        let user = format!(
+            &quot;SEMBOL: {}\nBAĞLAM (JSON):\n{}\n\nKARAR (JSON şemasına uy):&quot;,
+            self.symbol,
+            ctx.to_compact_json()
+        );
+        match provider.complete_json(SYSTEM_PROMPT, &amp;user).await {
+            Ok(v) =&gt; parse_signal(&amp;v, &amp;self.symbol),
+            Err(e) =&gt; {
+                eprintln!(&quot;⚠️  [signal] LLM hatası: {e}&quot;);
+                let mut s = SignalOutput::default();
+                s.symbol = self.symbol.clone();
+                s
+            }
+        }
+    }
+}
+
+#[derive(Default, Deserialize)]
+struct RawSignal {
+    action: Option&lt;String&gt;,
+    confidence: Option&lt;f64&gt;,
+    quantity: Option&lt;f64&gt;,
+    target_price: Option&lt;f64&gt;,
+    stop_loss: Option&lt;f64&gt;,
+    rationale: Option&lt;String&gt;,
+}
+
+fn parse_signal(v: &amp;serde_json::Value, symbol: &amp;str) -&gt; SignalOutput {
+    let raw: RawSignal = serde_json::from_value(v.clone()).unwrap_or_default();
+    let action = raw
+        .action
+        .as_deref()
+        .map(parse_action)
+        .unwrap_or(Action::Hold);
+    let quantity = raw
+        .quantity
+        .and_then(Decimal::from_f64)
+        .unwrap_or(Decimal::ZERO)
+        .abs();
+
+    // Miktar 0 ise emir göndermeyi anlamsız kıl → HOLD.
+    let action = if quantity.is_zero() { Action::Hold } else { action };
+
+    SignalOutput {
+        symbol: symbol.to_string(),
+        action,
+        confidence: clamp_confidence(raw.confidence),
+        quantity,
+        target_price: raw.target_price.and_then(Decimal::from_f64),
+        stop_loss: raw.stop_loss.and_then(Decimal::from_f64),
+        rationale: raw.rationale.unwrap_or_else(|| &quot;—&quot;.into()),
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-executor-live-rs"><code>ai-engine/src/executor/live.rs</code><a class="headerlink" href="#ai-engine-src-executor-live-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Canlı icra — executiond :3010 REST client (JWT auth + emir gönderimi).
+
+use crate::config::AiConfig;
+use crate::{Action, now_ms};
+use rust_decimal::Decimal;
+use serde_json::json;
+
+pub struct LiveExecutor {
+    client: reqwest::Client,
+    url: String,
+    user: String,
+    pass: String,
+}
+
+impl LiveExecutor {
+    pub fn new(cfg: &amp;AiConfig) -&gt; Self {
+        Self {
+            client: reqwest::Client::new(),
+            url: cfg.execution.execd_url.clone(),
+            user: cfg.execution.execd_user.clone(),
+            pass: cfg.execution.execd_password.clone(),
+        }
+    }
+
+    pub async fn execute(
+        &amp;self,
+        symbol: &amp;str,
+        action: Action,
+        quantity: Decimal,
+        price: Option&lt;Decimal&gt;,
+    ) -&gt; Result&lt;String, String&gt; {
+        let token = self.login().await?;
+        let body = json!({
+            &quot;symbol&quot;: symbol.to_uppercase(),
+            &quot;side&quot;: action.as_str(),
+            &quot;type&quot;: if price.is_some() { &quot;LIMIT&quot; } else { &quot;MARKET&quot; },
+            &quot;quantity&quot;: quantity.to_string(),
+            &quot;price&quot;: price.map(|p| p.to_string()),
+            &quot;client_order_id&quot;: format!(&quot;ai_{}&quot;, now_ms()),
+            &quot;reduce_only&quot;: false,
+        });
+
+        let resp = self
+            .client
+            .post(format!(&quot;{}/api/v1/orders&quot;, self.url))
+            .header(&quot;Authorization&quot;, format!(&quot;Bearer {token}&quot;))
+            .json(&amp;body)
+            .send()
+            .await
+            .map_err(|e| format!(&quot;executiond isteği başarısız: {e}&quot;))?;
+
+        let status = resp.status();
+        let text = resp
+            .text()
+            .await
+            .map_err(|e| format!(&quot;yanıt okunamadı: {e}&quot;))?;
+
+        if status.is_success() {
+            Ok(format!(&quot;✅ LIVE executiond: {status} {text}&quot;))
+        } else {
+            Err(format!(&quot;❌ LIVE executiond {status}: {text}&quot;))
+        }
+    }
+
+    async fn login(&amp;self) -&gt; Result&lt;String, String&gt; {
+        let resp = self
+            .client
+            .post(format!(&quot;{}/api/v1/auth/login&quot;, self.url))
+            .json(&amp;json!({ &quot;username&quot;: self.user, &quot;password&quot;: self.pass }))
+            .send()
+            .await
+            .map_err(|e| format!(&quot;executiond login başarısız: {e}&quot;))?;
+        let status = resp.status();
+        let v: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!(&quot;login yanıtı ayrıştırılamadı: {e}&quot;))?;
+        if !status.is_success() {
+            return Err(format!(&quot;executiond login {status}: {v}&quot;));
+        }
+        v[&quot;access_token&quot;]
+            .as_str()
+            .map(str::to_string)
+            .ok_or_else(|| &quot;login yanıtında access_token yok&quot;.into())
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-executor-mod-rs"><code>ai-engine/src/executor/mod.rs</code><a class="headerlink" href="#ai-engine-src-executor-mod-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! İcra katmanı — paper (order ring) ve canlı (executiond) emir gönderimi.
+//! `mode` (paper/live/both/none) ve `approval` (auto/human) burada uygulanır.
+
+pub mod live;
+pub mod paper;
+
+use crate::config::AiConfig;
+use crate::{Action, now_ms};
+use rust_decimal::Decimal;
+use std::time::{Duration, Instant};
+
+pub struct Executor {
+    mode: String,
+    approval: String,
+    approval_wait_secs: u64,
+    paper: Option&lt;paper::PaperExecutor&gt;,
+    live: Option&lt;live::LiveExecutor&gt;,
+}
+
+impl Executor {
+    pub fn new(cfg: &amp;AiConfig) -&gt; Self {
+        let paper = match cfg.execution.mode.as_str() {
+            &quot;paper&quot; | &quot;both&quot; =&gt; paper::PaperExecutor::new(),
+            _ =&gt; None,
+        };
+        let live = match cfg.execution.mode.as_str() {
+            &quot;live&quot; | &quot;both&quot; =&gt; Some(live::LiveExecutor::new(cfg)),
+            _ =&gt; None,
+        };
+        Self {
+            mode: cfg.execution.mode.clone(),
+            approval: cfg.execution.approval.clone(),
+            approval_wait_secs: cfg.schedule.approval_wait_secs,
+            paper,
+            live,
+        }
+    }
+
+    pub fn is_enabled(&amp;self) -&gt; bool {
+        self.mode != &quot;none&quot;
+    }
+
+    /// Emri icra eder. HITL (human-in-the-loop) modunda insan onayı bekler.
+    pub async fn execute(
+        &amp;self,
+        symbol: &amp;str,
+        action: Action,
+        quantity: Decimal,
+        price: Option&lt;Decimal&gt;,
+    ) -&gt; Result&lt;String, String&gt; {
+        if !action.is_trade() {
+            return Err(&quot;HOLD emri gönderilmez&quot;.into());
+        }
+        if self.approval == &quot;human&quot; {
+            self.await_approval(symbol, action, quantity, price).await?;
+        }
+
+        match self.mode.as_str() {
+            &quot;none&quot; =&gt; Err(&quot;execution.mode = none (sadece izleme)&quot;.into()),
+            &quot;paper&quot; =&gt; match &amp;self.paper {
+                Some(p) =&gt; p.execute(symbol, action, quantity, price),
+                None =&gt; Err(&quot;paper executor başlatılamadı (order ring açılamadı)&quot;.into()),
+            },
+            &quot;live&quot; =&gt; match &amp;self.live {
+                Some(l) =&gt; l.execute(symbol, action, quantity, price).await,
+                None =&gt; Err(&quot;live executor başlatılamadı&quot;.into()),
+            },
+            &quot;both&quot; =&gt; {
+                let paper_msg = match &amp;self.paper {
+                    Some(p) =&gt; match p.execute(symbol, action, quantity, price) {
+                        Ok(m) =&gt; Some(m),
+                        Err(e) =&gt; return Err(format!(&quot;PAPER başarısız: {e}&quot;)),
+                    },
+                    None =&gt; None,
+                };
+                let live_msg = match &amp;self.live {
+                    Some(l) =&gt; l.execute(symbol, action, quantity, price).await?,
+                    None =&gt; String::new(),
+                };
+                Ok(format!(
+                    &quot;✅ BOTH: paper={:?} live={}&quot;,
+                    paper_msg, live_msg
+                ))
+            }
+            other =&gt; Err(format!(&quot;bilinmeyen execution.mode: {other}&quot;)),
+        }
+    }
+
+    async fn await_approval(
+        &amp;self,
+        symbol: &amp;str,
+        action: Action,
+        quantity: Decimal,
+        price: Option&lt;Decimal&gt;,
+    ) -&gt; Result&lt;(), String&gt; {
+        let pending = serde_json::json!({
+            &quot;ts_ms&quot;: now_ms(),
+            &quot;symbol&quot;: symbol,
+            &quot;action&quot;: action.as_str(),
+            &quot;quantity&quot;: quantity.to_string(),
+            &quot;price&quot;: price.map(|p| p.to_string()),
+        });
+        let _ = std::fs::write(
+            &quot;/tmp/ai_pending.json&quot;,
+            serde_json::to_string_pretty(&amp;pending).unwrap_or_default(),
+        );
+        println!(
+            &quot;🕐 ONAY BEKLENİYOR: {symbol} {} {} @ {:?}\n   Onaylamak için: echo approve &gt; /tmp/ai_approve.txt&quot;,
+            action.as_str(),
+            quantity,
+            price
+        );
+
+        let deadline = Instant::now() + Duration::from_secs(self.approval_wait_secs);
+        loop {
+            if let Ok(content) = std::fs::read_to_string(&quot;/tmp/ai_approve.txt&quot;) {
+                let c = content.trim().to_ascii_lowercase();
+                if c == &quot;approve&quot; || c == &quot;1&quot; || c == &quot;evet&quot; || c == &quot;ok&quot; {
+                    let _ = std::fs::remove_file(&quot;/tmp/ai_approve.txt&quot;);
+                    return Ok(());
+                }
+                if c == &quot;reject&quot; || c == &quot;0&quot; || c == &quot;hayır&quot; || c == &quot;no&quot; {
+                    let _ = std::fs::remove_file(&quot;/tmp/ai_approve.txt&quot;);
+                    return Err(&quot;insan onayı reddetti — emir gönderilmedi&quot;.into());
+                }
+            }
+            if Instant::now() &gt;= deadline {
+                return Err(&quot;onay zaman aşımı — fail-safe: emir gönderilmedi&quot;.into());
+            }
+            tokio::time::sleep(Duration::from_millis(1000)).await;
+        }
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-executor-paper-rs"><code>ai-engine/src/executor/paper.rs</code><a class="headerlink" href="#ai-engine-src-executor-paper-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Paper icra — emri `/cycle_finance_orders` ring'ine yazar; paper-service bridge
+//! bunu alıp actor'e iletir (STRATEGY → EXECUTION yolu).
+
+use crate::{Action, now_ms};
+use rust_decimal::Decimal;
+use transport::order_ring::{IpcOrderSide, IpcOrderType, OrderRingBuffer};
+
+const ORDER_RING_CAPACITY: usize = 10_000;
+
+pub struct PaperExecutor {
+    ring: OrderRingBuffer,
+}
+
+impl PaperExecutor {
+    /// Ring'i açar. shm açılamazsa `None` (panik yerine güvenli düşüş).
+    pub fn new() -&gt; Option&lt;Self&gt; {
+        match std::panic::catch_unwind(|| OrderRingBuffer::new(ORDER_RING_CAPACITY)) {
+            Ok(ring) =&gt; Some(Self { ring }),
+            Err(_) =&gt; {
+                eprintln!(&quot;⚠️  paper order ring (/cycle_finance_orders) açılamadı&quot;);
+                None
+            }
+        }
+    }
+
+    pub fn execute(
+        &amp;self,
+        symbol: &amp;str,
+        action: Action,
+        quantity: Decimal,
+        price: Option&lt;Decimal&gt;,
+    ) -&gt; Result&lt;String, String&gt; {
+        let side = match action {
+            Action::Buy =&gt; IpcOrderSide::Buy,
+            Action::Sell =&gt; IpcOrderSide::Sell,
+            Action::Hold =&gt; return Err(&quot;HOLD emri gönderilmez&quot;.into()),
+        };
+        let order_type = if price.is_some() {
+            IpcOrderType::Limit
+        } else {
+            IpcOrderType::Market
+        };
+
+        self.ring.push(
+            symbol.as_bytes(),
+            side,
+            order_type,
+            quantity,
+            price.unwrap_or(Decimal::ZERO),
+        );
+
+        Ok(format!(
+            &quot;✅ PAPER ring: {} {} {} @ {} (ts: {})&quot;,
+            action.as_str(),
+            symbol,
+            quantity,
+            price.map(|p| p.to_string()).unwrap_or_else(|| &quot;MARKET&quot;.into()),
+            now_ms()
+        ))
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-llm-anthropic-rs"><code>ai-engine/src/llm/anthropic.rs</code><a class="headerlink" href="#ai-engine-src-llm-anthropic-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! Anthropic Messages API istemcisi (JSON structured output).
+
+use super::{LlmError, LlmProvider};
+use async_trait::async_trait;
+use serde_json::json;
+use std::time::Duration;
+
+pub struct AnthropicProvider {
+    api_key: String,
+    model: String,
+    temperature: f64,
+    max_tokens: u32,
+    timeout: Duration,
+    client: reqwest::Client,
+}
+
+impl AnthropicProvider {
+    pub fn new(
+        api_key: String,
+        model: String,
+        temperature: f64,
+        max_tokens: u32,
+        timeout: Duration,
+    ) -&gt; Self {
+        Self {
+            api_key,
+            model,
+            temperature,
+            max_tokens,
+            timeout,
+            client: reqwest::Client::new(),
+        }
+    }
+}
+
+#[async_trait]
+impl LlmProvider for AnthropicProvider {
+    fn name(&amp;self) -&gt; &amp;'static str {
+        &quot;anthropic&quot;
+    }
+
+    async fn complete_json(&amp;self, system: &amp;str, user: &amp;str) -&gt; Result&lt;serde_json::Value, LlmError&gt; {
+        let body = json!({
+            &quot;model&quot;: self.model,
+            &quot;max_tokens&quot;: self.max_tokens,
+            &quot;system&quot;: system,
+            &quot;temperature&quot;: self.temperature,
+            &quot;messages&quot;: [
+                { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: format!(&quot;{user}\n\nTek JSON nesnesiyle yanıtla.&quot;) }
+            ]
+        });
+
+        let fut = self
+            .client
+            .post(&quot;https://api.anthropic.com/v1/messages&quot;)
+            .header(&quot;x-api-key&quot;, &amp;self.api_key)
+            .header(&quot;anthropic-version&quot;, &quot;2023-06-01&quot;)
+            .json(&amp;body)
+            .send();
+
+        let resp = tokio::time::timeout(self.timeout, fut)
+            .await
+            .map_err(|_| LlmError::Timeout)?
+            .map_err(|e| LlmError::Http(e.to_string()))?;
+
+        let status = resp.status();
+        let text = resp.text().await.map_err(|e| LlmError::Http(e.to_string()))?;
+        if !status.is_success() {
+            return Err(LlmError::Status { status, body: text });
+        }
+
+        let v: serde_json::Value =
+            serde_json::from_str(&amp;text).map_err(|e| LlmError::Parse(e.to_string()))?;
+        let content = v[&quot;content&quot;][0][&quot;text&quot;]
+            .as_str()
+            .ok_or_else(|| LlmError::Parse(&quot;content[0].text eksik&quot;.into()))?;
+        serde_json::from_str(content).map_err(|e| LlmError::Parse(e.to_string()))
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-llm-mod-rs"><code>ai-engine/src/llm/mod.rs</code><a class="headerlink" href="#ai-engine-src-llm-mod-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! LLM provider soyutlaması — OpenAI ve Anthropic.
+//!
+//! Her provider JSON-schema kısıtlı (structured) çıktı üretir; agent'lar
+//! `complete_json` sonucunu kendi tiplerine çözer. LLM yoksa (`none`) agent'lar
+//! fail-safe varsayılanlara döner — asla kör emir üretilmez.
+
+pub mod anthropic;
+pub mod openai;
+
+use crate::config::AiConfig;
+use async_trait::async_trait;
+use std::sync::Arc;
+use std::time::Duration;
+
+/// Provider hataları.
+#[derive(Debug)]
+pub enum LlmError {
+    NoProvider,
+    Http(String),
+    Status { status: reqwest::StatusCode, body: String },
+    Parse(String),
+    Timeout,
+}
+
+impl std::fmt::Display for LlmError {
+    fn fmt(&amp;self, f: &amp;mut std::fmt::Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        match self {
+            LlmError::NoProvider =&gt; write!(f, &quot;LLM provider tanımlı değil&quot;),
+            LlmError::Http(e) =&gt; write!(f, &quot;HTTP hatası: {e}&quot;),
+            LlmError::Status { status, body } =&gt; write!(f, &quot;LLM {status}: {body}&quot;),
+            LlmError::Parse(e) =&gt; write!(f, &quot;yanıt ayrıştırılamadı: {e}&quot;),
+            LlmError::Timeout =&gt; write!(f, &quot;LLM istek zaman aşımı&quot;),
+        }
+    }
+}
+
+impl std::error::Error for LlmError {}
+
+/// Yapılandırılmış JSON döndüren LLM istemcisi.
+#[async_trait]
+pub trait LlmProvider: Send + Sync {
+    fn name(&amp;self) -&gt; &amp;'static str;
+    /// System + user prompt verilir, tek JSON nesnesi döner.
+    async fn complete_json(&amp;self, system: &amp;str, user: &amp;str) -&gt; Result&lt;serde_json::Value, LlmError&gt;;
+}
+
+/// Config + env anahtarlarına göre provider üretir.
+/// `none` veya anahtar eksikse `None` → agent'lar varsayılana döner.
+pub fn make_provider(cfg: &amp;AiConfig) -&gt; Option&lt;Arc&lt;dyn LlmProvider&gt;&gt; {
+    let timeout = Duration::from_secs(cfg.providers.timeout_secs);
+    match cfg.providers.provider.to_ascii_lowercase().as_str() {
+        &quot;openai&quot; =&gt; {
+            let key = AiConfig::openai_api_key()?;
+            Some(Arc::new(openai::OpenAiProvider::new(
+                key,
+                cfg.providers.openai_model.clone(),
+                cfg.providers.temperature,
+                cfg.providers.max_tokens,
+                timeout,
+            )))
+        }
+        &quot;anthropic&quot; =&gt; {
+            let key = AiConfig::anthropic_api_key()?;
+            Some(Arc::new(anthropic::AnthropicProvider::new(
+                key,
+                cfg.providers.anthropic_model.clone(),
+                cfg.providers.temperature,
+                cfg.providers.max_tokens,
+                timeout,
+            )))
+        }
+        _ =&gt; None,
+    }
+}
+</code></pre>
+<h3 id="ai-engine-src-llm-openai-rs"><code>ai-engine/src/llm/openai.rs</code><a class="headerlink" href="#ai-engine-src-llm-openai-rs" title="Permanent link">&para;</a></h3>
+<pre><code class="language-rust">//! OpenAI Chat Completions istemcisi (JSON object structured output).
+
+use super::{LlmError, LlmProvider};
+use async_trait::async_trait;
+use serde_json::json;
+use std::time::Duration;
+
+pub struct OpenAiProvider {
+    api_key: String,
+    model: String,
+    temperature: f64,
+    max_tokens: u32,
+    timeout: Duration,
+    client: reqwest::Client,
+}
+
+impl OpenAiProvider {
+    pub fn new(
+        api_key: String,
+        model: String,
+        temperature: f64,
+        max_tokens: u32,
+        timeout: Duration,
+    ) -&gt; Self {
+        Self {
+            api_key,
+            model,
+            temperature,
+            max_tokens,
+            timeout,
+            client: reqwest::Client::new(),
+        }
+    }
+}
+
+#[async_trait]
+impl LlmProvider for OpenAiProvider {
+    fn name(&amp;self) -&gt; &amp;'static str {
+        &quot;openai&quot;
+    }
+
+    async fn complete_json(&amp;self, system: &amp;str, user: &amp;str) -&gt; Result&lt;serde_json::Value, LlmError&gt; {
+        let body = json!({
+            &quot;model&quot;: self.model,
+            &quot;messages&quot;: [
+                { &quot;role&quot;: &quot;system&quot;, &quot;content&quot;: system },
+                { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: user }
+            ],
+            &quot;temperature&quot;: self.temperature,
+            &quot;max_tokens&quot;: self.max_tokens,
+            &quot;response_format&quot;: { &quot;type&quot;: &quot;json_object&quot; }
+        });
+
+        let fut = self
+            .client
+            .post(&quot;https://api.openai.com/v1/chat/completions&quot;)
+            .header(&quot;Authorization&quot;, format!(&quot;Bearer {}&quot;, self.api_key))
+            .json(&amp;body)
+            .send();
+
+        let resp = tokio::time::timeout(self.timeout, fut)
+            .await
+            .map_err(|_| LlmError::Timeout)?
+            .map_err(|e| LlmError::Http(e.to_string()))?;
+
+        let status = resp.status();
+        let text = resp.text().await.map_err(|e| LlmError::Http(e.to_string()))?;
+        if !status.is_success() {
+            return Err(LlmError::Status { status, body: text });
+        }
+
+        let v: serde_json::Value =
+            serde_json::from_str(&amp;text).map_err(|e| LlmError::Parse(e.to_string()))?;
+        let content = v[&quot;choices&quot;][0][&quot;message&quot;][&quot;content&quot;]
+            .as_str()
+            .ok_or_else(|| LlmError::Parse(&quot;choices[0].message.content eksik&quot;.into()))?;
+        serde_json::from_str(content).map_err(|e| LlmError::Parse(e.to_string()))
+    }
+}
+</code></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#e0ecff',
+      primaryTextColor: '#0f172a',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#64748b',
+      secondaryColor: '#f1f5f9',
+      tertiaryColor: '#f8fafc'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>
+
