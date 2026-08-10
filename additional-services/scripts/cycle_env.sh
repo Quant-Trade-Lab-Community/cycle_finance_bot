@@ -34,13 +34,12 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  ⚙️  SİSTEMLERİ TEK TEK AÇ / KAPAT  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_G}data-start${_N} / ${_R}data-stop${_N}          DATA terminali (Binance WS)"
-  echo -e "  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY terminali (PyO3)"
+  echo -e "  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY orkestrasyon konsolu"
   echo -e "  ${_G}paper-start${_N} / ${_R}paper-stop${_N}        Paper-service (REST :8080)"
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
   echo -e "  ${_G}calc-ind-start${_N} / ${_R}calc-ind-stop${_N}    İndikatör hesaplama motoru (:3007)"
-  echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi"
   echo -e "  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)"
 
   echo -e "\n${_Y}━━━  🤖 AI ENGINE (LLM Agent Katmanı)  ━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -58,7 +57,7 @@ help-cycle() {
   echo -e "  ${_C}exec-console-log${_N}     Konsol penceresine geç (Ctrl+B → 13)"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
+  echo -e "  ${_C}listener-start${_N}      Ayrı pencerede başlat"
   echo -e "  ${_C}listener-stop${_N}       Durdur"
   echo -e "  ${_C}listener-status${_N}     Çalışıyor mu? CPU/RAM"
   echo -e "  ${_C}listenconfig-list${_N}   Metrik parametrelerini göster"
@@ -67,7 +66,7 @@ help-cycle() {
   echo -e "  ${_C}listener-log${_N}        Metrik çıktısını izle (/tmp/listener_metrics.json)"
 
   echo -e "\n${_Y}━━━  ⚠️  RİSK ANALİZİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}risk-start${_N}           Pane 0.1'de başlat (5 sn yenileme)"
+  echo -e "  ${_C}risk-start${_N}           Risk analizini başlat (pencere 8)"
   echo -e "  ${_C}risk-worker-start${_N}    risk-worker daemon'ı başlat (korelasyon/VaR)"
   echo -e "  ${_C}risk-stop${_N}            Durdur"
   echo -e "  ${_C}risk-query${_N}           Tek seferlik analiz çalıştır"
@@ -80,7 +79,7 @@ help-cycle() {
   echo -e "  ${_C}pricefeed-log${_N}       Canlı log izle"
 
   echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}data-live${_N}            Canlı Binance WS başlat (RUN_MODE=DATA)"
+  echo -e "  ${_C}data-live${_N}            Canlı Binance WS başlat (engine DATA konsolu)"
   echo -e "  ${_C}data-backtest${_N}        CSV backtest başlat"
   echo -e "  ${_C}data-log${_N}             Data terminal logunu izle"
 
@@ -109,10 +108,15 @@ help-cycle() {
   echo -e "  ${_C}exec-account / exec-positions / exec-balance / exec-orders${_N}"
   echo -e "  ${_R}exec-kill / exec-unkill${_N}  Kill switch aç/kapat (acil durum)"
 
-  echo -e "\n${_Y}━━━  🧠 STRATEGY / CORRELATION  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}strategy-start${_N}       Strategy terminalini başlat (arka plan)"
-  echo -e "  ${_C}strategy-stop${_N}        Strategy terminalini durdur"
-  echo -e "  ${_C}correlation-start${_N}    Korelasyon analizini başlat"
+  echo -e "\n${_Y}━━━  🧠 STRATEJİ ORKESTRASYONU  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}strat run breakout${_N}        Strateji(ler)i başlat (istendiği kadar)"
+  echo -e "  ${_C}strat run breakout rsi${_N}    Birden fazla stratejiyi başlat"
+  echo -e "  ${_C}strat stop breakout${_N}       Strateji(ler)i durdur"
+  echo -e "  ${_C}strat list${_N}                Mevcut stratejiler (services-engine/strategies/)"
+  echo -e "  ${_C}strat status${_N}              Orkestrasyon durumu (çalışan stratejiler)"
+  echo -e "  ${_C}strat attach${_N}              STRATEGY konsoluna geç (pencere 1)"
+  echo -e "  ${_C}strategy-start${_N} / ${_R}strategy-stop${_N}  Orkestrasyon konsolunu aç/kapat"
+  echo -e "  ${_C}breakout-wait 600${_N}         Kırılım bekleme süresini ayarla (saniye)"
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
@@ -129,14 +133,14 @@ help-cycle() {
   echo -e "  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu"
   echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
 
-  echo -e "\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}breakout-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
-  echo -e "  ${_C}breakout-stop${_N}         Stratejiyi durdur"
-  echo -e "  ${_C}breakout-status${_N}       Çalışıyor mu? CPU/RAM göster"
-  echo -e "  ${_C}breakout-query${_N}        Tek seferlik analiz (emir açmaz)"
+  echo -e "\n${_Y}━━━  🎯 KIRILIM STRATEJİSİ (breakout)  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}strat run breakout${_N}      Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
+  echo -e "  ${_C}strat stop breakout${_N}     Stratejiyi durdur"
+  echo -e "  ${_C}strat status${_N}            Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}breakout-query${_N}          Tek seferlik analiz (emir açmaz)"
   echo -e "  ${_C}breakout-query --dry-run${_N}  Analiz + kırılım simülasyonu"
-  echo -e "  ${_C}breakout-wait 600${_N}     Bekleme süresini ayarla (saniye)"
-  echo -e "  ${_C}breakout-log${_N}          Canlı strateji logu izle"
+  echo -e "  ${_C}breakout-wait 600${_N}       Bekleme süresini ayarla (saniye)"
+  echo -e "  ${_C}breakout-log${_N}            Canlı strateji logu izle"
 
   echo -e "\n${_Y}━━━  📡 STREAM-OHLCV  (Canlı OHLCV Mum Akışı :3008)  ━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}stream-ohlcv-start${_N}    Servisi başlat (ring: /dev/shm/cycle_finance_stream_ohlcv)"
@@ -147,25 +151,29 @@ help-cycle() {
   echo -e "  ${_C}stream-ohlcv-query SYM ITV START_MS${_N}   Stream aç + durum göster"
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 4)"
+  echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 10)"
 
   echo -e "\n${_Y}━━━  🗄️  VERİTABANI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}db-trades${_N}            Son 20 işlemi göster"
   echo -e "  ${_C}db-size${_N}              Veritabanı boyutu"
 
   echo -e "\n${_Y}━━━  🌐 TMUX KISAYOLLARI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_B}Ctrl+B → ok tuşu${_N}     Panel değiştir"
-  echo -e "  ${_B}Ctrl+B → z${_N}           Paneli tam ekran yap / küçült"
+  echo -e "  ${_B}Ctrl+B → ok tuşu${_N}     Pencere değiştir"
   echo -e "  ${_B}Ctrl+B → d${_N}           Session'ı arka plana al"
-  echo -e "  ${_B}Ctrl+B → 0${_N}           Trading sekmesi (4 panel)"
-  echo -e "  ${_B}Ctrl+B → 1${_N}           📡 DATA sekmesi"
-  echo -e "  ${_B}Ctrl+B → 2${_N}           🔔 ALERT sekmesi"
-  echo -e "  ${_B}Ctrl+B → 3${_N}           🛡️ PAPER sekmesi"
-  echo -e "  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi"
-  echo -e "  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi"
-  echo -e "  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi"
-  echo -e "  ${_B}Ctrl+B → 7${_N}           STREAM-OHLCV sekmesi"
-  echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
+  echo -e "  ${_B}Ctrl+B → 0${_N}           💻 SHELL sekmesi (orkestrasyon komutları)"
+  echo -e "  ${_B}Ctrl+B → 1${_N}           🧠 STRATEGY sekmesi (orkestrasyon konsolu)"
+  echo -e "  ${_B}Ctrl+B → 2${_N}           📡 DATA sekmesi"
+  echo -e "  ${_B}Ctrl+B → 3${_N}           📈 DETECT-MS sekmesi"
+  echo -e "  ${_B}Ctrl+B → 4${_N}           🛰️ PRICE-FEED sekmesi"
+  echo -e "  ${_B}Ctrl+B → 5${_N}           🧮 CALC-IND sekmesi"
+  echo -e "  ${_B}Ctrl+B → 6${_N}           📊 STREAM-OHLCV sekmesi"
+  echo -e "  ${_B}Ctrl+B → 7${_N}           🛡️ PAPER sekmesi"
+  echo -e "  ${_B}Ctrl+B → 8${_N}           ⚠️ RISK sekmesi"
+  echo -e "  ${_B}Ctrl+B → 9${_N}           🔔 ALERT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 10${_N}          Monitor sekmesi"
+  echo -e "  ${_B}Ctrl+B → 11${_N}          🤖 AI sekmesi"
+  echo -e "  ${_B}Ctrl+B → 12${_N}          🖥️ CONSOLE sekmesi"
+  echo -e "  ${_B}Fare tıklama/scroll${_N}  Pencere seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_D}help-cycle yazarak bu listeye tekrar ulaşabilirsin.${_N}"
@@ -203,31 +211,39 @@ cycle-build-full() {
 }
 
 # ============================================================
-#  SİSTEMLERİ TEK TEK AÇ / KAPAT  (4 panelli Trading penceresi)
-#  DATA, ALERT ve PAPER ayrı sekme (pencere) olarak açılır.
-#  Her servis kendi pane'inde başlar.
+#  SİSTEMLERİ TEK TEK AÇ / KAPAT
+#  Her servis ayrı sekme (pencere) olarak açılır.
 # ============================================================
-# Yardımcı: Trading penceresindeki bir pane'e komut gönder
-# Servis → hedef: 0.0=STRATEGY 0.2=LISTENER 0.1=RISK 0.3=SHELL
-#                1=DATA sekmesi  2=ALERT sekmesi  3=PAPER sekmesi
+# Yardımcı: ilgili pencereye komut gönder
+# Pencere haritası: 0=SHELL 1=STRATEGY 2=DATA 3=DETECT-MS
+#                   4=PRICE-FEED 5=CALC-IND 6=STREAM-OHLCV
+#                   7=PAPER 8=RISK 9=ALERT 10=Monitor
+#                   11=AI 12=CONSOLE 13=EXEC 14=RISK-WORKER
 _tmux_pane() {
   local name="$1"; shift
   local session="cycle"
   local pane
   case "$name" in
-    "📡DATA")   pane="1" ;;
-    "🛡️PAPER")  pane="3" ;;
-    "🧠STRATEGY") pane="0.0" ;;
-    "🔔ALERT")  pane="2" ;;
-    "🛰️LISTENER") pane="0.2" ;;
-    "⚠️RISK")  pane="0.1" ;;
-    "💻SHELL")  pane="0.3" ;;
-    "📡STREAM-OHLCV") pane="7" ;;
+    "💻SHELL")     pane="0" ;;
+    "🧠STRATEGY")  pane="1" ;;
+    "📡DATA")      pane="2" ;;
+    "📈DETECT-MS") pane="3" ;;
+    "🛰️PRICE-FEED") pane="4" ;;
+    "🧮CALC-IND")  pane="5" ;;
+    "📡STREAM-OHLCV") pane="6" ;;
+    "🛡️PAPER")     pane="7" ;;
+    "⚠️RISK")      pane="8" ;;
+    "🔔ALERT")     pane="9" ;;
+    "Monitor")     pane="10" ;;
+    "🤖AI")        pane="11" ;;
+    "🖥️CONSOLE")   pane="12" ;;
+    "🛡️EXEC")      pane="13" ;;
+    "🧮RISK-WORKER") pane="14" ;;
     *)
-      # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
+      # Tanınmayan → yeni pencere (ör. özel servisler)
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -x 220 -y 50
-        tmux rename-window -t "$session:0" "Trading"
+        tmux rename-window -t "$session:0" "💻 SHELL"
       fi
       local idx
       idx=$(tmux list-windows -t "$session" -F "#{window_name} #{window_index}" 2>/dev/null | awk -v n="$name" '$1==n{print $2}')
@@ -244,17 +260,15 @@ _tmux_pane() {
   tmux send-keys -t "$session:$pane" "$@"
 }
 
-# ── DATA terminali (Binance WS → ring) ──────────────────────
-# RUN_MODE env değişkeni ps'de görünmez → /proc/*/environ ile kontrol et
+# ── DATA/STRATEGY konsolları ─────────────────────────────────
+# DATA → engine binary'si, STRATEGY → strategy-console binary'si (ayrı süreç).
+# Not: Linux comm 15-karakter sınırı → uzun isimlerde -f gerekir.
 _core_mode_pid() {
   local mode="$1"
-  for p in $(pgrep -x core 2>/dev/null); do
-    if tr '\0' '\n' < "/proc/$p/environ" 2>/dev/null | grep -q "^RUN_MODE=$mode$"; then
-      echo "$p"
-      return 0
-    fi
-  done
-  return 1
+  case "$mode" in
+    STRATEGY) pgrep -f "strategy-console" 2>/dev/null | head -1 ;;
+    *)        pgrep -x engine 2>/dev/null | head -1 ;;
+  esac
 }
 
 data-start() {
@@ -262,8 +276,8 @@ data-start() {
   if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
   rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
-  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && RUN_MODE=DATA ./target/debug/engine" Enter
-  echo "✅ DATA başlatıldı (sekme 1 — 📡 DATA)"
+  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && ./target/debug/engine" Enter
+  echo "✅ DATA başlatıldı (pencere 2 — 📡 DATA)"
 }
 data-stop() {
   _start_guard
@@ -271,18 +285,91 @@ data-stop() {
   if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; echo "✅ DATA durduruldu [pid:$p]"; else echo "ℹ️  DATA çalışmıyor"; fi
 }
 
-# ── STRATEGY terminali (core) ────────────────────────────────
+# ── STRATEGY orkestrasyon konsolu (ayrı strategy-console binary'si) ─
 strategy-start() {
   _start_guard
   if _core_mode_pid STRATEGY &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor (pid: $(_core_mode_pid STRATEGY))"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
-  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && RUN_MODE=STRATEGY ./target/debug/engine" Enter
-  echo "✅ STRATEGY başlatıldı (pane 0.0)"
+  mkdir -p /tmp/strategy_cmd.d
+  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && ./target/debug/strategy-console" Enter
+  echo "✅ STRATEGY orkestrasyon konsolu başlatıldı (pencere 1 — 🧠 STRATEGY)"
 }
 strategy-stop() {
   _start_guard
   local p; p=$(_core_mode_pid STRATEGY)
-  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; echo "✅ STRATEGY durduruldu [pid:$p]"; else echo "ℹ️  STRATEGY çalışmıyor"; fi
+  if [ -n "$p" ]; then
+    kill -TERM "$p" 2>/dev/null; sleep 1
+    # Orkestratör alt-süreçlerini de temizle (uzun isim → -f)
+    pkill -TERM -f "breakout-strategy" 2>/dev/null || true
+    echo "✅ STRATEGY durduruldu [pid:$p]"
+  else
+    echo "ℹ️  STRATEGY çalışmıyor"
+  fi
+}
+
+# ── STRATEJİ ORKESTRASYONU (shell → STRATEGY konsolu) ────────
+# Komut, maildir benzeri /tmp/strategy_cmd.d kuyruğuna yazılır;
+# STRATEGY konsolundaki orkestrasyon merkezi okur ve yürütür.
+__strat_send() {
+  mkdir -p /tmp/strategy_cmd.d
+  local f="/tmp/strategy_cmd.d/cmd_$(date +%s%N).cmd"
+  printf '%s\n' "$*" > "$f"
+}
+__strat_wait_status() {
+  # Orkestratörün işlemesi için kısa bekle, ardından durum dosyasını oku
+  sleep 0.4
+  if [ -f /tmp/strategy_status.txt ]; then
+    cat /tmp/strategy_status.txt
+  else
+    echo "ℹ️  STRATEGY orkestrasyon konsolu çalışmıyor. 'strategy-start' ile başlatın."
+  fi
+}
+strat() {
+  local cmd="${1:-help}"; shift || true
+  case "$cmd" in
+    run|start)
+      if [ $# -eq 0 ]; then echo "Kullanım: strat run <strateji> [<strateji>...]"; return 1; fi
+      __strat_send "run $*"
+      echo "🚀 Strateji komutu iletildi: run $*"
+      echo "   (STRATEGY konsolu: pencere 1 — orkestrasyon merkezi)"
+      __strat_wait_status
+      ;;
+    stop)
+      if [ $# -eq 0 ]; then echo "Kullanım: strat stop <strateji> [<strateji>...]"; return 1; fi
+      __strat_send "stop $*"
+      echo "⏹  Strateji komutu iletildi: stop $*"
+      __strat_wait_status
+      ;;
+    restart)
+      if [ $# -eq 0 ]; then echo "Kullanım: strat restart <strateji>"; return 1; fi
+      __strat_send "restart $*"
+      echo "🔄 Strateji komutu iletildi: restart $*"
+      __strat_wait_status
+      ;;
+    list|ls)
+      __strat_send "list"
+      __strat_wait_status
+      ;;
+    status)
+      __strat_send "status"
+      __strat_wait_status
+      ;;
+    attach)
+      tmux select-window -t cycle:1 2>/dev/null && echo "📌 STRATEGY konsoluna geçildi (pencere 1)" || echo "ℹ️  tmux session 'cycle' çalışmıyor."
+      ;;
+    help)
+      echo "Kullanım: strat <komut>"
+      echo "  strat run <strateji> [...]   strateji(ler)i başlat (örn. breakout)"
+      echo "  strat stop <strateji> [...]  strateji(ler)i durdur"
+      echo "  strat restart <strateji>     stratejiyi yeniden başlat"
+      echo "  strat list                   mevcut stratejileri listele"
+      echo "  strat status                 orkestrasyon durumu"
+      echo "  strat attach                 STRATEGY konsoluna geç"
+      ;;
+    *)
+      echo "Bilinmeyen komut: '$cmd' (help yazın)"
+      ;;
+  esac
 }
 
 # ── PAPER-SERVICE (REST API :8080) ───────────────────────────
@@ -294,7 +381,7 @@ paper-start() {
   _tmux_pane "🛡️PAPER" \
     "cd $CYCLE_ROOT && PAPER_ADMIN_USER=${PAPER_ADMIN_USER:-admin} PAPER_ADMIN_PASS=${PAPER_ADMIN_PASS:-changeme123} PAPER_API_ADDR=${PAPER_API_ADDR:-127.0.0.1:8080} PAPER_INITIAL_USDT=${PAPER_INITIAL_USDT:-100000} PAPER_DB_PATH=$CYCLE_ROOT/data-engine/data/paper_live.db PAPER_SLED_PATH=$CYCLE_ROOT/data-engine/data/paper_wal ./target/debug/paper-service" \
     Enter
-  echo "✅ PAPER-SERVICE başlatıldı (sekme 3 — 🛡️ PAPER, http://127.0.0.1:8080)"
+  echo "✅ PAPER-SERVICE başlatıldı (pencere 7 — 🛡️ PAPER, http://127.0.0.1:8080)"
 }
 paper-stop() {
   _start_guard
@@ -308,7 +395,7 @@ alert-start() {
   if pgrep -x "alert-service" &>/dev/null; then echo "⚠️  alert-service zaten çalışıyor"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p alert-service 2>&1 | tail -1
   _tmux_pane "🔔ALERT" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter
-  echo "✅ ALERT-SERVICE başlatıldı (sekme 2 — 🔔 ALERT)"
+  echo "✅ ALERT-SERVICE başlatıldı (pencere 9 — 🔔 ALERT)"
 }
 alert-stop() {
   _start_guard
@@ -340,7 +427,7 @@ risk-worker-status() {
   if [ -n "$p" ]; then echo "✅ RISK-WORKER ÇALIŞIYOR [pid:$p]"; else echo "✘  risk-worker durdurulmuş"; fi
 }
 
-# ── LISTENER (Anlık Metrik Analizi, pane 0.1) ──────────
+# ── LISTENER (Anlık Metrik Analizi) ──────────
 listener-start() {
   _start_guard
   if pgrep -x listener &>/dev/null; then
@@ -355,7 +442,7 @@ listener-start() {
   _tmux_pane "🛰️LISTENER" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/release/listener" Enter
   sleep 2
   if pgrep -x listener &>/dev/null; then
-    echo "✅ LISTENER başlatıldı (pane 0.2)"
+    echo "✅ LISTENER başlatıldı (pencere: 🛰️ LISTENER)"
   else
     echo "❌ LISTENER başlatılamadı"
   fi
@@ -388,7 +475,7 @@ listener-log() {
   tail -f /tmp/listener_metrics.json 2>/dev/null || echo "metrik dosyası yok"
 }
 
-# ── RISK (Anlık risk analizi, pane 0.3) ──────────────────────
+# ── RISK (Anlık risk analizi) ──────────────────────
 risk-start() {
   _start_guard
   if pgrep -x risk_analysis &>/dev/null; then
@@ -397,7 +484,7 @@ risk-start() {
   fi
   _tmux_pane "⚠️RISK" "cd $CYCLE_ROOT && ./target/release/risk_analysis --watch" Enter
   sleep 2
-  echo "✅ RISK başlatıldı (pane 0.1)"
+  echo "✅ RISK başlatıldı (pencere 8 — ⚠️ RISK)"
 }
 risk-stop() {
   _start_guard
@@ -549,10 +636,11 @@ pricefeed-log() {
 #  DATA TERMİNALİ
 # ============================================================
 data-live() {
-  cd "$CYCLE_ROOT" && RUN_MODE=DATA ./target/debug/engine
+  cd "$CYCLE_ROOT" && ./target/debug/engine
 }
 data-backtest() {
-  cd "$CYCLE_ROOT" && RUN_MODE=BACKTEST CSV_PATH="./test_data.csv" ./target/debug/engine
+  echo "ℹ️  BACKTEST modu kaldırıldı. Tek seferlik strateji analizi için:"
+  echo "     breakout-query"
 }
 data-log() {
   tail -f /tmp/data_terminal.log
@@ -622,10 +710,11 @@ paper-cli() {
 # ============================================================
 #  STRATEGY / CORRELATION
 # ============================================================
-# Not: strategy-start/stop artık "SİSTEMLERİ TEK TEK AÇ/KAPAT" bölümünde
-# (arka planda, pid dosyalı). correlation-start foreground çalıştırır.
+# Not: strategy-start/stop artık "SİSTEMLERİ TEK TEK AÇ/KAPAT" bölümünde.
+# correlation_start: eski RUN_MODE kaldırıldı; strateji analizi breakout-query.
 correlation-start() {
-  cd "$CYCLE_ROOT" && RUN_MODE=CORRELATION ./target/debug/engine
+  echo "ℹ️  CORRELATION modu kaldırıldı. Listener ile mikro-yapı metriklerini kullanın:"
+  echo "     listener-start && listener-log"
 }
 
 # ============================================================
@@ -655,8 +744,8 @@ _alert_apply() {
   # Eski süreci durdur, tmux pane'inde yeniden başlat
   pkill -x alert-service 2>/dev/null || true
   sleep 1
-  tmux send-keys -t "cycle:5" C-c 2>/dev/null
-  tmux send-keys -t "cycle:5" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter 2>/dev/null
+  tmux send-keys -t "cycle:9" C-c 2>/dev/null
+  tmux send-keys -t "cycle:9" "cd $CYCLE_ROOT && ./target/debug/alert-service --config $CYCLE_ROOT/alerts.toml" Enter 2>/dev/null
   sleep 1
   echo "✅ Tamamlandı. alert-list ile görüntüleyin."
 }
@@ -711,7 +800,7 @@ alert-remove() {
 # ============================================================
 monitor-start() {
   if tmux has-session -t cycle 2>/dev/null; then
-    tmux select-window -t cycle:7
+    tmux select-window -t cycle:10
   else
     "$CYCLE_ROOT/additional-services/scripts/monitor.sh"
   fi
@@ -898,7 +987,7 @@ ai-reject() {
 ai-log() {
   # ai-engine tmux içinde çalıştığında log'u tmux penceresinden izlemek daha iyidir.
   echo "ℹ️  ai-engine tmux penceresinde çalışıyor; log için pencereye geçin:"
-  echo "   tmux select-window -t cycle:12   (veya Ctrl-b + 12)"
+  echo "   tmux select-window -t cycle:11   (veya Ctrl-b + 11)"
 }
 
 # ============================================================
@@ -950,7 +1039,7 @@ exec-console-status() {
 
 exec-console-log() {
   echo "ℹ️  Konsol tmux penceresinde çalışıyor; geçmek için:"
-  echo "   tmux select-window -t cycle:13   (veya Ctrl-b + 13)"
+  echo "   tmux select-window -t cycle:12   (veya Ctrl-b + 12)"
 }
 
 # Sorgu kısayolları
@@ -1045,61 +1134,29 @@ stream-ohlcv-streams() {
 }
 
 # ============================================================
-#  BREAKOUT STRATEJİSİ  (breakout-strategy)
-#  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
-#  her 20 pencerede bir analiz.
+#  BREAKOUT STRATEJİSİ  (services-engine/strategies/breakout-strategy)
+#  Strateji, STRATEGY orkestrasyon konsolu tarafından yönetilir:
+#  breakout-start/stop → strat run/stop breakout komutunu iletir.
 # ============================================================
 breakout-start() {
   _start_guard
-  if pgrep -x breakout-strategy &>/dev/null; then
-    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -x breakout-strategy | head -1))"
-    return 1
-  fi
-  # Bağımlılık kontrolü
-  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
-    echo "⚠️  detect-ms yanıt vermiyor → breakout-start ile başlatın"
-    return 1
-  fi
-  echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
-  _tmux_pane "🎯BREAKOUT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/breakout-strategy" Enter
-  sleep 2
-  if pgrep -x breakout-strategy &>/dev/null; then
-    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -x breakout-strategy | head -1)]"
-    echo "   Pencere: cycle → 🎯BREAKOUT"
-  else
-    echo "❌ HEIUSDT stratejisi başlatılamadı."
-  fi
+  strat run breakout
 }
 
 breakout-stop() {
   _start_guard
-  local pid
-  pid=$(pgrep -x breakout-strategy 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    pkill -TERM -x breakout-strategy 2>/dev/null
-    sleep 1
-    pkill -KILL -x breakout-strategy 2>/dev/null || true
-    echo "✅ HEIUSDT stratejisi durduruldu [pid:$pid]"
-  else
-    echo "⚠️  HEIUSDT stratejisi zaten çalışmıyor"
-  fi
+  strat stop breakout
 }
 
 breakout-status() {
-  local pid
-  pid=$(pgrep -x breakout-strategy 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    local cpu mem
-    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
-    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ HEIUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
-  else
-    echo "✘  HEIUSDT stratejisi durdurulmuş"
-  fi
+  _start_guard
+  strat status
 }
 
 breakout-log() {
-  tail -f /tmp/breakout.log
+  echo "📌 Strateji çıktısı STRATEGY konsolunda (pencere 1) görünür."
+  echo "   Konsola geçmek için: strat attach"
+  strat attach
 }
 
 # Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
@@ -1120,7 +1177,7 @@ breakout-wait() {
   echo "$sec" > /tmp/breakout_wait_sec.txt
   echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
   echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
-  if pgrep -x breakout-strategy >/dev/null 2>&1; then
+  if pgrep -f "breakout-strategy" >/dev/null 2>&1; then
     echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
   fi
 }

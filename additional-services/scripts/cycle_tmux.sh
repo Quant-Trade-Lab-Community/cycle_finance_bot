@@ -3,21 +3,24 @@
 #  Cycle Finance — tmux tek-sekme başlatıcı
 #  Kullanım: ./scripts/cycle_tmux.sh [attach|kill|status]
 #
-#  Her servis tek sekmede (window) çalışır:
-#  Pencere 0 — 🧠 STRATEGY
-#  Pencere 1 — 🛰️  LISTENER
-#  Pencere 2 — ⚠️  RISK
-#  Pencere 3 — 💻 SHELL
-#  Pencere 4 — 📡 DATA
-#  Pencere 5 — 🔔 ALERT
-#  Pencere 6 — 🛡️ PAPER
-#  Pencere 7 — Monitor  (CPU/RAM/GPU izleme)
-#  Pencere 8 — DETECT-MS (MSMP :3002)
-#  Pencere 9 — BREAKOUT (Kırılım stratejisi)
-#  Pencere 10 — STREAM-OHLCV (canlı OHLCV mum akışı :3008)
-#  Pencere 11 — CALC-IND (indikatör hesaplama motoru :3007)
-#  Pencere 12 — 🤖 AI (LLM agent katmanı, ai.toml + OpenAI/Anthropic)
-#  Pencere 13 — 🖥️ CONSOLE (executiond elle komut konsolu)
+#  Pencere 0 — 💻 SHELL (cycle-engine shell — orkestrasyon komutları)
+#  Pencere 1 — 🧠 STRATEGY (strateji orkestrasyon merkezi, strategy-console)
+#  Pencere 2 — 📡 DATA (Binance WS veri hattı)
+#  Pencere 3 — 📈 DETECT-MS (piyasa yapısı analizi :3002)
+#  Pencere 4 — 🛰️  PRICE-FEED (fiyat akışı :3004)
+#  Pencere 5 — 🧮 CALC-IND (indikatör motoru :3007)
+#  Pencere 6 — 📊 STREAM-OHLCV (canlı OHLCV mum akışı :3008)
+#  Pencere 7 — 🛡️  PAPER (paper trading REST API :8080)
+#  Pencere 8 — ⚠️  RISK (risk analizi)
+#  Pencere 9 — 🔔 ALERT (sesli uyarı)
+#  Pencere 10 — Monitor (CPU/RAM/GPU izleme)
+#  Pencere 11 — 🤖 AI (LLM agent katmanı)
+#  Pencere 12 — 🖥️  CONSOLE (executiond elle komut konsolu)
+#
+#  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
+#  (orkestrasyon merkezi altında) çalışır. Shell'den:
+#     strat run breakout      strat stop breakout
+#     strat run breakout xxx  strat status
 # ============================================================
 set -euo pipefail
 
@@ -43,15 +46,26 @@ PAPER_ADMIN_PASS="${PAPER_ADMIN_PASS:-changeme123}"
 PAPER_INITIAL_USDT="${PAPER_INITIAL_USDT:-100000}"
 ALERT_CONFIG="${ALERT_CONFIG:-$CONFIG_DIR/alerts.toml}"
 
+# ── Uzun isimli süreçlerde Linux comm 15-karakter sınırı:
+#    breakout-strategy / strategy-console → pgrep/pkill -f gerekir.
+_proc_alive() {
+  local name="$1"
+  if [ "${#name}" -le 15 ]; then pgrep -x "$name" &>/dev/null; else pgrep -f "$name" &>/dev/null; fi
+}
+_proc_kill() {
+  local name="$1" sig="${2:-TERM}"
+  if [ "${#name}" -le 15 ]; then pkill -"$sig" -x "$name" 2>/dev/null || true; else pkill -"$sig" -f "$name" 2>/dev/null || true; fi
+}
+
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 full_cleanup() {
   echo "🧹 Temizleniyor..."
   tmux kill-session -t "$SESSION" 2>/dev/null && echo "  ✔ tmux session kapatıldı" || echo "  - tmux session yoktu"
-  for proc in core paper-service alert-service; do
-    if pgrep -x "$proc" &>/dev/null; then
-      pkill -TERM -x "$proc" 2>/dev/null || true
+  for proc in core paper-service alert-service breakout-strategy; do
+    if _proc_alive "$proc"; then
+      _proc_kill "$proc" TERM
       sleep 0.5
-      pkill -KILL -x "$proc" 2>/dev/null || true
+      _proc_kill "$proc" KILL
       echo "  ✔ $proc durduruldu"
     fi
   done
@@ -73,8 +87,9 @@ case "${1:-}" in
       || echo "  ⚠️  '$SESSION' session'ı çalışmıyor."
     echo ""
     echo "=== Çalışan Servisler ==="
-for proc in core paper-service alert-service; do
+for proc in core paper-service alert-service breakout-strategy; do
       pid=$(pgrep -x "$proc" 2>/dev/null | head -1 || true)
+      [ -z "$pid" ] && pid=$(pgrep -f "$proc" 2>/dev/null | head -1 || true)
       if [ -n "$pid" ]; then
         mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
         cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
@@ -109,16 +124,17 @@ fi
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
-for proc in core paper-service alert-service; do
-  if pgrep -x "$proc" &>/dev/null; then
-    pkill -TERM -x "$proc" 2>/dev/null || true
+for proc in core paper-service alert-service breakout-strategy; do
+  if _proc_alive "$proc"; then
+    _proc_kill "$proc" TERM
     sleep 0.3
-    pkill -KILL -x "$proc" 2>/dev/null || true
+    _proc_kill "$proc" KILL
     echo "  ✔ $proc durduruldu"
   fi
 done
 rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
-echo "  ✔ Ring buffer'lar temizlendi"
+rm -rf /tmp/strategy_cmd.d
+echo "  ✔ Ring buffer'lar ve strateji komut kuyruğu temizlendi"
 sleep 1
 
 # ── Açılış ekranı (tek terminal) ─────────────────────────────
@@ -140,63 +156,84 @@ chmod +x /tmp/cycle_init.sh
 
 # ── Session oluştur ──────────────────────────────────────────
 tmux new-session -d -s "$SESSION" -x 220 -y 50
-tmux rename-window -t "$SESSION:0" "🧠 STRATEGY"
+tmux rename-window -t "$SESSION:0" "💻 SHELL"
 
-# ── Pencere 0: STRATEGY ─────────────────────────────────────
+# ── Pencere 0: SHELL (cycle-engine shell — orkestrasyon komutları) ──
 tmux send-keys -t "$SESSION:0" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🧠  STRATEGY TERMİNALİ  (PyO3)'
+echo '💻  CYCLE-ENGINE SHELL'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 3
-cd $ROOT && RUN_MODE=STRATEGY $BIN/engine
+echo 'Strateji orkestrasyonu:'
+echo '   strat run breakout          bir stratejiyi başlat'
+echo '   strat run breakout xxx      birden fazlasını başlat'
+echo '   strat stop breakout         durdur'
+echo '   strat list / strat status   durum'
+echo '   strat attach                STRATEGY konsoluna git'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 " Enter
+tmux send-keys -t "$SESSION:0" "source /tmp/cycle_init.sh" Enter
 
-# ── Pencere 1: LISTENER ─────────────────────────────────────
-tmux new-window -t "$SESSION:1" -n "🛰️  LISTENER"
+# ── Pencere 1: STRATEGY (strateji orkestrasyon merkezi) ─────
+tmux new-window -t "$SESSION:1" -n "🧠 STRATEGY"
 tmux send-keys -t "$SESSION:1" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🛰️   LISTENER  (Anlık Metrik Analizi)'
+echo '🧠  STRATEJİ ORKESTRASYON MERKEZİ'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && $BIN/listener
+cd $ROOT && $BIN/strategy-console
 " Enter
 
-# ── Pencere 2: RISK ─────────────────────────────────────────
-tmux new-window -t "$SESSION:2" -n "⚠️  RISK"
+# ── Pencere 2: DATA ─────────────────────────────────────────
+tmux new-window -t "$SESSION:2" -n "📡 DATA"
 tmux send-keys -t "$SESSION:2" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '⚠️   RİSK ANALİZİ  (market_data.db)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && $BIN/risk_analysis --watch
-" Enter
-
-# ── Pencere 3: SHELL ────────────────────────────────────────
-tmux new-window -t "$SESSION:3" -n "💻 SHELL"
-tmux send-keys -t "$SESSION:3" "source /tmp/cycle_init.sh" Enter
-
-# ── Pencere 4: DATA ─────────────────────────────────────────
-tmux new-window -t "$SESSION:4" -n "📡 DATA"
-tmux send-keys -t "$SESSION:4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📡  DATA TERMİNALİ  (Binance WS)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-cd $ROOT && RUN_MODE=DATA $BIN/engine
+cd $ROOT && $BIN/engine
 " Enter
 
-# ── Pencere 5: ALERT ────────────────────────────────────────
-tmux new-window -t "$SESSION:5" -n "🔔 ALERT"
-tmux send-keys -t "$SESSION:5" "
+# ── Pencere 3: DETECT-MS ────────────────────────────────────
+tmux new-window -t "$SESSION:3" -n "📈 DETECT-MS"
+tmux send-keys -t "$SESSION:3" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
+echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 2
-cd $ROOT && $BIN/alert-service --config $ALERT_CONFIG
+cd $ROOT && $BIN/detect-ms
 " Enter
 
-# ── Pencere 6: PAPER ────────────────────────────────────────
-tmux new-window -t "$SESSION:6" -n "🛡️ PAPER"
+# ── Pencere 4: PRICE-FEED ───────────────────────────────────
+tmux new-window -t "$SESSION:4" -n "🛰️ PRICE-FEED"
+tmux send-keys -t "$SESSION:4" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛰️   PRICE-FEED  (Fiyat Akışı :3004)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT && $BIN/price-feed
+" Enter
+
+# ── Pencere 5: CALC-IND ─────────────────────────────────────
+tmux new-window -t "$SESSION:5" -n "🧮 CALC-IND"
+tmux send-keys -t "$SESSION:5" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT && $BIN/calc-ind
+" Enter
+
+# ── Pencere 6: STREAM-OHLCV ─────────────────────────────────
+tmux new-window -t "$SESSION:6" -n "📊 STREAM-OHLCV"
 tmux send-keys -t "$SESSION:6" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📊  STREAM-OHLCV  (Canlı OHLCV :3008)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 4
+cd $ROOT && $BIN/stream-ohlcv
+" Enter
+
+# ── Pencere 7: PAPER ────────────────────────────────────────
+tmux new-window -t "$SESSION:7" -n "🛡️ PAPER"
+tmux send-keys -t "$SESSION:7" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🛡️   PAPER SERVICE  (REST API :8080)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -211,53 +248,33 @@ cd $ROOT && \
   $BIN/paper-service
 " Enter
 
-# ── Pencere 7: MONITOR ──────────────────────────────────────
-tmux new-window -t "$SESSION:7" -n "Monitor"
-tmux send-keys -t "$SESSION:7" "bash '$SCRIPTS_DIR/monitor.sh'" Enter
-
-# ── Pencere 8: DETECT-MS ────────────────────────────────────
-tmux new-window -t "$SESSION:8" -n "DETECT-MS"
+# ── Pencere 8: RISK ─────────────────────────────────────────
+tmux new-window -t "$SESSION:8" -n "⚠️ RISK"
 tmux send-keys -t "$SESSION:8" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
+echo '⚠️   RİSK ANALİZİ  (market_data.db)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 2
-cd $ROOT && $BIN/detect-ms
+sleep 4
+cd $ROOT && $BIN/risk_analysis --watch
 " Enter
 
-# ── Pencere 9: BREAKOUT STRATEJİ ────────────────────────────
-tmux new-window -t "$SESSION:9" -n "BREAKOUT"
+# ── Pencere 9: ALERT ────────────────────────────────────────
+tmux new-window -t "$SESSION:9" -n "🔔 ALERT"
 tmux send-keys -t "$SESSION:9" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🎯  BREAKOUT  (Kırılım Stratejisi)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && $BIN/breakout-strategy
-" Enter
-
-# ── Pencere 10: STREAM-OHLCV ────────────────────────────────
-tmux new-window -t "$SESSION:10" -n "STREAM-OHLCV"
-tmux send-keys -t "$SESSION:10" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '📡  STREAM-OHLCV  (Canlı OHLCV :3008)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 4
-cd $ROOT && $BIN/stream-ohlcv
-" Enter
-
-# ── Pencere 11: CALC-IND ────────────────────────────────────
-tmux new-window -t "$SESSION:11" -n "CALC-IND"
-tmux send-keys -t "$SESSION:11" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
+echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 2
-cd $ROOT && $BIN/calc-ind
+cd $ROOT && $BIN/alert-service --config $ALERT_CONFIG
 " Enter
 
-# ── Pencere 12: AI ENGINE ───────────────────────────────────
-tmux new-window -t "$SESSION:12" -n "🤖 AI"
-tmux send-keys -t "$SESSION:12" "
+# ── Pencere 10: MONITOR ─────────────────────────────────────
+tmux new-window -t "$SESSION:10" -n "Monitor"
+tmux send-keys -t "$SESSION:10" "bash '$SCRIPTS_DIR/monitor.sh'" Enter
+
+# ── Pencere 11: AI ENGINE ───────────────────────────────────
+tmux new-window -t "$SESSION:11" -n "🤖 AI"
+tmux send-keys -t "$SESSION:11" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🤖  AI ENGINE  (LLM Agent Katmanı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -265,9 +282,9 @@ sleep 3
 cd $CONFIG_DIR && $BIN/ai-engine
 " Enter
 
-# ── Pencere 13: EXEC CONSOLE ────────────────────────────────
-tmux new-window -t "$SESSION:13" -n "🖥️ CONSOLE"
-tmux send-keys -t "$SESSION:13" "
+# ── Pencere 12: EXEC CONSOLE ────────────────────────────────
+tmux new-window -t "$SESSION:12" -n "🖥️ CONSOLE"
+tmux send-keys -t "$SESSION:12" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🖥️  EXEC CONSOLE  (executiond :3010)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -288,7 +305,7 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]0#[fg=#00cc33]:STRAT #[fg=#00ff41]1#[fg=#00cc33]:LISTEN #[fg=#00ff41]2#[fg=#00cc33]:RISK #[fg=#00ff41]4#[fg=#00cc33]:DATA #[fg=#00ff41]5#[fg=#00cc33]:ALERT #[fg=#00ff41]6#[fg=#00cc33]:PAPER #[fg=#00ff41]7#[fg=#00cc33]:Mon #[fg=#00ff41]10#[fg=#00cc33]:STREAM #[fg=#00ff41]11#[fg=#00cc33]:CALC #[fg=#00ff41]12#[fg=#00cc33]:AI #[fg=#00ff41]13#[fg=#00cc33]:CONSOLE #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DATA #[fg=#00ff41]3#[fg=#00cc33]:DETECT #[fg=#00ff41]4#[fg=#00cc33]:PRICE #[fg=#00ff41]5#[fg=#00cc33]:CALC #[fg=#00ff41]7#[fg=#00cc33]:PAPER #[fg=#00ff41]11#[fg=#00cc33]:AI #[fg=#00ff41]12#[fg=#00cc33]:CONSOLE #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   80
 
 # Window sekme renkleri — matrix

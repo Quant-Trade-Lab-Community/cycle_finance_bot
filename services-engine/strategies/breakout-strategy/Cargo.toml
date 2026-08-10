@@ -14,5 +14,5 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 rusqlite = { workspace = true }
-transport = { path = "../../cycle-engine/transport" }
+transport = { path = "../../../cycle-engine/transport" }
 rust_decimal = { workspace = true }

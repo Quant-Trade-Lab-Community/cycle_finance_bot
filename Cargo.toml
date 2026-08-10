@@ -13,7 +13,7 @@ members = [
     "execution-engine",
     "risk-engine",
     "strategies-engine",
-    "strategies-engine/breakout-strategy",
+    "services-engine/strategies/breakout-strategy",
     "services-engine/ohlcv-engine",
     "services-engine/calc-ind",
     "services-engine/stream-ohlcv",
