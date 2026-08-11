@@ -2,6 +2,7 @@ use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use flume::Sender;
 use serde_json::json;
+use crate::rate_gate::RateGate;
 
 /// Yeniden bağlanma politikası: 1s ile başla, her başarısız denemede ikiye katla,
 /// en fazla 60s (üstel geri çekilme). Başarılı bağlantı geri çekilme seviyesini sıfırlar.
@@ -23,7 +24,35 @@ async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Erro
     Ok(pairs)
 }
 
-async fn start_ws_chunk(tx: Sender<Vec<u8>>, chunk: Vec<String>, chunk_id: usize) {
+/// Verilen stream'lere abone olur. `use_gate` true ise her (yeniden) bağlantı
+/// öncesi ortak API rate kapısından (`RateGate`) token alınır; akışlar
+/// birbirinden bağımsızdır ama Binance API limitlerine takılmaz.
+pub async fn start_ws_client(tx: Sender<Vec<u8>>, streams: Vec<String>, use_gate: bool) {
+    if streams.is_empty() {
+        eprintln!("Binance WS: abone olunacak stream yok.");
+        return;
+    }
+
+    // Binance bir bağlantıda en fazla 200 stream kabul eder.
+    let chunks: Vec<Vec<String>> = streams.chunks(200).map(|c| c.to_vec()).collect();
+
+    let mut handles = Vec::new();
+    for (i, chunk) in chunks.into_iter().enumerate() {
+        let tx_clone = tx.clone();
+        handles.push(tokio::spawn(async move {
+            start_ws_chunk(tx_clone, chunk, i + 1, use_gate).await;
+        }));
+        // Binance'in DDoS firewall (WAF) aynı IP'den çok fazla WS bağlantısı
+        // açılırsa IP'yi bloke eder. Chunk'lar arasına kısa gecikme koy.
+        tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
+    }
+
+    for handle in handles {
+        let _ = handle.await;
+    }
+}
+
+async fn start_ws_chunk(tx: Sender<Vec<u8>>, chunk: Vec<String>, chunk_id: usize, use_gate: bool) {
     let ws_url = "wss://fstream.binance.com/stream";
 
     println!("Binance WS [Chunk {}]: Connecting ({} streams)...", chunk_id, chunk.len());
@@ -31,7 +60,16 @@ async fn start_ws_chunk(tx: Sender<Vec<u8>>, chunk: Vec<String>, chunk_id: usize
     // Üstel geri çekme: her başarısız denemeden sonra ikiye katlan, 60s'de tavanla.
     let mut backoff_ms = BASE_RECONNECT_DELAY_MS;
 
+    let gate = if use_gate { Some(RateGate::open_default()) } else { None };
+
     loop {
+        // API rate kapısı: bağlantı izni yoksa geri çekilme ile bekle.
+        if let Some(gate) = &gate {
+            if !gate.acquire(std::time::Duration::from_secs(30)) {
+                eprintln!("Binance WS [Chunk {}]: Rate gate token beklenirken zaman aşımı.", chunk_id);
+            }
+        }
+
         match connect_async(ws_url).await {
             Ok((ws_stream, _)) => {
                 println!("Binance WS [Chunk {}]: Successfully connected.", chunk_id);
@@ -107,28 +145,10 @@ async fn start_ws_chunk(tx: Sender<Vec<u8>>, chunk: Vec<String>, chunk_id: usize
     }
 }
 
-/// Connects to Binance live WebSocket stream for all USDT trade events.
+/// Legacy: DATA terminali (core) için Binance Futures trade + depth stream'leri.
 pub async fn start_binance_ws_client(tx: Sender<Vec<u8>>) {
     match fetch_usdt_spot_pairs().await {
-        Ok(pairs) => {
-            // Binance allows up to 200 streams per WebSocket connection
-            let chunks: Vec<Vec<String>> = pairs.chunks(200).map(|c| c.to_vec()).collect();
-            
-            let mut handles = Vec::new();
-            for (i, chunk) in chunks.into_iter().enumerate() {
-                let tx_clone = tx.clone();
-                handles.push(tokio::spawn(async move {
-                    start_ws_chunk(tx_clone, chunk, i + 1).await;
-                }));
-                // Binance's DDoS firewall (WAF) blocks the IP if we open too many WS connections simultaneously.
-                // Add a small delay between opening chunks.
-                tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
-            }
-            
-            for handle in handles {
-                let _ = handle.await;
-            }
-        }
+        Ok(pairs) => start_ws_client(tx, pairs, false).await,
         Err(e) => {
             eprintln!("Binance WS: Failed to fetch pairs: {}", e);
         }

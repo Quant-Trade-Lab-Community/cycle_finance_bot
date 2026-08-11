@@ -1,0 +1,57 @@
+[package]
+name = "flows"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "flows"
+
+[dependencies]
+gateway = { path = "../gateway" }
+pipeline = { path = "../pipeline" }
+transport = { path = "../transport" }
+persistence = { path = "../persistence" }
+os-utils = { path = "../../additional-services/os-utils" }
+tokio = { workspace = true }
+flume = { workspace = true }
+simd-json = { workspace = true }
+rust_decimal = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true }
+
+[dev-dependencies]
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+serde_json = { workspace = true }
+
+[[bin]]
+name = "flow-trade"
+path = "src/bin/flow_trade.rs"
+
+[[bin]]
+name = "flow-depth"
+path = "src/bin/flow_depth.rs"
+
+[[bin]]
+name = "flow-liquidation"
+path = "src/bin/flow_liquidation.rs"
+
+[[bin]]
+name = "flow-oi"
+path = "src/bin/flow_oi.rs"
+
+[[bin]]
+name = "flow-funding"
+path = "src/bin/flow_funding.rs"
+
+[[bin]]
+name = "flow-markprice"
+path = "src/bin/flow_markprice.rs"
+
+[[bin]]
+name = "flow-lastprice"
+path = "src/bin/flow_lastprice.rs"
+
+[[bin]]
+name = "flow-indexprice"
+path = "src/bin/flow_indexprice.rs"

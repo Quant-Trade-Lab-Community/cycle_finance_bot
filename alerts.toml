@@ -1,6 +1,6 @@
 # Sesli uyarı örnek yapılandırması
-# Veri kaynağı: "ring" (DATA terminali) veya "binance" (bağımsız doğrudan WS)
-data_source = "pricefeed"
+# Veri kaynağı: "flows" (trade flow ring — RAM) veya "binance" (bağımsız doğrudan WS)
+data_source = "flows"
 
 [[alerts]]
 symbol = "BTCUSDT"

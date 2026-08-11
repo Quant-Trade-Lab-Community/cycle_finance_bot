@@ -1,13 +1,13 @@
-//! LISTENER — DATA MERKEZİ mikro-yapı metrikleri + korelasyon tabloları (Rust).
+//! LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON TABLOLARI (Rust).
 //!
-//! Veri kaynakları:
-//!   - DATA MERKEZİ (core RUN_MODE=DATA → `/dev/shm/cycle_finance_ring`): trade/depth + hacim
-//!   - PRICE-FEED (:3004): lastprice (fiyat korelasyonu için)
+//! Veri kaynakları (flow ring'leri — RAM paylaşımlı bellek):
+//!   - `/cycle_finance_trades`: trade + hacim
+//!   - `/cycle_finance_lastprice`: lastprice (fiyat korelasyonu için)
 //!
 //! Ekran:
 //!   1. Mikro-yapı metrik tablosu (TPS, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP, sinyal)
-//!   2. Fiyat korelasyon tablosu (price-feed lastprice, N sn pencere, normalize 0-1)
-//!   3. Hacim korelasyon tablosu (DATA trade hacmi, N sn pencere, normalize 0-1)
+//!   2. Fiyat korelasyon tablosu (lastprice flow ring, N sn pencere, normalize 0-1)
+//!   3. Hacim korelasyon tablosu (trade hacmi, N sn pencere, normalize 0-1)
 //!
 //! Pencere süreleri shell'den ayarlanabilir (listenconfig-set):
 //!   corr_price_window_sec, corr_vol_window_sec
@@ -26,37 +26,42 @@ use std::time::Duration;
 
 const OUT_FILE: &str = "/tmp/listener_metrics.json";
 const REFRESH_MS: u64 = 2000;
-const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
 
 fn decode_symbol(buf: &[u8; 16]) -> String {
     let len = buf.iter().position(|&c| c == 0).unwrap_or(16);
     String::from_utf8_lossy(&buf[..len]).to_string().to_uppercase()
 }
 
-/// price-feed'ten periyodik lastprice çeker ve CorrSeries'e yazar.
+/// lastprice flow ring'inden periyodik fiyat okur ve CorrSeries'e yazar.
 fn spawn_price_corr_thread(symbols: Vec<String>, series: Arc<Mutex<HashMap<String, CorrSeries>>>) {
     std::thread::spawn(move || {
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(3))
-            .build()
-            .expect("reqwest client");
+        let ring = GenerationalRingBuffer::with_name("/cycle_finance_lastprice", 1);
+        let mut cursor = ring.get_head();
         loop {
-            let url = format!("{PRICE_FEED_URL}/api/lastprice");
-            if let Ok(resp) = client.get(&url).send() {
-                if let Ok(v) = resp.json::<serde_json::Value>() {
-                    if let Some(prices) = v.get("prices").and_then(|p| p.as_object()) {
-                        let now = now_ms();
-                        let mut s = series.lock().unwrap();
-                        for sym in &symbols {
-                            if let Some(p) = prices.get(sym).and_then(|x| x.get("last")).and_then(|x| x.as_f64()) {
-                                let e = s.entry(sym.clone()).or_insert_with(|| CorrSeries::new(5));
-                                e.push(now, p);
+            if let Some(slot) = ring.read_slot(cursor) {
+                if let Some(ev) = transport::wire::decode(&slot.data[..slot.len as usize]) {
+                    if let EventType::FundingRate { mark_price, .. } = ev.payload {
+                        let sym = decode_symbol(&ev.symbol);
+                        if symbols.contains(&sym) {
+                            if let Some(p) = mark_price.to_f64() {
+                                if p > 0.0 {
+                                    let now = now_ms();
+                                    let mut s = series.lock().unwrap();
+                                    let e = s.entry(sym).or_insert_with(|| CorrSeries::new(5));
+                                    e.push(now, p);
+                                }
                             }
                         }
                     }
                 }
+                cursor += 1;
+            } else {
+                let head = ring.get_head();
+                if head > cursor {
+                    cursor = head;
+                }
+                std::thread::sleep(Duration::from_millis(200));
             }
-            std::thread::sleep(Duration::from_millis(200));
         }
     });
 }
@@ -71,16 +76,16 @@ fn now_ms() -> u64 {
 fn main() {
     println!("{}", "═".repeat(96));
     println!("  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON");
-    println!("  Kaynak: DATA (/dev/shm/cycle_finance_ring) + PRICE-FEED (:3004)");
+    println!("  Kaynak: flow ring'leri (trades + lastprice — RAM)");
     println!("{}", "═".repeat(96));
 
-    let ring = Arc::new(GenerationalRingBuffer::new(160_000));
+    let ring = Arc::new(GenerationalRingBuffer::with_name("/cycle_finance_trades", 160_000));
     let mut cursor = ring.get_head();
     let mut symbols: HashMap<String, SymbolMetrics> = HashMap::new();
 
     let known: Vec<String> = load_symbols();
 
-    // Fiyat korelasyon serileri (price-feed)
+    // Fiyat korelasyon serileri (lastprice flow ring)
     let price_series: Arc<Mutex<HashMap<String, CorrSeries>>> = Arc::new(Mutex::new(HashMap::new()));
     spawn_price_corr_thread(known.clone(), price_series.clone());
 
@@ -213,11 +218,11 @@ fn render(symbols: &HashMap<String, SymbolMetrics>,
     print!("\x1b[2J\x1b[H");
     println!("{}", "═".repeat(96));
     println!("  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON");
-    println!("  DATA tick/s: {ticks} | depth/s: {depth} | price-feed: :3004");
+    println!("  trades/s: {ticks} | depth/s: {depth} | fiyat: lastprice flow ring");
     println!("{}", "═".repeat(96));
 
     if symbols.is_empty() {
-        println!("  📭 VERİ BEKLENİYOR — DATA terminali çalışıyor mu?");
+        println!("  📭 VERİ BEKLENİYOR — flow-trade akışı çalışıyor mu? (flows-start)");
         return;
     }
 
@@ -241,15 +246,15 @@ fn render(symbols: &HashMap<String, SymbolMetrics>,
     }
     println!();
 
-    // ── Fiyat korelasyonu (price-feed lastprice) ──
+    // ── Fiyat korelasyonu (lastprice flow ring) ──
     let sym_list: Vec<String> = {
         let mut v: Vec<String> = symbols.keys().cloned().collect();
         v.sort();
         v
     };
-    render_corr(&format!("📈 FİYAT KORELASYONU (price-feed lastprice)"),
+    render_corr(&format!("📈 FİYAT KORELASYONU (lastprice flow ring)"),
                 &sym_list, price_series);
-    render_corr(&format!("📊 HACİM KORELASYONU (DATA trade hacmi)"),
+    render_corr(&format!("📊 HACİM KORELASYONU (trade hacmi)"),
                 &sym_list, vol_series);
 
     println!("{}", "-".repeat(96));

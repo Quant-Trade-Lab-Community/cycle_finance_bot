@@ -7,6 +7,7 @@ members = [
     "cycle-engine/persistence",
     "cycle-engine/infra",
     "cycle-engine/splash",
+    "cycle-engine/flows",
     "additional-services/os-utils",
     "data-engine/cold-storage",
     "data-engine/cold-starter",
@@ -20,9 +21,7 @@ members = [
     "services-engine/detect-ms",
     "services-engine/paper-service",
     "services-engine/alert-service",
-    "services-engine/price-feed",
     "services-engine/exec-console",
-    "ai-engine",
 ]
 exclude = ["tests", "unused_services"]
 resolver = "2"
@@ -75,6 +74,7 @@ rtrb         = "0.3"
 redis        = { version = "0.27", features = ["tokio-comp"] }
 async-trait  = "0.1"
 flate2       = "1.0"
+sqlx         = { version = "0.7", default-features = false, features = ["runtime-tokio", "postgres", "rust_decimal"] }
 
 # Test araçları
 proptest     = "1.0"

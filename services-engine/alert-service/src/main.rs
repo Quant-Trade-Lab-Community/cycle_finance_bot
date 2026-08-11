@@ -65,15 +65,15 @@ async fn main() {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             }
         });
-    } else if config.data_source == "pricefeed" {
+    } else if config.data_source == "flows" || config.data_source == "pricefeed" {
         if !source::is_ring_alive() {
-            println!("⚠️ price-feed ring boş — price-feed servisi çalışıyor mu? (pricefeed-start)");
+            println!("⚠️ trade flow ring boş — flow-trade akışı çalışıyor mu? (flows-start)");
         }
-        println!("[ALERT] Veri kaynağı: PRICE-FEED ring (gerçek zamanlı, spin-loop)");
-        source::spawn_pricefeed_ring_source(price_tx.clone());
+        println!("[ALERT] Veri kaynağı: FLOW ring (trades — RAM paylaşımlı bellek, spin-loop)");
+        source::spawn_flow_ring_source(price_tx.clone());
     } else {
         if !source::is_ring_alive() {
-            println!("⚠️ tick ring boş — DATA terminali (RUN_MODE=DATA) çalışıyor mu?");
+            println!("⚠️ trade flow ring boş — flow-trade akışı çalışıyor mu?");
         }
         source::spawn_ring_source(price_tx.clone());
     }

@@ -18,7 +18,7 @@ pub const RING_CAPACITY: usize = 8192;
 /// Saniye cinsinden interval → Binance kline interval string'i.
 ///
 /// >= 1m (60s) için Binance geçmişi çekilebilir; daha küçükler yalnızca
-/// canlı price-feed'ten oluşturulur (Binance Futures geçmişi 1s altını desteklemez).
+/// canlı lastprice flow ring'inden oluşturulur (Binance Futures geçmişi 1s altını desteklemez).
 pub fn binance_interval(secs: u64) -> Option<&'static str> {
     match secs {
         1 => Some("1s"),
@@ -100,7 +100,7 @@ pub struct StreamMeta {
     pub status: StreamStatus,
     /// Bugüne kadar yayınlanan toplam mum sayısı.
     pub published: u64,
-    /// En son görülen fiyat (price-feed lastprice).
+    /// En son görülen fiyat (lastprice flow ring).
     pub last_price: Option<f64>,
     /// Şu an oluşan mum (varsa).
     pub current: Option<StreamCandle>,

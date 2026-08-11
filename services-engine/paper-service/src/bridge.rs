@@ -1,7 +1,7 @@
-//! PAPER sistemini DATA/STRATEGY terminallerine bağlayan köprü.
+//! PAPER sistemini veri akışlarına bağlayan köprü.
 //!
-//! - Price-feed ring (`/cycle_finance_pricefeed`) → `ActorCommand::MarkPriceUpdate`
-//!   (tek fiyat kaynağı: mark price; dolum/likidasyon bunun üzerinden yapılır)
+//! - Flow ring (`/cycle_finance_trades`) → `ActorCommand::MarkPriceUpdate`
+//!   (tek fiyat kaynağı: flow'dan gelen trade fiyatı; dolum/likidasyon bunun üzerinden yapılır)
 //! - Order ring (`/cycle_finance_orders`) → `ActorCommand::SubmitOrder`
 //!
 //! Her iki okuyucu da ayrı thread'de spin-loop ile çalışır (zero-copy).
@@ -18,16 +18,16 @@ const ORDER_RING_CAPACITY: usize = 10_000;
 
 /// Ring buffer'lardan actor'e veri taşıyan okuyucuları başlatır.
 pub fn spawn_ring_bridge(actor_tx: UnboundedSender<ActorCommand>) {
-    spawn_pricefeed_reader(actor_tx.clone());
+    spawn_flow_reader(actor_tx.clone());
     spawn_order_reader(actor_tx);
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) okuyup
-/// actor'e mark price güncellemesi olarak iletir. Tek veri kaynağı budur;
+/// Trade flow ring'ini (`/cycle_finance_trades`) okuyup actor'e mark price
+/// güncellemesi olarak iletir. Tek veri kaynağı budur;
 /// dolum ve likidasyon yalnızca mark price ile yapılır.
-fn spawn_pricefeed_reader(actor_tx: UnboundedSender<ActorCommand>) {
+fn spawn_flow_reader(actor_tx: UnboundedSender<ActorCommand>) {
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_trades", 20_000);
         let mut cursor = gen_ring.get_head();
 
         loop {

@@ -1,8 +1,8 @@
 //! BREAKOUT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
 //!
 //! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
-//! bir REST polling ile uyanıyordu; bu sürüm fiyatı price-feed ring'inden
-//! **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
+//!   bir REST polling ile uyanıyordu; bu sürüm fiyatı trade flow ring'inden
+//!   **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
 //! (varsayılan 20 dakika, `/tmp/breakout_wait_sec.txt` ile dinamik).
 //!
 //! **Sinyal üretici mod**: Emir AÇMAZ. Sadece kırılım algılandığında
@@ -10,7 +10,7 @@
 //!
 //! Akış:
 //! ```text
-//! price-feed ring (/cycle_finance_pricefeed)
+//! flow ring (/cycle_finance_trades)
 //!   → ring okuyucu std thread (fiyat event'leri)
 //!   → mpsc UnboundedChannel → [actor döngüsü]
 //!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
@@ -28,7 +28,6 @@ use tokio::sync::mpsc;
 use transport::ring_buffer::GenerationalRingBuffer;
 
 const DETECT_MS_URL: &str = "http://127.0.0.1:3002";
-const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
 const WAIT_FILE: &str = "/tmp/breakout_wait_sec.txt";
 /// Ring'de yeni event yoksa uyanma sınırı — döngü asla tamamen uykuda kalmaz.
 const WAKE_INTERVAL: Duration = Duration::from_millis(500);
@@ -74,24 +73,6 @@ async fn fetch_analysis(client: &reqwest::Client, cfg: &Config) -> Value {
         cfg.symbol, cfg.interval, cfg.limit
     );
     http_get(client, &url).await
-}
-
-async fn fetch_price_feed(client: &reqwest::Client, cfg: &Config) -> (Option<f64>, Option<String>) {
-    let url = format!("{PRICE_FEED_URL}/api/lastprice/{}", cfg.symbol);
-    let v = http_get(client, &url).await;
-    if v.get("error").is_some() {
-        return (None, v.get("error").and_then(|e| e.as_str()).map(|s| s.to_string()));
-    }
-    if let Some(p) = v.pointer("/price") {
-        for key in ["last", "mark", "index", "ask"] {
-            if let Some(f) = p.get(key).and_then(|x| x.as_f64()) {
-                if f > 0.0 {
-                    return (Some(f), None);
-                }
-            }
-        }
-    }
-    (None, Some("price-feed'te fiyat yok".to_string()))
 }
 
 // ── Seviye seçimi ────────────────────────────────────────────
@@ -162,11 +143,11 @@ fn current_wait_sec(default: u64) -> u64 {
 }
 
 // ── Ring okuyucu (Katman 2 trans sözleşmesi) ─────────────────
-/// Price-feed ring'indeki ilgili sembolün fiyat event'lerini kanala basar.
+/// Trade flow ring'indeki ilgili sembolün fiyat event'lerini kanala basar.
 fn spawn_price_reader(symbol: &str, tx: mpsc::UnboundedSender<f64>) {
     let symbol = symbol.to_ascii_uppercase();
     std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_pricefeed", 20_000);
+        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_trades", 20_000);
         let mut cursor = gen_ring.get_head();
         let mut symbol_buf = [0u8; 16];
         let bytes = symbol.as_bytes();
@@ -231,15 +212,14 @@ async fn analyze_once(client: &reqwest::Client, cfg: &Config, price_override: Op
         return EvalOutcome { ok: false, msg: format!("⚠️ detect-ms erişilemiyor: {e}") };
     }
 
-    let (pf_price, pf_err) = fetch_price_feed(client, cfg).await;
     let price = price_override
         .filter(|p| *p > 0.0)
-        .or(pf_price)
-        .unwrap_or_else(|| {
-            data.get("current_price").and_then(|c| c.as_str()).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0)
-        });
+        .or_else(|| {
+            data.get("current_price").and_then(|c| c.as_str()).and_then(|s| s.parse::<f64>().ok())
+        })
+        .unwrap_or(0.0);
     let (signal, msg) = evaluate(&data, price);
-    let feed_tag = if price_override.is_some() { "ring" } else if pf_err.is_none() { "REST" } else { "detect-ms" };
+    let feed_tag = if price_override.is_some() { "flow-ring" } else { "detect-ms" };
 
     let Some(side) = signal else {
         return EvalOutcome { ok: true, msg: format!("{msg}") };
@@ -256,7 +236,7 @@ async fn main() {
     let cfg = load_config();
     println!("══════════════════════════════════════════════════");
     println!("  🎯 BREAKOUT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
-    println!("  Pencere: {} | Bekleme: {} sn | Kaynak: price-feed ring", cfg.limit, cfg.wait_sec);
+    println!("  Pencere: {} | Bekleme: {} sn | Kaynak: flow ring (trades)", cfg.limit, cfg.wait_sec);
     println!("  detect-ms: {DETECT_MS_URL}");
     println!("  📡 MOD: Sinyal üretici (sembol + yön, emir AÇILMAZ)");
     println!("══════════════════════════════════════════════════");

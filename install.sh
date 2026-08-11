@@ -66,9 +66,11 @@ setup_dirs() {
 copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
-    core paper-service paper-cli alert-service detect-ms
-    risk-worker cold-starter price-feed breakout-strategy listener alerts risk_analysis
-    calc-ind ai-engine exec-console stream-ohlcv cycle-splash
+    paper-service paper-cli alert-service detect-ms
+    risk-worker cold-starter breakout-strategy listener alerts risk_analysis
+    calc-ind exec-console stream-ohlcv cycle-splash
+    flow-trade flow-depth flow-liquidation flow-oi flow-funding
+    flow-markprice flow-lastprice flow-indexprice
   )
   local n=0
   for b in "${bins[@]}"; do

@@ -1,7 +1,7 @@
 //! risk-worker — bağımsız risk parametre üretici daemon (cold path).
 //!
 //! Her çevrimde (varsayılan 60s):
-//!   1. `/tmp/price_feed.json` (price-feed çıktısı) veya HTTP'den mark fiyatları okur
+//!   1. markprice flow ring'inden (`/cycle_finance_markprice`) mark fiyatlarını okur (RAM)
 //!   2. Sembol getiri serilerini toplar
 //!   3. Korelasyon → Tikhonov → EWMA vol → parametrik VaR → konsantrasyon hesaplar
 //!   4. Önerilen limitleri `RiskCache` + `/cycle_finance_risk_params` ring + `/tmp/risk_params.json`'a yazar
@@ -18,15 +18,19 @@ use risk_engine::cache::{RiskCache, RiskParameters};
 use risk_engine::config::{load_risk_config, resolve_risk_config_path, ConfigWatcher};
 use risk_engine::kill_switch::KillSwitch;
 use risk_engine::worker::{RiskWorker, WorkerConfig};
+use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::Decimal;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
+use transport::events::EventType;
+use transport::ring_buffer::GenerationalRingBuffer;
+use transport::wire;
 
 const RING_NAME: &str = "/cycle_finance_risk_params";
 const RING_CAPACITY: usize = 1_024;
-const PRICE_FILE: &str = "/tmp/price_feed.json";
 const PARAMS_FILE: &str = "/tmp/risk_params.json";
 
 fn now_ms() -> u64 {
@@ -36,30 +40,31 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// `/tmp/price_feed.json`'dan mark fiyatlarını okur.
+/// markprice flow ring'inden (`/cycle_finance_markprice`) son mark fiyatlarını okur.
 fn read_marks() -> HashMap<String, f64> {
-    let content = match std::fs::read_to_string(PRICE_FILE) {
-        Ok(c) => c,
-        Err(_) => return HashMap::new(),
-    };
-    let doc: serde_json::Value = match serde_json::from_str(&content) {
-        Ok(d) => d,
-        Err(_) => return HashMap::new(),
-    };
+    let ring = GenerationalRingBuffer::with_name("/cycle_finance_markprice", 1);
+    let head = ring.get_head();
+    let start = head.saturating_sub(512);
     let mut out = HashMap::new();
-    if let Some(prices) = doc.get("prices").and_then(|p| p.as_object()) {
-        for (sym, v) in prices {
-            let mark = v.get("mark").and_then(|m| m.as_f64());
-            let last = v.get("last").and_then(|m| m.as_f64());
-            let price = mark.or(last);
-            if let Some(p) = price {
-                if p > 0.0 {
-                    out.insert(sym.to_uppercase(), p);
+    for seq in (start..head).rev() {
+        if let Some(slot) = ring.read_slot(seq) {
+            if let Some(ev) = wire::decode(&slot.data[..slot.len as usize]) {
+                if let EventType::FundingRate { mark_price, .. } = ev.payload {
+                    if mark_price > Decimal::ZERO {
+                        if let Some(f) = mark_price.to_f64() {
+                            out.insert(decode_symbol(&ev.symbol), f);
+                        }
+                    }
                 }
             }
         }
     }
     out
+}
+
+fn decode_symbol(buf: &[u8; 16]) -> String {
+    let len = buf.iter().position(|&c| c == 0).unwrap_or(16);
+    String::from_utf8_lossy(&buf[..len]).to_string()
 }
 
 /// Parametreleri ring'e (compact JSON) ve dosyaya yazar.

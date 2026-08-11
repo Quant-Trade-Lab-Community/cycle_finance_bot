@@ -5,17 +5,22 @@
 #
 #  Pencere 0 — 💻 SHELL (cycle-engine shell — orkestrasyon komutları)
 #  Pencere 1 — 🧠 STRATEGY (strateji orkestrasyon merkezi, strategy-console)
-#  Pencere 2 — 📡 DATA (Binance WS veri hattı)
-#  Pencere 3 — 📈 DETECT-MS (piyasa yapısı analizi :3002)
-#  Pencere 4 — 🛰️  PRICE-FEED (fiyat akışı :3004)
-#  Pencere 5 — 🧮 CALC-IND (indikatör motoru :3007)
-#  Pencere 6 — 📊 STREAM-OHLCV (canlı OHLCV mum akışı :3008)
-#  Pencere 7 — 🛡️  PAPER (paper trading REST API :8080)
-#  Pencere 8 — ⚠️  RISK (risk analizi)
-#  Pencere 9 — 🔔 ALERT (sesli uyarı)
-#  Pencere 10 — Monitor (CPU/RAM/GPU izleme)
-#  Pencere 11 — 🤖 AI (LLM agent katmanı)
-#  Pencere 12 — 🖥️  CONSOLE (executiond elle komut konsolu)
+#  Pencere 2 — 📈 DETECT-MS (piyasa yapısı analizi :3002)
+#  Pencere 3 — 🧮 CALC-IND (indikatör motoru :3007)
+#  Pencere 4 — 📊 STREAM-OHLCV (canlı OHLCV mum akışı :3008)
+#  Pencere 5 — 🛡️  PAPER (paper trading REST API :8080)
+#  Pencere 6 — ⚠️  RISK (risk analizi)
+#  Pencere 7 — 🔔 ALERT (sesli uyarı)
+#  Pencere 8 — Monitor (CPU/RAM/GPU izleme + Binance REST ağırlığı)
+#  Pencere 9 — 🖥️  CONSOLE (executiond elle komut konsolu)
+#  Pencere 10 — 💹 FLOW-TRADE (trade data akışı → TimescaleDB)
+#  Pencere 11 — 📚 FLOW-DEPTH (orderbook depth20 akışı → TimescaleDB)
+#  Pencere 12 — 💥 FLOW-LIQ (likidasyon akışı → TimescaleDB)
+#  Pencere 13 — 📈 FLOW-OI (open interest akışı → TimescaleDB)
+#  Pencere 14 — 💰 FLOW-FUNDING (funding rate akışı → TimescaleDB)
+#  Pencere 15 — 🎯 FLOW-MARK (mark price akışı → TimescaleDB)
+#  Pencere 16 — 🕐 FLOW-LAST (last price akışı → TimescaleDB)
+#  Pencere 17 — 📉 FLOW-INDEX (index price akışı → TimescaleDB)
 #
 #  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
 #  (orkestrasyon merkezi altında) çalışır. Shell'den:
@@ -58,10 +63,15 @@ _proc_kill() {
 }
 
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
+# Akış süreçleri (her biri ayrı proses) + klasik servisler
+FLOW_PROCS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
+SERVICE_PROCS="paper-service alert-service breakout-strategy"
+FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate"
+
 full_cleanup() {
   echo "🧹 Temizleniyor..."
   tmux kill-session -t "$SESSION" 2>/dev/null && echo "  ✔ tmux session kapatıldı" || echo "  - tmux session yoktu"
-  for proc in core paper-service alert-service breakout-strategy; do
+  for proc in $SERVICE_PROCS $FLOW_PROCS; do
     if _proc_alive "$proc"; then
       _proc_kill "$proc" TERM
       sleep 0.5
@@ -69,7 +79,7 @@ full_cleanup() {
       echo "  ✔ $proc durduruldu"
     fi
   done
-  for f in /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders; do
+  for f in /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders $FLOW_RINGS; do
     [ -f "$f" ] && rm -f "$f" && echo "  ✔ $f silindi" || true
   done
   echo "✅ Temizlik tamamlandı."
@@ -87,7 +97,7 @@ case "${1:-}" in
       || echo "  ⚠️  '$SESSION' session'ı çalışmıyor."
     echo ""
     echo "=== Çalışan Servisler ==="
-for proc in core paper-service alert-service breakout-strategy; do
+for proc in $SERVICE_PROCS $FLOW_PROCS; do
       pid=$(pgrep -x "$proc" 2>/dev/null | head -1 || true)
       [ -z "$pid" ] && pid=$(pgrep -f "$proc" 2>/dev/null | head -1 || true)
       if [ -n "$pid" ]; then
@@ -117,14 +127,14 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p cycle-splash -p engine -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p ai-engine -p exec-console 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p cycle-splash -p engine -p flows -p paper-service -p alert-service -p breakout-strategy -p stream-ohlcv -p exec-console 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
 
 # ── Eski süreçleri ve ring buffer'ları temizle ───────────────
 echo "🧹 Eski süreçler temizleniyor..."
-for proc in core paper-service alert-service breakout-strategy; do
+for proc in $SERVICE_PROCS $FLOW_PROCS; do
   if _proc_alive "$proc"; then
     _proc_kill "$proc" TERM
     sleep 0.3
@@ -132,7 +142,7 @@ for proc in core paper-service alert-service breakout-strategy; do
     echo "  ✔ $proc durduruldu"
   fi
 done
-rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders $FLOW_RINGS
 rm -rf /tmp/strategy_cmd.d
 echo "  ✔ Ring buffer'lar ve strateji komut kuyruğu temizlendi"
 sleep 1
@@ -182,18 +192,9 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 cd $ROOT && $BIN/strategy-console
 " Enter
 
-# ── Pencere 2: DATA ─────────────────────────────────────────
-tmux new-window -t "$SESSION:2" -n "📡 DATA"
+# ── Pencere 2: DETECT-MS ────────────────────────────────────
+tmux new-window -t "$SESSION:2" -n "📈 DETECT-MS"
 tmux send-keys -t "$SESSION:2" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '📡  DATA TERMİNALİ  (Binance WS)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-cd $ROOT && $BIN/engine
-" Enter
-
-# ── Pencere 3: DETECT-MS ────────────────────────────────────
-tmux new-window -t "$SESSION:3" -n "📈 DETECT-MS"
-tmux send-keys -t "$SESSION:3" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📈  DETECT-MS  (MSMP 2.0 :3002)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -201,19 +202,9 @@ sleep 2
 cd $ROOT && $BIN/detect-ms
 " Enter
 
-# ── Pencere 4: PRICE-FEED ───────────────────────────────────
-tmux new-window -t "$SESSION:4" -n "🛰️ PRICE-FEED"
-tmux send-keys -t "$SESSION:4" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🛰️   PRICE-FEED  (Fiyat Akışı :3004)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 2
-cd $ROOT && $BIN/price-feed
-" Enter
-
-# ── Pencere 5: CALC-IND ─────────────────────────────────────
-tmux new-window -t "$SESSION:5" -n "🧮 CALC-IND"
-tmux send-keys -t "$SESSION:5" "
+# ── Pencere 3: CALC-IND ─────────────────────────────────────
+tmux new-window -t "$SESSION:3" -n "🧮 CALC-IND"
+tmux send-keys -t "$SESSION:3" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🧮  CALC-IND  (İndikatör Motoru :3007)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -221,9 +212,9 @@ sleep 2
 cd $ROOT && $BIN/calc-ind
 " Enter
 
-# ── Pencere 6: STREAM-OHLCV ─────────────────────────────────
-tmux new-window -t "$SESSION:6" -n "📊 STREAM-OHLCV"
-tmux send-keys -t "$SESSION:6" "
+# ── Pencere 4: STREAM-OHLCV ─────────────────────────────────
+tmux new-window -t "$SESSION:4" -n "📊 STREAM-OHLCV"
+tmux send-keys -t "$SESSION:4" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '📊  STREAM-OHLCV  (Canlı OHLCV :3008)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -231,9 +222,9 @@ sleep 4
 cd $ROOT && $BIN/stream-ohlcv
 " Enter
 
-# ── Pencere 7: PAPER ────────────────────────────────────────
-tmux new-window -t "$SESSION:7" -n "🛡️ PAPER"
-tmux send-keys -t "$SESSION:7" "
+# ── Pencere 5: PAPER ────────────────────────────────────────
+tmux new-window -t "$SESSION:5" -n "🛡️ PAPER"
+tmux send-keys -t "$SESSION:5" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🛡️   PAPER SERVICE  (REST API :8080)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -248,9 +239,9 @@ cd $ROOT && \
   $BIN/paper-service
 " Enter
 
-# ── Pencere 8: RISK ─────────────────────────────────────────
-tmux new-window -t "$SESSION:8" -n "⚠️ RISK"
-tmux send-keys -t "$SESSION:8" "
+# ── Pencere 6: RISK ─────────────────────────────────────────
+tmux new-window -t "$SESSION:6" -n "⚠️ RISK"
+tmux send-keys -t "$SESSION:6" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '⚠️   RİSK ANALİZİ  (market_data.db)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -258,9 +249,9 @@ sleep 4
 cd $ROOT && $BIN/risk_analysis --watch
 " Enter
 
-# ── Pencere 9: ALERT ────────────────────────────────────────
-tmux new-window -t "$SESSION:9" -n "🔔 ALERT"
-tmux send-keys -t "$SESSION:9" "
+# ── Pencere 7: ALERT ────────────────────────────────────────
+tmux new-window -t "$SESSION:7" -n "🔔 ALERT"
+tmux send-keys -t "$SESSION:7" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🔔  ALERT SERVİSİ  (Sesli Uyarı)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -268,28 +259,90 @@ sleep 2
 cd $ROOT && $BIN/alert-service --config $ALERT_CONFIG
 " Enter
 
-# ── Pencere 10: MONITOR ─────────────────────────────────────
-tmux new-window -t "$SESSION:10" -n "Monitor"
-tmux send-keys -t "$SESSION:10" "bash '$SCRIPTS_DIR/monitor.sh'" Enter
+# ── Pencere 8: MONITOR ──────────────────────────────────────
+tmux new-window -t "$SESSION:8" -n "Monitor"
+tmux send-keys -t "$SESSION:8" "bash '$SCRIPTS_DIR/monitor.sh'" Enter
 
-# ── Pencere 11: AI ENGINE ───────────────────────────────────
-tmux new-window -t "$SESSION:11" -n "🤖 AI"
-tmux send-keys -t "$SESSION:11" "
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🤖  AI ENGINE  (LLM Agent Katmanı)'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-sleep 3
-cd $CONFIG_DIR && $BIN/ai-engine
-" Enter
-
-# ── Pencere 12: EXEC CONSOLE ────────────────────────────────
-tmux new-window -t "$SESSION:12" -n "🖥️ CONSOLE"
-tmux send-keys -t "$SESSION:12" "
+# ── Pencere 9: EXEC CONSOLE ─────────────────────────────────
+tmux new-window -t "$SESSION:9" -n "🖥️ CONSOLE"
+tmux send-keys -t "$SESSION:9" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo '🖥️  EXEC CONSOLE  (executiond :3010)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 3
 cd $ROOT && $BIN/exec-console
+" Enter
+
+# ── Pencere 10: FLOW-TRADE ──────────────────────────────────
+tmux new-window -t "$SESSION:10" -n "💹 FLOW-TRADE"
+tmux send-keys -t "$SESSION:10" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '💹  FLOW-TRADE  (WS → parse → ring → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-trade
+" Enter
+
+# ── Pencere 11: FLOW-DEPTH ──────────────────────────────────
+tmux new-window -t "$SESSION:11" -n "📚 FLOW-DEPTH"
+tmux send-keys -t "$SESSION:11" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📚  FLOW-DEPTH  (Orderbook Depth20 → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-depth
+" Enter
+
+# ── Pencere 12: FLOW-LIQ ────────────────────────────────────
+tmux new-window -t "$SESSION:12" -n "💥 FLOW-LIQ"
+tmux send-keys -t "$SESSION:12" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '💥  FLOW-LIQ  (Likidasyon → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-liquidation
+" Enter
+
+# ── Pencere 13: FLOW-OI ─────────────────────────────────────
+tmux new-window -t "$SESSION:13" -n "📈 FLOW-OI"
+tmux send-keys -t "$SESSION:13" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📈  FLOW-OI  (Open Interest → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-oi
+" Enter
+
+# ── Pencere 14: FLOW-FUNDING ────────────────────────────────
+tmux new-window -t "$SESSION:14" -n "💰 FLOW-FUNDING"
+tmux send-keys -t "$SESSION:14" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '💰  FLOW-FUNDING  (Funding Rate → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-funding
+" Enter
+
+# ── Pencere 15: FLOW-MARK ───────────────────────────────────
+tmux new-window -t "$SESSION:15" -n "🎯 FLOW-MARK"
+tmux send-keys -t "$SESSION:15" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🎯  FLOW-MARK  (Mark Price → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-markprice
+" Enter
+
+# ── Pencere 16: FLOW-LAST ───────────────────────────────────
+tmux new-window -t "$SESSION:16" -n "🕐 FLOW-LAST"
+tmux send-keys -t "$SESSION:16" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🕐  FLOW-LAST  (Last Price → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-lastprice
+" Enter
+
+# ── Pencere 17: FLOW-INDEX ──────────────────────────────────
+tmux new-window -t "$SESSION:17" -n "📉 FLOW-INDEX"
+tmux send-keys -t "$SESSION:17" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '📉  FLOW-INDEX  (Index Price → TimescaleDB)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/flow-indexprice
 " Enter
 
 # ── Görsel ayarlar (global) ──────────────────────────────────
@@ -305,8 +358,8 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DATA #[fg=#00ff41]3#[fg=#00cc33]:DETECT #[fg=#00ff41]4#[fg=#00cc33]:PRICE #[fg=#00ff41]5#[fg=#00cc33]:CALC #[fg=#00ff41]7#[fg=#00cc33]:PAPER #[fg=#00ff41]11#[fg=#00cc33]:AI #[fg=#00ff41]12#[fg=#00cc33]:CONSOLE #[fg=#00ff41]%H:%M:%S"
-tmux set-option -t "$SESSION" status-right-length   80
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right-length   110
 
 # Window sekme renkleri — matrix
 tmux set-option -t "$SESSION" window-status-format          "#[fg=#008a2e] #{window_index}:#{window_name} "

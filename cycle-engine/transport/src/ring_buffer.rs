@@ -46,7 +46,7 @@ impl GenerationalRingBuffer {
     }
 
     /// Belirtilen POSIX shm nesnesi üzerinde ring buffer oluşturur/açar.
-    /// Farklı servisler farklı isim kullanabilir (örn. price-feed).
+    /// Farklı servisler farklı isim kullanabilir (örn. akış ring'leri).
     pub fn with_name(shm_name: &str, capacity: usize) -> Self {
         let name = CString::new(shm_name).unwrap();
 

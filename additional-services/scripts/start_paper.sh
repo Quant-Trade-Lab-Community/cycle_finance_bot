@@ -19,20 +19,23 @@ ADMIN_PASS="${PAPER_ADMIN_PASS:-changeme123}"
 INITIAL_USDT="${PAPER_INITIAL_USDT:-10000}"
 
 echo "=== Derleniyor... ==="
-cargo build $BUILD_ARGS -p engine -p paper-service
+cargo build $BUILD_ARGS -p flows -p paper-service
 
 echo "=== Eski süreçler kapatılıyor (varsa) ==="
-pkill -x core 2>/dev/null || true
-pkill -x paper-service 2>/dev/null || true
-pkill -x paper_cli 2>/dev/null || true
+for p in flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice paper-service paper_cli; do
+  pkill -x "$p" 2>/dev/null || true
+done
 sleep 1
 
-# Tick ring'i temizle (farklı kapasiteyle başlatılırsa)
-rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
+# Akış ring'lerini ve rate kapısını temizle
+rm -f /dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate
 
-echo "=== DATA terminali başlatılıyor (Binance Futures WS) ==="
-setsid env RUN_MODE=DATA "$BIN/engine" > /tmp/data_terminal.log 2>&1 < /dev/null &
-disown
+echo "=== Veri akışları başlatılıyor (WS → parse → ring → TimescaleDB) ==="
+FLOWS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
+for f in $FLOWS; do
+  setsid env "$BIN/$f" > "/tmp/${f}.log" 2>&1 < /dev/null &
+  disown
+done
 
 echo "=== paper-service başlatılıyor (REST API + Actor) ==="
 rm -rf data-engine/data/paper_wal
@@ -63,5 +66,5 @@ echo "CLI örnekleri:"
 echo "  $BIN/paper_cli --api http://$API_ADDR --user $ADMIN_USER --password $ADMIN_PASS status"
 echo "  $BIN/paper_cli --api http://$API_ADDR --user $ADMIN_USER --password $ADMIN_PASS order --symbol BTCUSDT --side BUY --order-type MARKET --qty 0.001"
 echo ""
-echo "Loglar: /tmp/data_terminal.log , /tmp/paper_service.log"
+echo "Loglar: /tmp/flow-*.log , /tmp/paper_service.log"
 echo "Kapatmak için: ./scripts/stop_paper.sh"

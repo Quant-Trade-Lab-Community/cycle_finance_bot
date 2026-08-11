@@ -1,6 +1,6 @@
 //! Veri kaynakları: `(symbol, price)` akışı üreten kaynaklar.
 //!
-//! - **ring**: mevcut DATA terminalinin tick ring'ini okur (`/dev/shm/cycle_finance_ring`)
+//! - **ring**: flow ring'lerinden fiyatları okur (`/dev/shm/cycle_finance_trades`)
 //! - **binance**: doğrudan Binance Futures WS'ine abone olur (bağımsız çalışır)
 
 use flume::Sender;
@@ -9,10 +9,10 @@ use std::sync::Arc;
 
 pub type PriceSink = Sender<(String, Decimal)>;
 
-/// DATA terminalinin tick ring'inden fiyatları okur ve `sink`'e iletir.
+/// Flow ring'indeki trade fiyatlarını okur ve `sink`'e iletir.
 pub fn spawn_ring_source(sink: PriceSink) {
     std::thread::spawn(move || {
-        let gen_ring = transport::ring_buffer::GenerationalRingBuffer::new(160_000);
+        let gen_ring = transport::ring_buffer::GenerationalRingBuffer::with_name("/cycle_finance_trades", 160_000);
         let mut cursor = gen_ring.get_head();
 
         loop {
@@ -96,18 +96,18 @@ pub async fn spawn_binance_source(sink: PriceSink, symbols: Vec<String>) {
     }
 }
 
-/// Sembol seti için tick ring'de veri gelip gelmediğini doğrular (debug).
+/// Sembol seti için trade flow ring'inde veri gelip gelmediğini doğrular (debug).
 pub fn is_ring_alive() -> bool {
-    let ring = transport::ring_buffer::GenerationalRingBuffer::new(160_000);
+    let ring = transport::ring_buffer::GenerationalRingBuffer::with_name("/cycle_finance_trades", 160_000);
     ring.get_head() > 0
 }
 
-/// Price-feed servisinin yazdığı ring'i (`/cycle_finance_pricefeed`) SPIN-LOOP
-/// ile okur ve sink'e iletir. Poll gecikmesi yoktur — gerçek zamanlı.
-pub fn spawn_pricefeed_ring_source(sink: PriceSink) {
+/// Trade flow ring'ini (`/cycle_finance_trades`) SPIN-LOOP ile okur ve sink'e iletir.
+/// Poll gecikmesi yoktur — gerçek zamanlı. Kaynak: flow (RAM paylaşımlı bellek).
+pub fn spawn_flow_ring_source(sink: PriceSink) {
     std::thread::spawn(move || {
         let gen_ring = transport::ring_buffer::GenerationalRingBuffer::with_name(
-            "/cycle_finance_pricefeed", 20_000,
+            "/cycle_finance_trades", 20_000,
         );
         let mut cursor = gen_ring.get_head();
 

@@ -5,7 +5,7 @@
 //!   istek (POST /api/stream: {symbol, start_ms, interval_secs})
 //!     → interval >= 60s ise ohlcv-engine (Binance klines) ile start_ms'ten
 //!       bugüne kadar geçmiş mumları çek ve ring'e yayınla
-//!     → price-feed (:3004 /api/lastprice/{symbol}) anlık fiyatı düzenli çek
+//!     → lastprice flow ring'inden (`/cycle_finance_lastprice`) anlık fiyatı düzenli oku
 //!     → canlı mumu güncelle, mum kapanınca binary olarak
 //!       `/dev/shm/cycle_finance_stream_ohlcv` ring'ine yayınla
 //!
@@ -32,7 +32,6 @@ use transport::stream_ring::{StreamRingBuffer, STREAM_DEFAULT_CAPACITY};
 
 const DEFAULT_PORT: u16 = 3008;
 const RING_NAME: &str = "/cycle_finance_stream_ohlcv";
-const PRICE_FEED_DEFAULT: &str = "http://127.0.0.1:3004";
 const HISTORY_PAGE: usize = 1000;
 const HISTORY_MAX_PAGES: usize = 200;
 const CACHE_MAX: usize = 500;
@@ -46,9 +45,7 @@ fn now_ms() -> u64 {
 }
 
 struct AppState {
-    http: reqwest::Client,
     client: ohlcv_engine::client::BinanceClient,
-    price_feed_addr: String,
     ring: Arc<StreamRingBuffer>,
     /// Ring'e push'ları seri hale getirir (çok sayıda stream eşzamanlı yazabilir).
     ring_lock: Arc<Mutex<()>>,
@@ -121,21 +118,29 @@ fn publish(app: &AppState, candle: &StreamCandle) {
     app.ring.push(&bytes);
 }
 
-async fn fetch_last_price(app: &AppState, symbol: &str) -> Option<f64> {
-    let url = format!("{}/api/lastprice/{}", app.price_feed_addr, symbol);
-    let resp = app.http.get(&url).send().await.ok()?;
-    if !resp.status().is_success() {
-        return None;
-    }
-    let v: serde_json::Value = resp.json().await.ok()?;
-    if v.get("error").is_some() {
-        return None;
-    }
-    if let Some(p) = v.pointer("/price") {
-        for key in ["last", "mark", "index", "ask"] {
-            if let Some(f) = p.get(key).and_then(|x| x.as_f64()) {
-                if f > 0.0 {
-                    return Some(f);
+/// Son fiyatı lastprice flow ring'inden (RAM paylaşımlı bellek) okur.
+/// `FundingRate` event'inin `mark_price` alanı last price olarak taşınır.
+fn fetch_last_price(symbol: &str) -> Option<f64> {
+    let sym = symbol.to_ascii_uppercase();
+    let mut buf = [0u8; 16];
+    let b = sym.as_bytes();
+    let len = b.len().min(16);
+    buf[..len].copy_from_slice(&b[..len]);
+
+    let ring = transport::ring_buffer::GenerationalRingBuffer::with_name("/cycle_finance_lastprice", 1);
+    let head = ring.get_head();
+    let start = head.saturating_sub(256);
+    for seq in (start..head).rev() {
+        if let Some(slot) = ring.read_slot(seq) {
+            if let Some(ev) = transport::wire::decode(&slot.data[..slot.len as usize]) {
+                if &ev.symbol == &buf {
+                    if let transport::events::EventType::FundingRate { mark_price, .. } = ev.payload {
+                        if let Some(f) = mark_price.to_f64() {
+                            if f > 0.0 {
+                                return Some(f);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -240,7 +245,7 @@ async fn run_stream(app: Arc<AppState>, stream: Arc<Stream>) {
         return;
     }
 
-    // 2) Canlı döngü: price-feed lastprice ile mumları güncelle/kapat.
+    // 2) Canlı döngü: lastprice flow ring'i ile mumları güncelle/kapat.
     let poll_ms = if stream.interval_secs < 60 { 500u64 } else { 1000u64 };
     let mut last_report = SystemTime::now();
     loop {
@@ -248,7 +253,7 @@ async fn run_stream(app: Arc<AppState>, stream: Arc<Stream>) {
             break;
         }
 
-        if let Some(price) = fetch_last_price(&app, &stream.symbol).await {
+        if let Some(price) = fetch_last_price(&stream.symbol) {
             let bucket = now_ms() - (now_ms() % interval_ms);
             let now = now_ms();
             let mut state = stream.state.lock().await;
@@ -501,21 +506,18 @@ async fn main() {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(DEFAULT_PORT);
-    let price_feed_addr = std::env::var("PRICE_FEED_ADDR").unwrap_or_else(|_| PRICE_FEED_DEFAULT.to_string());
 
     println!("══════════════════════════════════════════════════");
     println!("  📡 STREAM-OHLCV — Canlı OHLCV Mum Akışı");
     println!("  Ring : {RING_NAME} (RAM, binary)");
-    println!("  Fiyat: {price_feed_addr}");
+    println!("  Fiyat: lastprice flow ring (RAM)");
     println!("  API  : http://127.0.0.1:{port}/api/stream");
     println!("══════════════════════════════════════════════════");
 
     let ring = Arc::new(StreamRingBuffer::with_name(RING_NAME, STREAM_DEFAULT_CAPACITY));
 
     let state = Arc::new(AppState {
-        http: reqwest::Client::new(),
         client: ohlcv_engine::client::BinanceClient::new(),
-        price_feed_addr,
         ring,
         ring_lock: Arc::new(Mutex::new(())),
         streams: Arc::new(tokio::sync::RwLock::new(HashMap::new())),

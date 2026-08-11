@@ -92,7 +92,7 @@ impl RiskChecks {
         }
     }
 
-    /// Harici bir mark fiyatını risk state'ine besler (ör. price-feed).
+    /// Harici bir mark fiyatını risk state'ine besler (ör. markprice flow ring).
     pub fn push_mark(&self, symbol: &str, price: Decimal) {
         self.engine.on_mark(&MarkPrice::new(symbol, price, now_ms()));
     }

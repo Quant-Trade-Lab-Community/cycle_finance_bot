@@ -33,7 +33,7 @@ help-cycle() {
   echo -e "  ${_G}cycle-build-full${_N}     Tam set derle (--features full)"
 
   echo -e "\n${_Y}━━━  ⚙️  SİSTEMLERİ TEK TEK AÇ / KAPAT  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_G}data-start${_N} / ${_R}data-stop${_N}          DATA terminali (Binance WS)"
+  echo -e "  ${_G}flows-start${_N} / ${_R}flows-stop${_N}       8 veri akışı (WS→Ring→TimescaleDB)"
   echo -e "  ${_G}strategy-start${_N} / ${_R}strategy-stop${_N}  STRATEGY orkestrasyon konsolu"
   echo -e "  ${_G}paper-start${_N} / ${_R}paper-stop${_N}        Paper-service (REST :8080)"
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
@@ -41,14 +41,6 @@ help-cycle() {
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
   echo -e "  ${_G}calc-ind-start${_N} / ${_R}calc-ind-stop${_N}    İndikatör hesaplama motoru (:3007)"
   echo -e "  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)"
-
-  echo -e "\n${_Y}━━━  🤖 AI ENGINE (LLM Agent Katmanı)  ━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}ai-start${_N}           AI Engine'i başlat (ai.toml + OpenAI/Anthropic)"
-  echo -e "  ${_R}ai-stop${_N}            Durdur"
-  echo -e "  ${_C}ai-status${_N}          Çalışıyor mu? CPU/RAM + son döngü"
-  echo -e "  ${_C}ai-approve${_N}         HITL modunda bekleyen emri onayla (echo approve)"
-  echo -e "  ${_C}ai-reject${_N}          HITL modunda bekleyen emri reddet"
-  echo -e "  ${_C}ai-log${_N}             Canlı log izle"
 
   echo -e "\n${_Y}━━━  🖥️  EXEC CONSOLE (Execution Engine elle komut)  ━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}exec-console-start${_N}   Konsolu tmux sekmesinde başlat (executiond :3010)"
@@ -71,17 +63,9 @@ help-cycle() {
   echo -e "  ${_C}risk-stop${_N}            Durdur"
   echo -e "  ${_C}risk-query${_N}           Tek seferlik analiz çalıştır"
 
-  echo -e "\n${_Y}━━━  💹 PRICE-FEED  (WS→Ring, Anlık Last/Mark/Index)  ━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)"
-  echo -e "  ${_C}pricefeed-stop${_N}      Durdur"
-  echo -e "  ${_C}pricefeed-status${_N}    Çalışıyor mu? CPU/RAM + health"
-  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query HEIUSDT)"
-  echo -e "  ${_C}pricefeed-log${_N}       Canlı log izle"
-
-  echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}data-live${_N}            Canlı Binance WS başlat (engine DATA konsolu)"
-  echo -e "  ${_C}data-backtest${_N}        CSV backtest başlat"
-  echo -e "  ${_C}data-log${_N}             Data terminal logunu izle"
+  echo -e "  ${_C}flows-start${_N}         8 akışı ayrı tmux sekmelerinde başlat"
+  echo -e "  ${_C}flows-stop${_N}          Tüm akışları durdur"
+  echo -e "  ${_C}flows-status${_N}        Akışların durumu (CPU/RAM)"
 
   echo -e "\n${_Y}━━━  🛡️  PAPER SERVICE (REST API)  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}paper-health${_N}         Sistem sağlık kontrolü"
@@ -162,17 +146,15 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → d${_N}           Session'ı arka plana al"
   echo -e "  ${_B}Ctrl+B → 0${_N}           💻 SHELL sekmesi (orkestrasyon komutları)"
   echo -e "  ${_B}Ctrl+B → 1${_N}           🧠 STRATEGY sekmesi (orkestrasyon konsolu)"
-  echo -e "  ${_B}Ctrl+B → 2${_N}           📡 DATA sekmesi"
-  echo -e "  ${_B}Ctrl+B → 3${_N}           📈 DETECT-MS sekmesi"
-  echo -e "  ${_B}Ctrl+B → 4${_N}           🛰️ PRICE-FEED sekmesi"
-  echo -e "  ${_B}Ctrl+B → 5${_N}           🧮 CALC-IND sekmesi"
-  echo -e "  ${_B}Ctrl+B → 6${_N}           📊 STREAM-OHLCV sekmesi"
-  echo -e "  ${_B}Ctrl+B → 7${_N}           🛡️ PAPER sekmesi"
-  echo -e "  ${_B}Ctrl+B → 8${_N}           ⚠️ RISK sekmesi"
-  echo -e "  ${_B}Ctrl+B → 9${_N}           🔔 ALERT sekmesi"
-  echo -e "  ${_B}Ctrl+B → 10${_N}          Monitor sekmesi"
-  echo -e "  ${_B}Ctrl+B → 11${_N}          🤖 AI sekmesi"
-  echo -e "  ${_B}Ctrl+B → 12${_N}          🖥️ CONSOLE sekmesi"
+  echo -e "  ${_B}Ctrl+B → 2${_N}           📈 DETECT-MS sekmesi"
+  echo -e "  ${_B}Ctrl+B → 3${_N}           🧮 CALC-IND sekmesi"
+  echo -e "  ${_B}Ctrl+B → 4${_N}           📊 STREAM-OHLCV sekmesi"
+  echo -e "  ${_B}Ctrl+B → 5${_N}           🛡️ PAPER sekmesi"
+  echo -e "  ${_B}Ctrl+B → 6${_N}           ⚠️ RISK sekmesi"
+  echo -e "  ${_B}Ctrl+B → 7${_N}           🔔 ALERT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 8${_N}           Monitor sekmesi"
+  echo -e "  ${_B}Ctrl+B → 9${_N}           🖥️ CONSOLE sekmesi"
+  echo -e "  ${_B}Ctrl+B → 10-17${_N}       💹 Veri akışları (FLOWS)"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Pencere seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -215,10 +197,10 @@ cycle-build-full() {
 #  Her servis ayrı sekme (pencere) olarak açılır.
 # ============================================================
 # Yardımcı: ilgili pencereye komut gönder
-# Pencere haritası: 0=SHELL 1=STRATEGY 2=DATA 3=DETECT-MS
-#                   4=PRICE-FEED 5=CALC-IND 6=STREAM-OHLCV
-#                   7=PAPER 8=RISK 9=ALERT 10=Monitor
-#                   11=AI 12=CONSOLE 13=EXEC 14=RISK-WORKER
+# Pencere haritası: 0=SHELL 1=STRATEGY 2=DETECT-MS
+#                   3=CALC-IND 4=STREAM-OHLCV 5=PAPER
+#                   6=RISK 7=ALERT 8=Monitor 9=CONSOLE
+#                   10-17=FLOWS (8 veri akışı)
 _tmux_pane() {
   local name="$1"; shift
   local session="cycle"
@@ -226,19 +208,22 @@ _tmux_pane() {
   case "$name" in
     "💻SHELL")     pane="0" ;;
     "🧠STRATEGY")  pane="1" ;;
-    "📡DATA")      pane="2" ;;
-    "📈DETECT-MS") pane="3" ;;
-    "🛰️PRICE-FEED") pane="4" ;;
-    "🧮CALC-IND")  pane="5" ;;
-    "📡STREAM-OHLCV") pane="6" ;;
-    "🛡️PAPER")     pane="7" ;;
-    "⚠️RISK")      pane="8" ;;
-    "🔔ALERT")     pane="9" ;;
-    "Monitor")     pane="10" ;;
-    "🤖AI")        pane="11" ;;
-    "🖥️CONSOLE")   pane="12" ;;
-    "🛡️EXEC")      pane="13" ;;
-    "🧮RISK-WORKER") pane="14" ;;
+    "📈DETECT-MS") pane="2" ;;
+    "🧮CALC-IND")  pane="3" ;;
+    "📡STREAM-OHLCV") pane="4" ;;
+    "🛡️PAPER")     pane="5" ;;
+    "⚠️RISK")      pane="6" ;;
+    "🔔ALERT")     pane="7" ;;
+    "Monitor")     pane="8" ;;
+    "🖥️CONSOLE")   pane="9" ;;
+    "💹 FLOW-TRADE")   pane="10" ;;
+    "📚 FLOW-DEPTH")   pane="11" ;;
+    "💥 FLOW-LIQ")     pane="12" ;;
+    "📈 FLOW-OI")      pane="13" ;;
+    "💰 FLOW-FUNDING") pane="14" ;;
+    "🎯 FLOW-MARK")    pane="15" ;;
+    "🕐 FLOW-LAST")    pane="16" ;;
+    "📉 FLOW-INDEX")   pane="17" ;;
     *)
       # Tanınmayan → yeni pencere (ör. özel servisler)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -260,35 +245,54 @@ _tmux_pane() {
   tmux send-keys -t "$session:$pane" "$@"
 }
 
-# ── DATA/STRATEGY konsolları ─────────────────────────────────
-# DATA → engine binary'si, STRATEGY → strategy-console binary'si (ayrı süreç).
-# Not: Linux comm 15-karakter sınırı → uzun isimlerde -f gerekir.
-_core_mode_pid() {
-  local mode="$1"
-  case "$mode" in
-    STRATEGY) pgrep -f "strategy-console" 2>/dev/null | head -1 ;;
-    *)        pgrep -x engine 2>/dev/null | head -1 ;;
-  esac
-}
+# ── VERİ AKIŞLARI (8 bağımsız süreç, her biri ayrı tmux sekmesi) ─
+# WS → parse → validate → ring buffer → TimescaleDB
+FLOW_BINS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
+FLOW_TABS="💹 FLOW-TRADE 📚 FLOW-DEPTH 💥 FLOW-LIQ 📈 FLOW-OI 💰 FLOW-FUNDING 🎯 FLOW-MARK 🕐 FLOW-LAST 📉 FLOW-INDEX"
 
-data-start() {
+flows-start() {
   _start_guard
-  if _core_mode_pid DATA &>/dev/null; then echo "⚠️  DATA zaten çalışıyor (pid: $(_core_mode_pid DATA))"; return 1; fi
-  cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
-  rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders
-  _tmux_pane "📡DATA" "cd $CYCLE_ROOT && ./target/debug/engine" Enter
-  echo "✅ DATA başlatıldı (pencere 2 — 📡 DATA)"
+  cd "$CYCLE_ROOT" && cargo build -p flows 2>&1 | tail -1
+  rm -f /dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate
+  local i=0 bin tab
+  for tab in $FLOW_TABS; do
+    bin=$(echo "$FLOW_BINS" | tr ' ' '\n' | sed -n "$((i+1))p")
+    _tmux_pane "$tab" "cd $CYCLE_ROOT && ./target/debug/$bin" Enter
+    i=$((i+1))
+  done
+  echo "✅ Veri akışları başlatıldı (8 akış — her biri ayrı sekme)"
 }
-data-stop() {
+flows-stop() {
   _start_guard
-  local p; p=$(_core_mode_pid DATA)
-  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; echo "✅ DATA durduruldu [pid:$p]"; else echo "ℹ️  DATA çalışmıyor"; fi
+  for bin in $FLOW_BINS; do
+    pkill -TERM -x "$bin" 2>/dev/null || pkill -TERM -f "$bin" 2>/dev/null || true
+  done
+  sleep 1
+  echo "✅ Veri akışları durduruldu"
+}
+flows-status() {
+  for bin in $FLOW_BINS; do
+    local pid; pid=$(pgrep -x "$bin" 2>/dev/null | head -1 || true)
+    [ -z "$pid" ] && pid=$(pgrep -f "$bin" 2>/dev/null | head -1 || true)
+    if [ -n "$pid" ]; then
+      local mem cpu
+      mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+      cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+      echo "  ✔ $bin  [pid:$pid]  CPU:${cpu}%  RAM:${mem}"
+    else
+      echo "  ✘ $bin  (durdurulmuş)"
+    fi
+  done
+}
+flows-log() {
+  echo "Akışlar tmux sekmelerinde çalışır (Ctrl+B → 12-19)."
+  echo "  start_paper.sh ile başlatıldıysa: tail -f /tmp/flow-<isim>.log"
 }
 
 # ── STRATEGY orkestrasyon konsolu (ayrı strategy-console binary'si) ─
 strategy-start() {
   _start_guard
-  if _core_mode_pid STRATEGY &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor (pid: $(_core_mode_pid STRATEGY))"; return 1; fi
+  if pgrep -f "strategy-console" &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor"; return 1; fi
   cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
   mkdir -p /tmp/strategy_cmd.d
   _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && ./target/debug/strategy-console" Enter
@@ -296,7 +300,7 @@ strategy-start() {
 }
 strategy-stop() {
   _start_guard
-  local p; p=$(_core_mode_pid STRATEGY)
+  local p; p=$(pgrep -f "strategy-console" 2>/dev/null | head -1)
   if [ -n "$p" ]; then
     kill -TERM "$p" 2>/dev/null; sleep 1
     # Orkestratör alt-süreçlerini de temizle (uzun isim → -f)
@@ -587,63 +591,12 @@ listenconfig-reset() {
 listener-config() { listenconfig-list; }
 listener-set() { listenconfig-set "$@"; }
 
-# ── PRICE-FEED (WS → ring buffer, anlık last/mark/index price) ──
-pricefeed-start() {
-  _start_guard
-  if pgrep -x "price-feed" &>/dev/null; then
-    echo "⚠️  price-feed zaten çalışıyor (pid: $(pgrep -x price-feed | head -1))"
-    return 1
-  fi
-  cd "$CYCLE_ROOT" && cargo build -p price-feed 2>&1 | tail -1
-  setsid nohup "$CYCLE_ROOT/target/debug/price-feed" > /tmp/price_feed.log 2>&1 < /dev/null &
-  sleep 3
-  if curl -s -m 2 http://127.0.0.1:3004/health >/dev/null 2>&1; then
-    echo "✅ PRICE-FEED başlatıldı → http://127.0.0.1:3004/api/lastprice"
-  else
-    echo "❌ PRICE-FEED başlatılamadı:"; tail -5 /tmp/price_feed.log
-  fi
-}
-pricefeed-stop() {
-  _start_guard
-  local p; p=$(pgrep -x "price-feed" 2>/dev/null | head -1 || true)
-  if [ -n "$p" ]; then kill -TERM "$p" 2>/dev/null; sleep 1; kill -0 "$p" 2>/dev/null && kill -KILL "$p" 2>/dev/null; echo "✅ price-feed durduruldu [pid:$p]"; else echo "ℹ️  price-feed çalışmıyor"; fi
-}
-pricefeed-status() {
-  _start_guard
-  local p; p=$(pgrep -x "price-feed" 2>/dev/null | head -1 || true)
-  if [ -n "$p" ]; then
-    local cpu mem
-    cpu=$(ps -p "$p" -o pcpu= 2>/dev/null | tr -d ' ')
-    mem=$(ps -p "$p" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ PRICE-FEED ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]"
-    curl -s -m 2 http://127.0.0.1:3004/health
-    echo
-  else
-    echo "✘  PRICE-FEED durdurulmuş"
-  fi
-}
-pricefeed-query() {
-  _start_guard
-  local sym="${1:-BTCUSDT}"
-  curl -s -m 3 "http://127.0.0.1:3004/api/lastprice/$sym" | python3 -m json.tool 2>/dev/null \
-    || echo "❌ Servis yanıt vermiyor — pricefeed-start ile başlat."
-}
-pricefeed-log() {
-  tail -f /tmp/price_feed.log
-}
-
 # ============================================================
-#  DATA TERMİNALİ
+#  VERİ AKIŞLARI — 8 bağımsız süreç (WS → parse → ring → TimescaleDB)
+#  Temel yardımcılar: flows-start / flows-stop / flows-status
 # ============================================================
 data-live() {
-  cd "$CYCLE_ROOT" && ./target/debug/engine
-}
-data-backtest() {
-  echo "ℹ️  BACKTEST modu kaldırıldı. Tek seferlik strateji analizi için:"
-  echo "     breakout-query"
-}
-data-log() {
-  tail -f /tmp/data_terminal.log
+  flows-start
 }
 
 # ============================================================
@@ -919,75 +872,6 @@ calc-ind-status() {
   else
     echo "✘  calc-ind durdurulmuş"
   fi
-}
-
-# ============================================================
-#  AI ENGINE (LLM Agent Katmanı — ai.toml + OpenAI/Anthropic)
-#  Bağımlılık: price-feed (:3004), detect-ms (:3002), calc-ind (:3007), paper (:8080)
-# ============================================================
-AI_ADDR="${AI_ADDR:-127.0.0.1:3110}"
-
-ai-start() {
-  _start_guard
-  if pgrep -x "ai-engine" &>/dev/null; then
-    echo "⚠️  ai-engine zaten çalışıyor (pid: $(pgrep -x ai-engine | head -1))"
-    echo "   → ai-stop ile önce durdur"
-    return 1
-  fi
-  if [ ! -f "$CYCLE_ROOT/target/debug/ai-engine" ]; then
-    echo "🔨 ai-engine derleniyor..."
-    cd "$CYCLE_ROOT" && cargo build -p ai-engine 2>&1 | tail -5
-  fi
-  echo "🚀 ai-engine başlatılıyor → http://$AI_ADDR"
-  _tmux_pane "🤖AI" "cd $CYCLE_ROOT && ./target/debug/ai-engine" Enter
-  sleep 1
-  if pgrep -x ai-engine &>/dev/null; then
-    echo "✅ ai-engine başladı [pid: $(pgrep -x ai-engine | head -1)]"
-    echo "   Status: http://$AI_ADDR/api/status"
-  else
-    echo "❌ ai-engine başlatılamadı. (OPENAI_API_KEY / ANTHROPIC_API_KEY gerekli olabilir)"
-  fi
-}
-
-ai-stop() {
-  _start_guard
-  if pgrep -x "ai-engine" &>/dev/null; then
-    pkill -TERM -x "ai-engine" && echo "✅ ai-engine durduruldu"
-  else
-    echo "⚠️  ai-engine zaten çalışmıyor"
-  fi
-}
-
-ai-status() {
-  local pid
-  pid=$(pgrep -x "ai-engine" 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    local cpu mem
-    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
-    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ ai-engine ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
-    curl -s -m 2 "http://$AI_ADDR/api/status" | python3 -m json.tool 2>/dev/null \
-      || echo "   (status API yanıt vermiyor)"
-  else
-    echo "✘  ai-engine durdurulmuş"
-  fi
-}
-
-# HITL onayı — /tmp/ai_approve.txt üzerinden
-ai-approve() {
-  echo "approve" > /tmp/ai_approve.txt
-  echo "✅ Onay verildi — bekleyen emir icra edilecek."
-}
-
-ai-reject() {
-  echo "reject" > /tmp/ai_approve.txt
-  echo "❌ Onay reddedildi."
-}
-
-ai-log() {
-  # ai-engine tmux içinde çalıştığında log'u tmux penceresinden izlemek daha iyidir.
-  echo "ℹ️  ai-engine tmux penceresinde çalışıyor; log için pencereye geçin:"
-  echo "   tmux select-window -t cycle:11   (veya Ctrl-b + 11)"
 }
 
 # ============================================================

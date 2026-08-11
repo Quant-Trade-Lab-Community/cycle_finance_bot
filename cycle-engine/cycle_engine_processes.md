@@ -1,54 +1,59 @@
 # ⚙️ Cycle-Engine Fonksiyonel Süreçler
 
-`cycle-engine` iki ayrı binary üretir. **`RUN_MODE` yoktur** — her binary tek amaçlıdır:
+Veri toplama artık **8 bağımsız akış süreci** (`flows` crate) ile yapılır; `engine` yalnızca strateji orkestrasyonu sağlar:
 
-- `engine` → **DATA konsolu**: canlı piyasa veri toplama + işleme + kayıt
+- `flow-*` (8 binary) → **bağımsız veri akışı süreçleri**: `WS → parse → validate → ring → TimescaleDB`
 - `strategy-console` → **strateji orkestrasyon merkezi**: stratejileri alt-süreç olarak yönetir (Bölüm 3)
 
 ```
-cargo run -p engine              → Canlı piyasa veri toplama + işleme + kayıt
-./target/debug/strategy-console  → Strateji orkestrasyon merkezi
+./target/debug/flow-trade         → Trade akışı (WS→ring→TimescaleDB)
+./target/debug/flow-depth         → Depth20 akışı
+./target/debug/flow-liquidation   → Likidasyon akışı
+./target/debug/flow-oi            → Open Interest akışı
+./target/debug/flow-funding       → Funding Rate akışı
+./target/debug/flow-markprice     → Mark Price akışı
+./target/debug/flow-lastprice     → Last Price akışı
+./target/debug/flow-indexprice    → Index Price akışı
+./target/debug/strategy-console   → Strateji orkestrasyon merkezi
 ```
 
 ---
 
-## 1. DATA Konsolu — Ana Veri Hattı (Hot Path)
+## 1. Veri Akışı Süreçleri — Ana Veri Hattı
 
-Bu mod, sistemin kalbi olan **gerçek zamanlı veri toplama ve dağıtım** sürecidir. 4 eşzamanlı süreç çalışır:
+Her akış **ayrı bir OS sürecidir** ve 3 eşzamanlı parça çalıştırır:
 
 ```mermaid
 flowchart TD
-    subgraph "TOKIO ASYNC RUNTIME (Main Thread)"
-        A["start_binance_ws_client(tx)"]
-        A1["Chunk 1: WS Task<br/>btcusdt@trade, btcusdt@depth20"]
-        A2["Chunk N: WS Task<br/>...diğer semboller"]
-        A --> A1
-        A --> A2
+    subgraph "AKIŞ SÜRECİ (ör. flow-trade)"
+        subgraph "TOKIO ASYNC RUNTIME"
+            A["start_ws_client(tx, streams, use_gate=true)<br/>RateGate'ten token al → WS bağlan → SUBSCRIBE"]
+        end
+
+        subgraph "THREAD — İŞLEMCİ (RT Priority 99)"
+            B1["rx.recv() — Bounded Kanal Okuma"]
+            B2["parse_for()<br/>simd_json / EventParser"]
+            B3["DataValidator::is_valid()<br/>Circuit Breaker"]
+            B4["wire::encode()<br/>Compact Binary"]
+            B5["ring.push()<br/>kendi akış ring'i (/dev/shm)"]
+            B6["db_tx.try_send()<br/>DB kanalına gönder"]
+            B1 --> B2 --> B3 --> B4 --> B5
+            B3 --> B6
+        end
+
+        subgraph "THREAD — DB WRITER"
+            C1["db_rx.recv()"]
+            C2["TimescaleDB INSERT<br/>(akışın hypertable'ı)"]
+            C3{"1000 kayıt VEYA<br/>1sn geçti mi?"}
+            C4["tx.commit()"]
+            C1 --> C2 --> C3
+            C3 -->|Evet| C4
+            C4 --> C1
+        end
     end
 
-    subgraph "THREAD 2 — İŞLEMCİ (RT Priority 99)"
-        B1["rx.recv() — Bounded Kanal Okuma"]
-        B2["EventParser::parse()<br/>simd_json zero-copy"]
-        B3["DataValidator::is_valid()<br/>Circuit Breaker"]
-        B4["wire::encode()<br/>Compact Binary"]
-        B5["GenerationalRingBuffer.push()<br/>/dev/shm yazma"]
-        B6["db_tx.try_send()<br/>DB kanalına gönder"]
-        B1 --> B2 --> B3 --> B4 --> B5
-        B3 --> B6
-    end
-
-    subgraph "THREAD 3 — DB WRITER"
-        C1["db_rx.recv()"]
-        C2["SQLite INSERT<br/>(8 tablo)"]
-        C3{"10K kayıt VEYA<br/>1sn geçti mi?"}
-        C4["tx.commit()"]
-        C1 --> C2 --> C3
-        C3 -->|Evet| C4
-        C4 --> C1
-    end
-
-    A1 -->|"flume bounded<br/>Vec&lt;u8&gt;"| B1
-    A2 -->|"flume bounded<br/>Vec&lt;u8&gt;"| B1
+    RG["RateGate<br/>/dev/shm/cycle_finance_api_gate"] -.->|"token"| A
+    A -->|"flume bounded<br/>Vec&lt;u8&gt;"| B1
     B6 -->|"flume bounded(1M)<br/>OwnedEvent"| C1
 
     style A fill:#1a1a2e,stroke:#e94560,color:#fff
@@ -57,17 +62,36 @@ flowchart TD
     style C4 fill:#e94560,stroke:#fff,color:#fff
 ```
 
-### Süreç 1: WebSocket Bağlantı Yöneticisi (Tokio Async)
+**Akış → kaynak → ring → hypertable eşlemesi:**
 
-**Dosya:** [gateway/src/binance.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/gateway/src/binance.rs)
+| Akış | Binary | Kaynak | Stream / REST | Ring | Bellek | Hypertable |
+|:---|:---|:---|:---|:---|:---:|:---|
+| 1. Trade | `flow-trade` | **WS** | `{sym}@trade` | `/cycle_finance_trades` | 50 MB | `trades` |
+| 2. Depth20 | `flow-depth` | **WS** | `{sym}@depth20@100ms` | `/cycle_finance_depth` | 100 MB | `orderbooks` |
+| 3. Likidasyon | `flow-liquidation` | **WS** | `{sym}@forceOrder` | `/cycle_finance_liquidations` | 20 MB | `liquidations` |
+| 4. Open Interest | `flow-oi` | **REST** | `GET /fapi/v1/openInterest` | `/cycle_finance_open_interest` | 20 MB | `open_interests` |
+| 5. Funding Rate | `flow-funding` | **REST** | `GET /fapi/v1/premiumIndex` | `/cycle_finance_funding` | 10 MB | `funding_rates` |
+| 6. Mark Price | `flow-markprice` | **REST** | `GET /fapi/v1/premiumIndex` | `/cycle_finance_markprice` | 50 MB | `markprices` |
+| 7. Last Price | `flow-lastprice` | **REST** | `GET /fapi/v1/ticker/price` | `/cycle_finance_lastprice` | 50 MB | `lastprices` |
+| 8. Index Price | `flow-indexprice` | **REST** | `GET /fapi/v1/premiumIndex` | `/cycle_finance_indexprice` | 50 MB | `indexprices` |
+
+> **REST fallback:** Bu ağdan Binance markPrice/indexPrice/lastPrice/openInterest stream'leri WS ile
+> iletilmediği için o akışlar REST ile beslenir (`flows/src/rest.rs`); REST yanıtı WS-format frame'e
+> çevrilir ve aynı `parse → validate → ring → TimescaleDB` hattından geçer. Semboller
+> `CYCLE_FLOW_SYMBOLS` ile değiştirilebilir (varsayılan `BTCUSDT,ETHUSDT,SOLUSDT,HEIUSDT`).
+>
+> **Likidasyon:** Binance'te piyasa geneli likidasyon için REST endpoint yoktur (`allForceOrders` 404);
+> `flow-liquidation` WS aboneliğinde kalır — bu ağda stream iletilmediği için tablo boş, stream çalışan ağda anında dolar.
+
+### Süreç 1: Veri Kaynağı — WebSocket + Rate Kapısı / REST Fallback
+
+**Dosya:** [gateway/src/binance.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/gateway/src/binance.rs) · [gateway/src/rate_gate.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/gateway/src/rate_gate.rs)
 
 ```
-start_binance_ws_client(tx)
-  ├── fetch_usdt_spot_pairs()
-  │     → ["btcusdt@trade", "btcusdt@depth20@100ms", "ethusdt@trade", ...]
-  │
+start_ws_client(tx, streams, use_gate=true)
   ├── chunks(200) → Her chunk için tokio::spawn
-  │     └── start_ws_chunk(tx, chunk, id)
+  │     └── start_ws_chunk(tx, chunk, id, use_gate)
+  │           ├── [use_gate] RateGate::acquire(30s)   ← Binance limit koruması
   │           ├── connect_async("wss://fstream.binance.com/stream")
   │           ├── SUBSCRIBE JSON mesajı gönder
   │           └── tokio::select! döngüsü:
@@ -76,6 +100,14 @@ start_binance_ws_client(tx)
   │
   └── Chunk'lar arası 600ms gecikme (WAF koruması)
 ```
+
+**Rate kapısı (API rate limit koruması):** `RateGate` `/dev/shm/cycle_finance_api_gate` üzerinde prosesler arası token bucket'tır. Bağımsız 8 akış aynı bütçeyi paylaşır; kapasite/dolum `CYCLE_GATE_CAPACITY` / `CYCLE_GATE_RATE` ile ayarlanır.
+
+**REST fallback ([rest.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/flows/src/rest.rs)):** WS ile gelmeyen akışlar (funding, markprice, indexprice, lastprice, oi) her poll döngüsünde (`CYCLE_REST_POLL_MS`, varsayılan 2s) `RateGate` token'ı alır, REST yanıtını WS-format frame'e çevirir ve aynı `raw_tx` kanalına yazar — parse/validate/ring/TSDB hattı değişmez.
+
+**Rate güvenliği (REST):**
+- HTTP **429** → 60 sn, HTTP **418** (teapot/IP banı) → 5 dk geri çekilme (asla aynı hızda vurmaya devam etmez)
+- Her akış dakikalık ağırlığını (request × endpoint weight: premiumIndex=1, ticker/price=2, openInterest=1) `/tmp/cycle_flow_weights/<flow>.weight` dosyasına yazar → **monitor sekmesi** toplamı gösterir (limit 2400/dk)
 
 **Hata yönetimi:**
 - Bağlantı koparsa → Exponential backoff (1s → 2s → 4s → ... → 60s tavan)
@@ -86,22 +118,19 @@ start_binance_ws_client(tx)
 
 ### Süreç 2: Veri İşleme Hattı (RT Priority Thread)
 
-**Dosya:** [engine/src/main.rs:24-69](file:///home/smhvz/Desktop/PROJE/cycle-engine/engine/src/main.rs#L24-L69)
+**Dosya:** [flows/src/lib.rs:76-119](file:///home/smhvz/Desktop/PROJE/cycle-engine/flows/src/lib.rs#L76-L119) · [flows/src/parse.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/flows/src/parse.rs)
 
 Bu thread `SCHED_FIFO` öncelik 99 ile çalışır (Linux RT scheduler). İşlem adımları:
 
 ```
 set_rt_thread_priority(99)  ← OS-level realtime öncelik
 
-while let Ok(mut bytes) = rx.recv() {
+while let Ok(mut bytes) = raw_rx.recv() {
     ┌─ ADIM 1: PARSE ────────────────────────────────────────┐
-    │  EventParser::parse(&mut bytes)                         │
-    │  • simd_json zero-copy: buffer'ı yerinde parse eder     │
-    │  • @trade → OwnedEvent::new_trade(...)                  │
-    │  • @depth → OwnedEvent::new_orderbook(...)              │
-    │  • @forceOrder → OwnedEvent::new_liquidation(...)       │
-    │  • @markPrice → OwnedEvent::new_funding_rate(...)       │
-    │  • @bookTicker → OwnedEvent::new_bookticker(...)        │
+    │  parse_for(kind, &mut bytes)                            │
+    │  • Tanınan stream'ler → EventParser (simd_json)         │
+    │  • @lastPrice/@indexPrice/!openInterest → ek ayrıştırıcı│
+    │  • Mevcut EventType varyantlarına eşlenir (yeni eklenmez)│
     └─────────────────────────────────────────────────────────┘
            │
            ▼
@@ -118,79 +147,79 @@ while let Ok(mut bytes) = rx.recv() {
     ┌─ ADIM 3: KODLAMA + DAĞITIM ────────────────────────────┐
     │  wire::encode(&owned_event, &mut frame_buf)             │
     │  • OwnedEvent → Compact Binary Frame (max 659B)        │
-    │  • Decimal → (mantissa: i64, scale: u8) = 9 byte       │
     │                                                          │
-    │  gen_ring.push(&frame_buf[..len])                        │
-    │  • /dev/shm/cycle_finance_ring'e atom yazma              │
+    │  ring.push(&frame_buf[..len])                           │
+    │  • Bu akışın ring'ine atom yazma (örn. /cycle_finance_trades)│
     │  • Torn-read korumalı: data → fence → seq → head        │
     └─────────────────────────────────────────────────────────┘
            │
            ▼
     ┌─ ADIM 4: DB KANALINA GÖNDERİM ────────────────────────┐
     │  db_tx.try_send(owned_event)                             │
-    │  • Non-blocking: Kuyruk doluysa drop (db_drop_count++)   │
+    │  • Non-blocking: Kuyruk doluysa drop (db_drops++)        │
     │  • Hot path'i asla bloke etmez                           │
     └─────────────────────────────────────────────────────────┘
            │
            ▼
     ┌─ ADIM 5: PERFORMANS RAPORU (1 saniyede bir) ───────────┐
-    │  "[MARKET DATA] Ticks/sec: X | depth: Y | invalid: Z    │
-    │   | db_drops: W | Avg Parse: N.NN ns"                    │
+    │  "[<akış>] evt/s: X | invalid: Y | db_drops: Z"          │
     └─────────────────────────────────────────────────────────┘
 }
 ```
 
 ---
 
-### Süreç 3: Veritabanı Yazıcı (Ayrı Thread)
+### Süreç 3: TimescaleDB Yazıcı (Ayrı Thread)
 
-**Dosya:** [persistence/src/db.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/persistence/src/db.rs)
+**Dosya:** [persistence/src/timescaledb.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/persistence/src/timescaledb.rs)
+
+> **Kurulum (PC'ye native):** PostgreSQL 18 + TimescaleDB 2.x (`timescaledb-tune` ile `shared_preload_libraries='timescaledb'`, `CREATE EXTENSION timescaledb`). Kullanıcı `cycle` / şifre `cycle`, DB `market_data`; bağlantı `TIMESCALEDB_URL` (varsayılan `postgres://cycle:cycle@localhost:5432/market_data`).
 
 ```
-start_db_writer(db_rx)
-  ├── SQLite bağlantısı aç (WAL modu, 64MB cache)
-  ├── 8 tablo oluştur (trades, orderbooks, liquidations, ...)
+start_tsdb_writer(db_rx, kind)
+  ├── sqlx PgPool bağlantısı (TIMESCALEDB_URL, 2s retry — akışı asla durdurmaz)
+  ├── Akışın hypertable'ını oluştur (CREATE TABLE + create_hypertable)
   └── Batch döngüsü:
-        while let Ok(event) = rx.recv() {
-            match event.payload {
-                Trade → INSERT INTO trades
-                Orderbook → INSERT INTO orderbooks (bids/asks string serialize)
+        while let Ok(event) = rx.recv_timeout(250ms) {
+            match (kind, event.payload) {
+                Trade    → INSERT INTO trades
+                Orderbook→ INSERT INTO orderbooks (bids/asks JSONB)
                 Liquidation → INSERT INTO liquidations
-                FundingRate → INSERT INTO funding_rates
-                BookTicker → INSERT INTO booktickers
                 OpenInterest → INSERT INTO open_interests
-                Opportunity → INSERT INTO opportunities
-                SymbolMetrics → INSERT INTO symbol_metrics
+                FundingRate (funding)  → INSERT INTO funding_rates
+                FundingRate (markprice)→ INSERT INTO markprices (mark_price)
+                FundingRate (indexprice)→ INSERT INTO indexprices (index_price)
+                FundingRate (lastprice)→ INSERT INTO lastprices (mark_price)
             }
             batch_count++
 
-            if batch_count >= 10_000 || 1sn geçtiyse {
-                tx.commit()     ← Toplu disk yazma
-                tx = yeni transaction başlat
+            if batch_count >= 1000 || 1sn geçtiyse {
+                tx.commit()     ← Toplu yazma
             }
         }
 ```
 
 **Optimizasyon:**
-- WAL modu: Okuma ve yazma eşzamanlı çalışabilir
-- `synchronous = NORMAL`: Çökme güvenliği ile hız arası denge
-- 10K batch: Disk I/O'yu minimize eder
+- TimescaleDB hypertable'ları `timestamp` üzerinde bölümlenir (zaman serisi sorguları)
+- 1000 batch: Disk I/O'yu minimize eder
 - `try_send`: Ana hat doluysa DB yerine performansı tercih eder
+- Bağlantı yoksa bekleme ile yeniden dener — veri akışı kuralları bozulmaz
 
 ---
 
 ### Süreç 4: Ring Buffer Tüketicileri (Harici Süreçler)
 
-Ring buffer'a yazılan veriler diğer bağımsız OS süreçleri tarafından okunur:
+Her akış kendi ring'ine yazar; diğer bağımsız OS süreçleri o ring'leri **RAM'den** (paylaşımlı bellek) okur:
 
-| Tüketici | Ring Buffer | Süreç |
+| Tüketici | Ring Buffer | Açıklama |
 |:---|:---|:---|
-| `price-feed` | `/cycle_finance_ring` → `/cycle_finance_pricefeed` | Fiyat akışı REST API (:3004) |
-| `calc-ind` | `/cycle_finance_ring` → `/cycle_finance_calc` | İndikatör hesaplama (:3007) |
-| `stream-ohlcv` | `/cycle_finance_ring` → `/cycle_finance_stream_ohlcv` | OHLCV mum üretimi |
-| `alert-service` | `/cycle_finance_ring` | Alarm tetikleme |
-| `detect-ms` | `/cycle_finance_ring` | Piyasa yapısı analizi (:3002) |
-| `breakout-strategy` | `/cycle_finance_pricefeed` | Kırılım stratejisi |
+| `breakout-strategy` | `/cycle_finance_trades` | Kırılım stratejisi fiyatı (event-driven) |
+| `alert-service` | `/cycle_finance_trades` | Sesli fiyat uyarısı |
+| `paper-service` | `/cycle_finance_trades` | Mark price güncellemesi (dolum/likidasyon) |
+| `stream-ohlcv` | `/cycle_finance_lastprice` | Canlı mum güncellemesi |
+| `risk-worker` | `/cycle_finance_markprice` | Risk parametreleri (VaR/korelasyon) |
+| `calc-ind` | `/cycle_finance_calc` | İndikatör hesaplama (:3007) |
+| `stream-ohlcv` | `/cycle_finance_stream_ohlcv` | OHLCV mum üretimi |
 
 ---
 
@@ -275,7 +304,7 @@ flowchart LR
     CMD --> SC["strategy-console<br/>StrategyOrchestrator"]
     SC -->|"spawn / SIGTERM"| ST["breakout-strategy<br/>(alt-süreç)"]
     SC -->|"durum yazma"| STAT["/tmp/strategy_status.txt"]
-    ST -->|"okur"| PF["/cycle_finance_pricefeed"]
+    ST -->|"okur"| PF["/cycle_finance_trades (flow ring — RAM)"]
 ```
 
 - `StrategyOrchestrator` (strategies-engine) `services-engine/strategies/` klasörünü tarar; her strateji dizini ayrı alt-süreç olarak yönetilir
@@ -292,7 +321,7 @@ flowchart LR
 | `strat list` / `strat status` | Mevcut / çalışan stratejiler |
 | `strat attach` | tmux pencere 1'e (🧠 STRATEGY) geç |
 
-> tmux eşlemesi: `1 — 🧠 STRATEGY` → `strategy-console` · `2 — 📡 DATA` → `engine`. Strateji çıktısı DATA ekranına karışmaz.
+> tmux eşlemesi: `1 — 🧠 STRATEGY` → `strategy-console` · `12-19` → 8 veri akışı (`flow-*`). Strateji çıktısı akış ekranlarına karışmaz.
 
 ---
 
@@ -322,46 +351,58 @@ spawn_watcher(handler) → Tokio arka plan task'ı:
 
 ## 5. Thread/Task Haritası Özeti
 
+**Her veri akışı süreci (8 adet):**
+
+| # | Parça | Tip | Öncelik | Bloklanır mı? |
+|:---:|:---|:---|:---:|:---:|
+| 1 | WebSocket görevi | Tokio Task | Normal | Async I/O |
+| 2 | Veri İşleme Hattı | OS Thread | **RT 99** | Hayır (bounded queue) |
+| 3 | TimescaleDB Writer | OS Thread | Normal | Evet (DB I/O, 2s retry) |
+
+**Genel sistem:**
+
 | # | Süreç | Tip | Öncelik | Bloklanır mı? |
 |:---:|:---|:---|:---:|:---:|
-| 1 | WebSocket Chunk 1 | Tokio Task | Normal | Async I/O |
-| 2 | WebSocket Chunk N | Tokio Task | Normal | Async I/O |
-| 3 | Veri İşleme Hattı | OS Thread | **RT 99** | Hayır (spin-loop ready) |
-| 4 | DB Writer | OS Thread | Normal | Evet (disk I/O) |
-| 5 | Orchestrator Spin-Loop | OS Thread | RT | **Asla** (spin_loop) |
-| 6 | Scout Watcher | Tokio Task | Normal | 100ms sleep |
-| 7 | Timer Tick | Orkestratör içi | RT | Hayır |
-| 8 | strategy-console (orkestrasyon) | Ayrı OS Süreci | Normal | 250ms poll |
-| 9 | breakout-strategy (yönetilen alt-süreç) | Ayrı OS Süreci | Normal | Evet (döngü bekleme) |
+| 1 | `flow-*` (8 adet — bağımsız veri akışı) | Ayrı OS Süreci | RT 99 (işlemci thread) | Hayır |
+| 2 | Rate kapısı (acquire) | Akış içi bekleme | Normal | 25ms poll / 30s tavan |
+| 3 | Orchestrator Spin-Loop | OS Thread | RT | **Asla** (spin_loop) |
+| 4 | Scout Watcher | Tokio Task | Normal | 100ms sleep |
+| 5 | Timer Tick | Orkestratör içi | RT | Hayır |
+| 6 | strategy-console (orkestrasyon) | Ayrı OS Süreci | Normal | 250ms poll |
+| 7 | breakout-strategy (yönetilen alt-süreç) | Ayrı OS Süreci | Normal | Evet (döngü bekleme) |
 
-> 8–9 satırları `engine` DATA konsolundan bağımsız çalışır: `strategy-console`, strateji süreçlerini spawn eder/yönetir (Bölüm 3).
+> 6–7 satırları veri akışlarından bağımsız çalışır: `strategy-console`, strateji süreçlerini spawn eder/yönetir (Bölüm 3).
 
 ```mermaid
 graph LR
-    subgraph "OS Threads"
-        T1["Main Thread<br/>(Tokio Runtime)"]
+    subgraph "8 × Akış Süreci (flow-*)"
+        A1["flow-trade"]
+        A2["flow-depth"]
+        A3["...diğer 6 akış"]
+    end
+
+    subgraph "Akış içi Thread'ler"
+        T1["Tokio Runtime<br/>(WS task)"]
         T2["İşlemci Thread<br/>(RT Priority 99)"]
-        T3["DB Writer Thread"]
+        T3["TSDB Writer Thread"]
     end
-    
-    subgraph "Tokio Tasks (Main Thread içinde)"
-        K1["WS Chunk 1"]
-        K2["WS Chunk 2"]
-        K3["Scout Watcher"]
-    end
-    
+
     subgraph "Shared Memory IPC (/dev/shm)"
-        R1["cycle_finance_ring"]
-        R2["cycle_finance_orders"]
-        R3["cycle_finance_scout"]
+        R1["cycle_finance_trades"]
+        R2["cycle_finance_depth"]
+        RG["cycle_finance_api_gate"]
     end
-    
-    K1 -->|flume| T2
-    K2 -->|flume| T2
-    T2 -->|push| R1
-    T2 -->|flume| T3
-    K3 -->|read| R3
-    
+
+    A1 --> T1
+    A2 --> T1
+    A3 --> T1
+    T1 -->|"flume"| T2
+    T2 -->|"push"| R1
+    T2 -->|"push"| R2
+    T2 -->|"flume"| T3
+    T1 -.->|"token"| RG
+
     style T2 fill:#e94560,stroke:#fff,color:#fff
     style R1 fill:#533483,stroke:#fff,color:#fff
+    style RG fill:#b7950b,stroke:#fff,color:#fff
 ```

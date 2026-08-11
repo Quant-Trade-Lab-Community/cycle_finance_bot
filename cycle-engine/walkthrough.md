@@ -2,6 +2,14 @@
 
 Projenin mevcut derleme ve çalışma bütünlüğüne zarar vermeden, `cycle-engine` sistemi üzerinde mutabık kalınan 6 mimari katmana dayalı klasör yapılandırması başarıyla tamamlanmıştır.
 
+> [!NOTE]
+> **Güncelleme (2026-08-11):** Yapılandırma sonrasında veri toplama monolitik `engine` (DATA konsolu) yerine **`flows` crate'indeki 8 bağımsız akış sürecine** taşınmıştır:
+> - `engine/src/main.rs` (DATA terminali) kaldırıldı; kalıcılık SQLite yerine **TimescaleDB**'dir (PC'ye native kurulum).
+> - `gateway`'e prosesler arası **API rate kapısı** (`rate_gate.rs`) eklendi; akışlar `start_ws_client(..., use_gate=true)` ile bağlanır.
+> - Bu ağdan WS ile gelmeyen 6 akış (funding, markprice, indexprice, lastprice, oi) **REST fallback** (`flows/src/rest.rs`) ile beslenir; her akış dakikalık weight'ini `/tmp/cycle_flow_weights/` dosyasına yazar (monitor sekmesi gösterir). Likidasyon WS'te kaldı (REST endpoint yok).
+> - **`price-feed` servisi kaldırıldı**; tüketicileri (breakout, alert, paper, stream-ohlcv, risk-worker) artık flow ring'lerini RAM'den okur. `ai-engine` de Desktop'a taşındı.
+> - Yeni crate: `flows` (8 binary: `flow-trade` … `flow-indexprice`). Güncel mimari için [cycle_engine_architecture.md](cycle_engine_architecture.md) ve [cycle_engine_processes.md](cycle_engine_processes.md).
+
 ## Gerçekleştirilen İşlemler
 
 ### 1. Klasör ve Crate Organizasyonu

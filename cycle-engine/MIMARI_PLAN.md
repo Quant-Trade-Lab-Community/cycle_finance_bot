@@ -1,5 +1,8 @@
 # 🏛️ Cycle-Engine — 6 Katmanlı Mimari ve Geliştirme Planı
 
+> [!NOTE]
+> **Güncelleme (2026-08-11):** Bu belge, yeniden yapılandırma **öncesi** yapıyı (`contracts`, `adapter`, `core`, `transport`) anlatan tarihî bir plan dokümanıdır. Güncel mimari için **cycle_engine_architecture.md** ve **cycle_engine_processes.md**'ye bakınız. Son değişiklikler: `flows` crate'i (8 bağımsız veri akışı süreci), `gateway::rate_gate` (prosesler arası API rate kapısı), SQLite → TimescaleDB geçişi.
+
 > **Kapsam**: Yalnızca `cycle-engine/` alt dizini — 5 crate, 37 kaynak dosyası, ~80.000 satır derlenmiş kod.
 > **Kural**: Hiçbir mevcut dosya değiştirilmeyecek. Bu plan salt-okunur analiz ve doğrulamadır.
 

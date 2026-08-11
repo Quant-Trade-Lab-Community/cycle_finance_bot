@@ -38,7 +38,9 @@ risk_config_path = "risk.toml"
 initial_balance_usdt = 100000
 
 [context]
-price_feed_url = "http://127.0.0.1:3004"
+# Fiyat artık flow ring'lerinden (RAM paylaşımlı bellek) okunur:
+#   /cycle_finance_lastprice · /cycle_finance_markprice
+#   /cycle_finance_indexprice · /cycle_finance_orderbooks
 detect_ms_url = "http://127.0.0.1:3002"
 calc_ind_url = "http://127.0.0.1:3007"
 # İsteğe bağlı haber kaynağı (JSON). Boşsa duygu agent'ı nötr kalır.

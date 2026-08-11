@@ -4,9 +4,10 @@
 #  Her saniye güncellenir. Ctrl+C ile çıkılır.
 #
 #  İzlenen servisler:
-#    core (DATA / STRATEGY / BACKTEST / CORRELATION)
+#    Veri akışları (flow-trade … flow-indexprice) — 8 bağımsız süreç
 #    paper-service
 #    alert-service
+#    Binance REST ağırlığı — data çeken akışların dakikalık weight'i
 # ============================================================
 
 # ── Renkler ──────────────────────────────────────────────────
@@ -151,15 +152,13 @@ find_pid() {
     pgrep -x "$name" 2>/dev/null | head -1
 }
 
-find_pid_env() {
-    # RUN_MODE=X olan core process'ini bul
-    local mode="$1"
-    pgrep -x "core" 2>/dev/null | while read -r pid; do
-        if grep -qa "RUN_MODE=$mode" /proc/"$pid"/environ 2>/dev/null; then
-            echo "$pid"
-            return
-        fi
-    done
+find_flow_pid() {
+    # Akış prosesi: comm 15-karakter sınırı → uzun isimlerde -f yedeği.
+    local name="$1"
+    local pid
+    pid=$(pgrep -x "$name" 2>/dev/null | head -1)
+    [ -z "$pid" ] && pid=$(pgrep -f "$name" 2>/dev/null | head -1)
+    echo "$pid"
 }
 
 # ── Ana döngü ────────────────────────────────────────────────
@@ -195,22 +194,26 @@ while true; do
     echo -e "${W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${N}"
 
     # ── Servisler ────────────────────────────────────────────
-    PID_DATA=$(find_pid_env "DATA")
-    PID_STRATEGY=$(find_pid_env "STRATEGY")
-    PID_BACKTEST=$(find_pid_env "BACKTEST")
-    PID_CORRELATION=$(find_pid_env "CORRELATION")
+    FLOWS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
     PID_PAPER=$(find_pid "paper-service")
     PID_ALERT=$(find_pid "alert-service")
 
-    # core binary tek isimle görünüyorsa genel bul
-    [ -z "$PID_DATA" ] && [ -z "$PID_STRATEGY" ] && [ -z "$PID_BACKTEST" ] && [ -z "$PID_CORRELATION" ] && {
-        ALL_CORE=$(pgrep -x "core" 2>/dev/null | head -1)
-    }
-
-    print_service "📡 DATA"          "${PID_DATA:-$ALL_CORE}" "$C"
-    print_service "🧠 STRATEGY"      "$PID_STRATEGY"          "$B"
-    print_service "🔄 BACKTEST"      "$PID_BACKTEST"          "$M"
-    print_service "📈 CORRELATION"   "$PID_CORRELATION"       "$Y"
+    # Veri akışları (8 bağımsız süreç)
+    i=0
+    for f in $FLOWS; do
+        PID_FLOW=$(find_flow_pid "$f")
+        case "$i" in
+            0) print_service "💹 FLOW-TRADE"   "$PID_FLOW" "$C" ;;
+            1) print_service "📚 FLOW-DEPTH"   "$PID_FLOW" "$B" ;;
+            2) print_service "💥 FLOW-LIQ"     "$PID_FLOW" "$M" ;;
+            3) print_service "📈 FLOW-OI"      "$PID_FLOW" "$Y" ;;
+            4) print_service "💰 FLOW-FUNDING" "$PID_FLOW" "$G" ;;
+            5) print_service "🎯 FLOW-MARK"    "$PID_FLOW" "$C" ;;
+            6) print_service "🕐 FLOW-LAST"    "$PID_FLOW" "$B" ;;
+            7) print_service "📉 FLOW-INDEX"   "$PID_FLOW" "$M" ;;
+        esac
+        i=$((i+1))
+    done
     echo -e "${DIM}──────────────────────────────────────────────────────────────────────────────────${N}"
     print_service "🛡️  PAPER-SERVICE" "$PID_PAPER"             "$G"
     print_service "🔔 ALERT-SERVICE" "$PID_ALERT"             "$Y"
@@ -219,18 +222,22 @@ while true; do
 
     # ── Çalışan servis sayısı ─────────────────────────────────
     running=0
-    for p in "$PID_DATA" "$PID_STRATEGY" "$PID_BACKTEST" "$PID_CORRELATION" "$PID_PAPER" "$PID_ALERT"; do
+    for f in $FLOWS; do
+        p=$(find_flow_pid "$f")
+        [ -n "$p" ] && kill -0 "$p" 2>/dev/null && (( running++ )) || true
+    done
+    for p in "$PID_PAPER" "$PID_ALERT"; do
         [ -n "$p" ] && kill -0 "$p" 2>/dev/null && (( running++ )) || true
     done
 
     echo ""
-    printf "  ${DIM}Çalışan servis: ${W}%d/6${N}${DIM}   |   Yenileme: her %ss   |   Çıkış: Ctrl+C${N}\n" \
+    printf "  ${DIM}Çalışan servis: ${W}%d/10${N}${DIM}   |   Yenileme: her %ss   |   Çıkış: Ctrl+C${N}\n" \
         "$running" "$INTERVAL"
 
     # ── Ring buffer bilgisi ───────────────────────────────────
     echo ""
     echo -e "  ${DIM}Ring Buffer Durumu:${N}"
-    for ring in cycle_finance_ring cycle_finance_orders; do
+    for ring in cycle_finance_trades cycle_finance_depth cycle_finance_liquidations cycle_finance_open_interest cycle_finance_funding cycle_finance_markprice cycle_finance_lastprice cycle_finance_indexprice cycle_finance_api_gate; do
         if [ -f "/dev/shm/$ring" ]; then
             ring_size=$(du -sh "/dev/shm/$ring" 2>/dev/null | cut -f1)
             printf "    ${G}✔${N} /dev/shm/%-28s %s\n" "$ring" "$ring_size"
@@ -238,6 +245,31 @@ while true; do
             printf "    ${R}✘${N} /dev/shm/%-28s ${DIM}(yok)${N}\n" "$ring"
         fi
     done
+
+    # ── Binance REST ağırlığı (data çeken akışlar) ────────────
+    echo ""
+    echo -e "  ${DIM}Binance REST Ağırlığı (akışlar):${N}"
+    REST_TOTAL=0
+    for wf in /tmp/cycle_flow_weights/*.weight; do
+        [ -f "$wf" ] || continue
+        fname=$(basename "$wf" .weight)
+        w=$(awk '{print $2}' "$wf" 2>/dev/null)
+        w=${w:-0}
+        REST_TOTAL=$((REST_TOTAL + w))
+        if [ "$w" -gt 0 ]; then
+            printf "    ${G}✔${N} %-18s %s ${DIM}weight/dk${N}\n" "$fname" "$w"
+        else
+            printf "    ${R}✘${N} %-18s 0 ${DIM}(yok)${N}\n" "$fname"
+        fi
+    done
+    if [ "$REST_TOTAL" -gt 2000 ]; then
+        wcolor=$R
+    elif [ "$REST_TOTAL" -gt 1200 ]; then
+        wcolor=$Y
+    else
+        wcolor=$G
+    fi
+    printf "    ${W}TOPLAM: ${wcolor}%d ${N}${DIM}weight/dk  (Binance limiti 2400/dk)${N}\n" "$REST_TOTAL"
 
     sleep "$INTERVAL"
 done

@@ -1,5 +1,8 @@
 # 🏗️ Cycle-Engine — 6 Katmanlı Klasör Yeniden Yapılandırma Planı
 
+> [!NOTE]
+> **Güncelleme (2026-08-11):** Bu plan tamamlanmıştır — 6 katmanlı yapı `gateway`, `pipeline`, `transport`, `engine`, `persistence`, `infra` olarak uygulanmıştır (plan sırasında geçici `katmanX-` isimleri kullanılmıştı). Ayrıca yeni **`flows`** crate'i (8 bağımsız veri akışı süreci) ve `transport::flow::FlowKind` eklenmiş, SQLite kaldırılıp **TimescaleDB**'ye geçilmiştir. Güncel durum için: [cycle_engine_architecture.md](cycle_engine_architecture.md).
+
 > **Kural**: Hiçbir algoritma değişmez. Sadece dosya konumları, `Cargo.toml` bağımlılıkları ve `use`/`mod` import yolları güncellenir.
 
 ---
