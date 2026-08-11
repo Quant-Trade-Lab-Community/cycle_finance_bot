@@ -1,8 +1,0 @@
-[package]
-name = "cycle-splash"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-terminal_size = { workspace = true }
-figlet-rs = { workspace = true }

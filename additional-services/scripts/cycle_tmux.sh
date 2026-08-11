@@ -127,7 +127,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p cycle-splash -p engine -p flows -p paper-service -p alert-service -p breakout-strategy -p detect-ms -p stream-ohlcv -p exec-console 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p breakout-strategy -p detect-ms -p stream-ohlcv -p exec-console 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -146,11 +146,6 @@ rm -f /dev/shm/cycle_finance_ring /dev/shm/cycle_finance_orders $FLOW_RINGS
 rm -rf /tmp/strategy_cmd.d
 echo "  ✔ Ring buffer'lar ve strateji komut kuyruğu temizlendi"
 sleep 1
-
-# ── Açılış ekranı (tek terminal) ─────────────────────────────
-echo "🎬 Açılış ekranı..."
-cd "$ROOT"
-"$BIN/cycle-splash" 2>/dev/null || "$ROOT/target/debug/cycle-splash" 2>/dev/null || echo "  (cycle-splash bulunamadı)"
 
 # ── Shell init dosyasını oluştur ────────────────────────────
 cat > /tmp/cycle_init.sh << INITEOF

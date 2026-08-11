@@ -68,7 +68,7 @@ copy_bins() {
   local bins=(
     paper-service paper-cli alert-service detect-ms
     risk-worker cold-starter breakout-strategy listener alerts risk_analysis
-    calc-ind exec-console stream-ohlcv cycle-splash
+    calc-ind exec-console stream-ohlcv
     flow-trade flow-depth flow-liquidation flow-oi flow-funding
     flow-markprice flow-lastprice flow-indexprice
   )

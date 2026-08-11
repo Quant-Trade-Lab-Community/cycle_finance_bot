@@ -6,7 +6,6 @@ members = [
     "cycle-engine/engine",
     "cycle-engine/persistence",
     "cycle-engine/infra",
-    "cycle-engine/splash",
     "cycle-engine/flows",
     "additional-services/os-utils",
     "data-engine/cold-storage",
