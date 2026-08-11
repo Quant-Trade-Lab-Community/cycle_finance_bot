@@ -1,0 +1,13 @@
+[package]
+name = "telegram-bot"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "telegram-bot"
+path = "src/main.rs"
+
+[dependencies]
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+infra = { path = "../../cycle-engine/infra" }

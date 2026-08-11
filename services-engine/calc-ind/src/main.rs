@@ -28,6 +28,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    let _ = infra::util::single_instance("calc-ind");
     println!("══════════════════════════════════════════════════");
     println!("  🧮 CALC-IND — İNDİKATÖR HESAPLAMA MOTORU");
     println!("  ferro_ta_core | ring: {RING_NAME}");
@@ -46,7 +47,7 @@ async fn main() {
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3007));
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = infra::util::bind_or_exit(addr, "calc-ind").await;
     axum::serve(listener, app).await.unwrap();
 }
 

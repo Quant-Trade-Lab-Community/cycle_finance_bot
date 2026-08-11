@@ -21,6 +21,7 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    let _ = infra::util::single_instance("ohlcv-server");
     println!("OHLCV API Sunucusu Başlatılıyor...");
     
     let state = Arc::new(AppState {
@@ -35,7 +36,7 @@ async fn main() {
     println!("API Sunucusu http://{} üzerinde dinleniyor.", addr);
     println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=VELVETUSDT&interval=15m&limit=100");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = infra::util::bind_or_exit(addr, "ohlcv-server").await;
     axum::serve(listener, app).await.unwrap();
 }
 

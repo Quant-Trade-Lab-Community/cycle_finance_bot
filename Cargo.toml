@@ -21,6 +21,7 @@ members = [
     "services-engine/alert-service",
     "services-engine/exec-console",
     "services-engine/db-query",
+    "services-engine/telegram-bot",
 ]
 exclude = ["tests", "unused_services"]
 resolver = "2"

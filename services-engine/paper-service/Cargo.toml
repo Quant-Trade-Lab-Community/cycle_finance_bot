@@ -8,6 +8,7 @@ default-run = "paper-service"
 tokio = { workspace = true }
 engine = { path = "../../cycle-engine/engine" }
 transport = { path = "../../cycle-engine/transport" }
+infra = { path = "../../cycle-engine/infra" }
 execution-engine = { path = "../../execution-engine" }
 rust_decimal = { workspace = true }
 serde = { workspace = true }

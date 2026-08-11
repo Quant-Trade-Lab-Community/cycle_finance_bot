@@ -441,7 +441,7 @@ pub async fn serve(addr: &str, state: Arc<AppState>) {
         }
     }
 
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("bind api");
+    let listener = infra::util::bind_or_exit(addr, "paper-service").await;
     tracing::info!("REST API dinleniyor: http://{addr}");
     axum::serve(listener, app).await.expect("serve api");
 }

@@ -15,6 +15,7 @@ use paper_service::postgres_store::PostgresEventStore;
 
 #[tokio::main]
 async fn main() {
+    let _ = infra::util::single_instance("paper-service");
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| "paper_service=info,execution_engine=info".into()))

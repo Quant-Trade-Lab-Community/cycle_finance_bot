@@ -27,6 +27,8 @@ const CANDLE_LIMIT: usize = 200;
 const EVAL_MS: u64 = 1_000;
 /// Mum + seviye önbellek tazeleme periyodu (Binance yükünü düşük tutar).
 const CACHE_REFRESH_SEC: u64 = 10;
+/// Sinyal bildirim akışı (telegram-bot bu dosyayı izler).
+const SIGNALS_FILE: &str = "/tmp/strategy_signals.jsonl";
 
 struct Config {
     symbol: String,
@@ -110,6 +112,23 @@ fn timestamp() -> String {
     chrono::Local::now().format("%H:%M:%S").to_string()
 }
 
+/// Kırılım sinyalini JSONL satırı olarak `SIGNALS_FILE`'a ekler (telegram-bot okur).
+fn append_signal(symbol: &str, r: &breakout::BreakoutResult) {
+    use std::io::Write;
+    let line = serde_json::json!({
+        "symbol": symbol,
+        "direction": r.direction,
+        "broken_level": r.broken_level,
+        "quality": r.quality,
+        "fake": r.fake,
+        "certainty": r.certainty,
+        "ts": chrono::Local::now().format("%H:%M:%S").to_string(),
+    });
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(SIGNALS_FILE) {
+        let _ = writeln!(f, "{line}");
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let cfg = load_config();
@@ -129,6 +148,8 @@ async fn main() {
     let mut cached_s = 0.0;
     let mut last_refresh = std::time::Instant::now() - Duration::from_secs(CACHE_REFRESH_SEC + 1);
     let mut last_cache_err = std::time::Instant::now() - Duration::from_secs(60);
+    // Telegram bildirimi için son gönderilen yön (NONE ↔ UP/DOWN değişiminde sinyal yazılır).
+    let mut last_signal_direction: Option<&'static str> = None;
 
     loop {
         // 1) Önbellek tazele (10 sn): mumlar + detect-ms seviyeleri.
@@ -208,6 +229,12 @@ async fn main() {
             last: snap.last,
         };
         let r = breakout::compute(&input);
+
+        // Yön DEĞİŞİNCE sinyali biriktir → telegram-bot okur ve bildirim atar.
+        if r.direction != "NONE" && last_signal_direction != Some(r.direction) {
+            append_signal(&cfg.symbol, &r);
+            last_signal_direction = Some(r.direction);
+        }
 
         println!("[{}] {}", timestamp(), serde_json::to_string(&r.to_json()).unwrap_or_default());
         let signal = match r.direction {

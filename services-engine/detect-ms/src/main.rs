@@ -39,6 +39,9 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    // cycle-engine dayanıklılık deseni: tek örnek koruması (ikiz süreç önlenir).
+    let _ = infra::util::single_instance("detect-ms");
+
     println!("══════════════════════════════════════════════════════");
     println!("  🏛️  MSMP 2.0 — KURUMSAL MATEMATİKSEL ÇERÇEVE");
     println!("      Market Structure Multi-Protocol Engine");
@@ -66,7 +69,7 @@ async fn main() {
     println!("  API: http://{}/api/ms?symbol=BTCUSDT&interval=15m", addr);
     println!("══════════════════════════════════════════════════════");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = infra::util::bind_or_exit(addr, "detect-ms").await;
     axum::serve(listener, app).await.unwrap();
 }
 

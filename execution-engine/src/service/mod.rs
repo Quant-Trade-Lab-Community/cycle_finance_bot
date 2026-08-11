@@ -13,6 +13,8 @@ pub async fn serve(
     metrics: Arc<Metrics>,
     client: Option<Arc<crate::client::BinanceClient>>,
 ) {
+    // cycle-engine dayanıklılık deseni: ikiz süreç → çift emir riskini önler.
+    let _ = infra::util::single_instance("executiond");
     use argon2::password_hash::SaltString;
     use argon2::{Argon2, PasswordHasher};
     use rand::rngs::OsRng;

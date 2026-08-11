@@ -22,6 +22,7 @@
 #  Pencere 16 — 🕐 FLOW-LAST (last price akışı → TimescaleDB)
 #  Pencere 17 — 📉 FLOW-INDEX (index price akışı → TimescaleDB)
 #  Pencere 18 — 🛢️ DB-QUERY (TimescaleDB sorgu paneli)
+#  Pencere 19 — 🤖 TELEGRAM (sinyal bildirim botu)
 #
 #  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
 #  (orkestrasyon merkezi altında) çalışır. Shell'den:
@@ -128,7 +129,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p exec-console -p db-query 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p exec-console -p db-query -p telegram-bot 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -352,6 +353,15 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 cd $ROOT && $BIN/db-query
 " Enter
 
+# ── Pencere 19: TELEGRAM ────────────────────────────────────
+tmux new-window -t "$SESSION:19" -n "🤖 TELEGRAM"
+tmux send-keys -t "$SESSION:19" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🤖  TELEGRAM  (sinyal bildirim botu)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && journalctl --user -u cycle-telegram.service -f
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" status-interval 1
@@ -365,7 +375,7 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]19#[fg=#00cc33]:TG #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   110
 
 # Window sekme renkleri — matrix

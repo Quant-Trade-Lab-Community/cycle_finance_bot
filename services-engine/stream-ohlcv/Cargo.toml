@@ -16,3 +16,4 @@ reqwest = { workspace = true }
 chrono = { workspace = true }
 ohlcv-engine = { version = "0.1.0", path = "../ohlcv-engine" }
 transport = { path = "../../cycle-engine/transport" }
+infra = { path = "../../cycle-engine/infra" }

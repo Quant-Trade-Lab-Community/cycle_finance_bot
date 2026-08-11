@@ -214,6 +214,7 @@ async fn set_kill_switch(
 }
 
 fn main() {
+    let _ = infra::util::single_instance("risk-worker");
     let port: u16 = std::env::var("RISK_WORKER_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -304,7 +305,7 @@ fn main() {
             .route("/api/risk/kill-switch", put(set_kill_switch))
             .with_state(app_state);
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
-        let listener = tokio::net::TcpListener::bind(addr).await.expect("port bind");
+        let listener = infra::util::bind_or_exit(addr, "risk-worker").await;
         println!("risk-worker: http://127.0.0.1:{port}/healthz (cycle={cycle_sec}s)");
         axum::serve(listener, app).await.expect("serve");
     });

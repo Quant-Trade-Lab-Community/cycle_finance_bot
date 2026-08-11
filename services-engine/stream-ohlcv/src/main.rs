@@ -502,6 +502,7 @@ async fn api_health(State(state): State<Arc<AppState>>) -> Json<serde_json::Valu
 
 #[tokio::main]
 async fn main() {
+    let _ = infra::util::single_instance("stream-ohlcv");
     let port: u16 = std::env::var("STREAM_OHLCV_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -534,6 +535,6 @@ async fn main() {
         .with_state(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("port bind");
+    let listener = infra::util::bind_or_exit(addr, "stream-ohlcv").await;
     axum::serve(listener, app).await.expect("serve");
 }
