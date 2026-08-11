@@ -21,6 +21,7 @@
 #  Pencere 15 — 🎯 FLOW-MARK (mark price akışı → TimescaleDB)
 #  Pencere 16 — 🕐 FLOW-LAST (last price akışı → TimescaleDB)
 #  Pencere 17 — 📉 FLOW-INDEX (index price akışı → TimescaleDB)
+#  Pencere 18 — 🛢️ DB-QUERY (TimescaleDB sorgu paneli)
 #
 #  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
 #  (orkestrasyon merkezi altında) çalışır. Shell'den:
@@ -52,7 +53,7 @@ PAPER_INITIAL_USDT="${PAPER_INITIAL_USDT:-100000}"
 ALERT_CONFIG="${ALERT_CONFIG:-$CONFIG_DIR/alerts.toml}"
 
 # ── Uzun isimli süreçlerde Linux comm 15-karakter sınırı:
-#    breakout-strategy / strategy-console → pgrep/pkill -f gerekir.
+#    strategies-engine / strategy-console → pgrep/pkill -f gerekir.
 _proc_alive() {
   local name="$1"
   if [ "${#name}" -le 15 ]; then pgrep -x "$name" &>/dev/null; else pgrep -f "$name" &>/dev/null; fi
@@ -65,7 +66,7 @@ _proc_kill() {
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 # Akış süreçleri (her biri ayrı proses) + klasik servisler
 FLOW_PROCS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
-SERVICE_PROCS="paper-service alert-service breakout-strategy"
+SERVICE_PROCS="paper-service alert-service strategies-engine"
 FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate"
 
 full_cleanup() {
@@ -127,7 +128,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p breakout-strategy -p detect-ms -p stream-ohlcv -p exec-console 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p exec-console -p db-query 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -178,13 +179,15 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 " Enter
 tmux send-keys -t "$SESSION:0" "source /tmp/cycle_init.sh" Enter
 
-# ── Pencere 1: STRATEGY (strateji orkestrasyon merkezi) ─────
+# ── Pencere 1: STRATEGY (ana strateji binary'si — strategies-engine) ──
+# Strateji systemd (cycle-strategy) tarafından otomatik başlatılır;
+# bu pencere canlı çıktısını izler.
 tmux new-window -t "$SESSION:1" -n "🧠 STRATEGY"
 tmux send-keys -t "$SESSION:1" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🧠  STRATEJİ ORKESTRASYON MERKEZİ'
+echo '🧠  STRATEJİ MOTORU  (strategies-engine — ana binary, systemd)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-cd $ROOT && $BIN/strategy-console
+cd $ROOT && journalctl --user -u cycle-strategy.service -f
 " Enter
 
 # ── Pencere 2: DETECT-MS ────────────────────────────────────
@@ -340,6 +343,15 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 cd $ROOT && $BIN/flow-indexprice
 " Enter
 
+# ── Pencere 18: DB-QUERY ────────────────────────────────────
+tmux new-window -t "$SESSION:18" -n "🛢️ DB-QUERY"
+tmux send-keys -t "$SESSION:18" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '🛢️  DB-QUERY  (TimescaleDB sorgu paneli)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+cd $ROOT && $BIN/db-query
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" status-interval 1
@@ -353,7 +365,7 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   110
 
 # Window sekme renkleri — matrix

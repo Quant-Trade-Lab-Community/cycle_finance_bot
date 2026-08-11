@@ -28,7 +28,8 @@ impl EventParser {
             
             Some(OwnedEvent::new_trade(symbol, price, quantity, timestamp, is_buyer_maker))
         } else if stream.contains("@depth") {
-            let symbol = stream.split('@').next()?;
+            // Sembolü büyük harfe normalize et (diğer akışlarla tutarlı; örn. BTCUSDT).
+            let symbol = stream.split('@').next()?.to_uppercase();
             let mut bids = [(Decimal::ZERO, Decimal::ZERO); 20];
             let mut asks = [(Decimal::ZERO, Decimal::ZERO); 20];
             
@@ -54,7 +55,7 @@ impl EventParser {
                 }
             }
             
-            Some(OwnedEvent::new_orderbook(symbol, bids, asks))
+            Some(OwnedEvent::new_orderbook(&symbol, bids, asks))
         } else if stream.ends_with("@forceOrder") {
             let o = data.get("o")?;
             let symbol = o.get("s")?.as_str()?;

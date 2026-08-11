@@ -13,7 +13,6 @@ members = [
     "execution-engine",
     "risk-engine",
     "strategies-engine",
-    "services-engine/strategies/breakout-strategy",
     "services-engine/ohlcv-engine",
     "services-engine/calc-ind",
     "services-engine/stream-ohlcv",
@@ -21,6 +20,7 @@ members = [
     "services-engine/paper-service",
     "services-engine/alert-service",
     "services-engine/exec-console",
+    "services-engine/db-query",
 ]
 exclude = ["tests", "unused_services"]
 resolver = "2"

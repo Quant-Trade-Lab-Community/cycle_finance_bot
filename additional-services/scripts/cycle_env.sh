@@ -155,6 +155,7 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 8${_N}           Monitor sekmesi"
   echo -e "  ${_B}Ctrl+B → 9${_N}           🖥️ CONSOLE sekmesi"
   echo -e "  ${_B}Ctrl+B → 10-17${_N}       💹 Veri akışları (FLOWS)"
+  echo -e "  ${_B}Ctrl+B → 18${_N}          🛢️ DB-QUERY (TimescaleDB sorgu paneli)"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Pencere seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -186,7 +187,7 @@ cycle-status() {
   "$CYCLE_ROOT/additional-services/scripts/cycle_tmux.sh" status
 }
 cycle-build() {
-  cd "$CYCLE_ROOT" && cargo build -p engine -p paper-service -p alert-service -p breakout-strategy
+  cd "$CYCLE_ROOT" && cargo build -p engine -p paper-service -p alert-service -p strategies-engine
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
@@ -224,6 +225,7 @@ _tmux_pane() {
     "🎯 FLOW-MARK")    pane="15" ;;
     "🕐 FLOW-LAST")    pane="16" ;;
     "📉 FLOW-INDEX")   pane="17" ;;
+    "🛢️DB-QUERY")     pane="18" ;;
     *)
       # Tanınmayan → yeni pencere (ör. özel servisler)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -285,26 +287,33 @@ flows-status() {
   done
 }
 flows-log() {
-  echo "Akışlar tmux sekmelerinde çalışır (Ctrl+B → 12-19)."
+  echo "Akışlar tmux sekmelerinde çalışır (Ctrl+B → 10-17)."
   echo "  start_paper.sh ile başlatıldıysa: tail -f /tmp/flow-<isim>.log"
 }
 
-# ── STRATEGY orkestrasyon konsolu (ayrı strategy-console binary'si) ─
+# ── DB-QUERY (TimescaleDB sorgu paneli) ─────────────────────
+db-query-start() {
+  _start_guard
+  _tmux_pane "🛢️DB-QUERY" "cd $CYCLE_ROOT && ./target/release/db-query" Enter
+}
+# Örnek: db-query-recent trades BTCUSDT 10
+db-query-recent() {
+  cd "$CYCLE_ROOT" && ./target/release/db-query --recent "${1:-trades}" "${2:-BTCUSDT}" "${3:-10}"
+}
+
+# ── STRATEGY — ana strateji binary'si (strategies-engine) ───
 strategy-start() {
   _start_guard
-  if pgrep -f "strategy-console" &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor"; return 1; fi
-  cd "$CYCLE_ROOT" && cargo build -p engine 2>&1 | tail -1
-  mkdir -p /tmp/strategy_cmd.d
-  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && ./target/debug/strategy-console" Enter
-  echo "✅ STRATEGY orkestrasyon konsolu başlatıldı (pencere 1 — 🧠 STRATEGY)"
+  if pgrep -f "strategies-engine" &>/dev/null; then echo "⚠️  STRATEGY zaten çalışıyor"; return 1; fi
+  cd "$CYCLE_ROOT" && cargo build -p strategies-engine 2>&1 | tail -1
+  _tmux_pane "🧠STRATEGY" "cd $CYCLE_ROOT && ./target/release/strategies-engine" Enter
+  echo "✅ STRATEJİ MOTORU başlatıldı (pencere 1 — 🧠 STRATEGY)"
 }
 strategy-stop() {
   _start_guard
-  local p; p=$(pgrep -f "strategy-console" 2>/dev/null | head -1)
+  local p; p=$(pgrep -f "strategies-engine" 2>/dev/null | head -1)
   if [ -n "$p" ]; then
     kill -TERM "$p" 2>/dev/null; sleep 1
-    # Orkestratör alt-süreçlerini de temizle (uzun isim → -f)
-    pkill -TERM -f "breakout-strategy" 2>/dev/null || true
     echo "✅ STRATEGY durduruldu [pid:$p]"
   else
     echo "ℹ️  STRATEGY çalışmıyor"
@@ -1018,61 +1027,41 @@ stream-ohlcv-streams() {
 }
 
 # ============================================================
-#  BREAKOUT STRATEJİSİ  (services-engine/strategies/breakout-strategy)
-#  Strateji, STRATEGY orkestrasyon konsolu tarafından yönetilir:
-#  breakout-start/stop → strat run/stop breakout komutunu iletir.
+#  STRATEJİ (strategies-engine — ana binary, pencere 1)
+#  Kırılım stratejisi artık strategies-engine'in native kodudur.
 # ============================================================
 breakout-start() {
   _start_guard
-  strat run breakout
+  strategy-start
 }
 
 breakout-stop() {
   _start_guard
-  strat stop breakout
+  strategy-stop
 }
 
 breakout-status() {
   _start_guard
-  strat status
+  local p; p=$(pgrep -f "strategies-engine" 2>/dev/null | head -1 || true)
+  if [ -n "$p" ]; then
+    local cpu mem
+    cpu=$(ps -p "$p" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$p" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ STRATEJİ MOTORU ÇALIŞIYOR  [pid:$p  CPU:${cpu}%  RAM:${mem}]"
+    echo "   Son sinyal: $(journalctl --user -u cycle-strategy.service -n 1 --no-pager 2>/dev/null | tail -1 | cut -c80-140)"
+  else
+    echo "✘  STRATEJİ MOTORU durdurulmuş (strategy-start)"
+  fi
 }
 
 breakout-log() {
-  echo "📌 Strateji çıktısı STRATEGY konsolunda (pencere 1) görünür."
-  echo "   Konsola geçmek için: strat attach"
-  strat attach
-}
-
-# Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
-# Kullanım: breakout-wait 600   (10 dakika)  |  breakout-wait 1200  (20 dakika)
-breakout-wait() {
-  _start_guard
-  local sec="${1:-}"
-  if [ -z "$sec" ]; then
-    local cur; cur=$(cat /tmp/breakout_wait_sec.txt 2>/dev/null || echo "1200")
-    echo "ℹ️  Mevcut bekleme: $cur sn"
-    echo "Kullanım: breakout-wait <saniye>   (örn. breakout-wait 600 → 10dk)"
-    return 0
-  fi
-  if ! echo "$sec" | grep -qE '^[0-9]+$' || [ "$sec" -lt 10 ]; then
-    echo "❌ Saniye değeri geçerli değil (min 10): $sec"
-    return 1
-  fi
-  echo "$sec" > /tmp/breakout_wait_sec.txt
-  echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
-  echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
-  if pgrep -f "breakout-strategy" >/dev/null 2>&1; then
-    echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
-  fi
+  echo "📌 Strateji pencere 1'de (🧠 STRATEGY) canlı çalışır."
+  echo "   systemd ile çalışıyorsa: journalctl --user -u cycle-strategy.service -f"
+  if tmux has-session -t cycle 2>/dev/null; then tmux select-window -t cycle:1; fi
 }
 
 breakout-query() {
-  # Kullanım: breakout-query [--dry-run]
-  if [ "${1:-}" = "--dry-run" ]; then
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/breakout-strategy --once --dry-run
-  else
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/breakout-strategy --once
-  fi
+  cd "$CYCLE_ROOT" && ./target/release/strategies-engine --once
 }
 
 # ============================================================

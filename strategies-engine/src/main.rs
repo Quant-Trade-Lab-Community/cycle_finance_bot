@@ -11,9 +11,9 @@
 //!   → breakout::compute() → {direction, quality, fake, certainty}
 //! ```
 
-use breakout_strategy::breakout::{self, BreakoutInput};
-use breakout_strategy::feed::Feed;
-use breakout_strategy::indicators;
+use strategies_engine::breakout::{self, BreakoutInput};
+use strategies_engine::feed::Feed;
+use strategies_engine::indicators;
 use ohlcv_engine::client::BinanceClient;
 use rust_decimal::prelude::ToPrimitive;
 use serde_json::Value;

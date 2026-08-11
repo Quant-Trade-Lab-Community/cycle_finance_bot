@@ -3,7 +3,33 @@ name = "strategies-engine"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "strategies_engine"
+
+[[bin]]
+name = "strategies-engine"
+path = "src/main.rs"
+
+[[bin]]
+name = "listener"
+path = "src/bin/listener.rs"
+
+[[bin]]
+name = "alerts"
+path = "src/bin/alerts.rs"
+
+[[bin]]
+name = "risk_analysis"
+path = "src/bin/risk_analysis.rs"
+
 [dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
 transport = { path = "../cycle-engine/transport" }
 rust_decimal = { workspace = true }
 libc = { workspace = true }
+ohlcv-engine = { path = "../services-engine/ohlcv-engine" }
+rusqlite = { workspace = true }
