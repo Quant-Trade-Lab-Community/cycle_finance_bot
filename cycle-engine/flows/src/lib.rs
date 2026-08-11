@@ -72,7 +72,7 @@ pub fn load_symbols() -> Vec<String> {
             return s;
         }
     }
-    vec!["BTCUSDT".into(), "ETHUSDT".into(), "SOLUSDT".into(), "HEIUSDT".into()]
+    vec!["BTCUSDT".into(), "ETHUSDT".into(), "SOLUSDT".into(), "VELVETUSDT".into()]
 }
 
 /// Bir akışı başlatır (bloklar). Her akış kendi ring'ini ve DB tablosunu kullanır.

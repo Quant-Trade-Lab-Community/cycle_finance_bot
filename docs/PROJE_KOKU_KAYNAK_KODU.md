@@ -210,7 +210,7 @@ flowchart TD
 ```
 
 ### `alerts.toml`
-**Detaylı açıklama:** `alert-service`'in sesli uyarı koşullarını tanımlar: `data_source = "pricefeed"` (veri kaynağı) ve `[[alerts]]` listesi. Her uyarı için sembol, condition (`above`/`below`/`touch`/`cross`), eşik fiyat, isteğe bağlı `voice` metni ve `cooldown_sec` vardır; `touch` koşulu `tolerance_pct` ile tolerans alır. Örneklerde BTCUSDT 64500 üstü, ETHUSDT 3200 cross, HEIUSDT 0.21628 kırılımı gibi uyarılar verilmiştir.
+**Detaylı açıklama:** `alert-service`'in sesli uyarı koşullarını tanımlar: `data_source = "pricefeed"` (veri kaynağı) ve `[[alerts]]` listesi. Her uyarı için sembol, condition (`above`/`below`/`touch`/`cross`), eşik fiyat, isteğe bağlı `voice` metni ve `cooldown_sec` vardır; `touch` koşulu `tolerance_pct` ile tolerans alır. Örneklerde BTCUSDT 64500 üstü, ETHUSDT 3200 cross, VELVETUSDT 0.21628 kırılımı gibi uyarılar verilmiştir.
 
 **Neden kullandık:**
 - TOML bildirimsel yapı: yeni uyarı eklemek için derleme gerekmez, config ile yapılır.
@@ -675,14 +675,14 @@ detect-ms raporundan:
 ### Çıktı
 
 ```
-📡 SİNYAL → Sembol: HEIUSDT | Yön: BUY (fiyat: ring) | Fiyat=0.2135 ATS=2.1 Trend=... Confluence=%
+📡 SİNYAL → Sembol: VELVETUSDT | Yön: BUY (fiyat: ring) | Fiyat=0.2135 ATS=2.1 Trend=... Confluence=%
 ```
 
 ### Konfigürasyon (env)
 
 | Değişken | Varsayılan | Açıklama |
 |---|---|---|
-| `BREAKOUT_SYMBOL` | `HEIUSDT` | Analiz edilecek sembol |
+| `BREAKOUT_SYMBOL` | `VELVETUSDT` | Analiz edilecek sembol |
 | `BREAKOUT_INTERVAL` | `1m` | Kline intervali |
 | `BREAKOUT_LIMIT` | `100` | Analizdeki mum sayısı |
 | `BREAKOUT_WAIT_SEC` | `check_every×60` | Değerlendirme aralığı (sn) |
@@ -1381,7 +1381,7 @@ timeout_secs = 60
 
 [schedule]
 interval_secs = 60
-symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HEIUSDT"]
+symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "VELVETUSDT"]
 approval_wait_secs = 60
 
 [execution]
@@ -1457,7 +1457,7 @@ price = 150
 cooldown_sec = 60
 
 [[alerts]]
-symbol = "HEIUSDT"
+symbol = "VELVETUSDT"
 condition = "above"
 price = 0.21628
 voice = "HEI 0 virgül 21628 seviyesini yukarı kırdı"
@@ -1498,7 +1498,7 @@ max_slippage_bps = 50               # Maksimum kabul edilebilir slippage (baz pu
 blocklist = ["TRXUSDT", "DOGEUSDT"]
 
 # ── Sembol bazlı override'lar (genel limitleri daraltır) ──
-[symbol.HEIUSDT]
+[symbol.VELVETUSDT]
 max_position_usdt = 500
 max_leverage = 5
 

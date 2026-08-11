@@ -6,8 +6,8 @@ use rust_decimal::Decimal;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Hangi sembolün çekileceği (Örn: HEIUSDT, BTCUSDT)
-    #[arg(short, long, default_value = "HEIUSDT")]
+    /// Hangi sembolün çekileceği (Örn: VELVETUSDT, BTCUSDT)
+    #[arg(short, long, default_value = "VELVETUSDT")]
     symbol: String,
 
     /// Mum aralığı (Örn: 1m, 5m, 1h, 1d)

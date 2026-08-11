@@ -179,8 +179,8 @@ fn load_symbols() -> Vec<String> {
             }
         }
     }
-    if !syms.contains(&"HEIUSDT".to_string()) {
-        syms.push("HEIUSDT".to_string());
+    if !syms.contains(&"VELVETUSDT".to_string()) {
+        syms.push("VELVETUSDT".to_string());
     }
     syms
 }

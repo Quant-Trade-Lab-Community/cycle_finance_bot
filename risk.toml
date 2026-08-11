@@ -29,7 +29,7 @@ max_slippage_bps = 50               # Maksimum kabul edilebilir slippage (baz pu
 blocklist = ["TRXUSDT", "DOGEUSDT"]
 
 # ── Sembol bazlı override'lar (genel limitleri daraltır) ──
-[symbol.HEIUSDT]
+[symbol.VELVETUSDT]
 max_position_usdt = 500
 max_leverage = 5
 

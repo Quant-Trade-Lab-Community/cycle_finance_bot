@@ -2,9 +2,9 @@
 //!
 //! Kullanım:
 //!   alerts list
-//!   alerts add --symbol HEIUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
-//!   alerts update --symbol HEIUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
-//!   alerts remove --symbol HEIUSDT --condition above --price 0.21628
+//!   alerts add --symbol VELVETUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
+//!   alerts update --symbol VELVETUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
+//!   alerts remove --symbol VELVETUSDT --condition above --price 0.21628
 
 use std::process::exit;
 

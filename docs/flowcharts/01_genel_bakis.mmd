@@ -39,7 +39,7 @@ flowchart TB
     subgraph TRADE["Strateji & Yürütme"]
         PRICEF["price-feed daemon :3004"]
         SCOUT["scout-service (fırsat radarı)"]
-        HEI["heiusdt (breakout stratejisi)"]
+        HEI["velvetusdt (breakout stratejisi)"]
         PAPER["paper-service REST :8080<br/>JWT · actor · event store"]
         EXEC["execution-engine<br/>PAPER actor / LIVE"]
         OHLCV["ohlcv-engine (klines client)"]

@@ -14,7 +14,7 @@ graph TD
     H -- Evet --> J{wire::decode başarılı mı?}
     J -- Hayır --> K[read_cursor += 1]
     K --> G
-    J -- Evet --> L{symbol HEIUSDT ile başlıyor mu?}
+    J -- Evet --> L{symbol VELVETUSDT ile başlıyor mu?}
     L -- Hayır --> K
     L -- Evet --> M{EventType::Trade mi?}
     M -- Hayır --> K

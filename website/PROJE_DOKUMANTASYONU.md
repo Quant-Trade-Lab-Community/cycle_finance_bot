@@ -164,7 +164,7 @@
 │   │   ├── 05_detektorler_nesil.mmd
 │   │   ├── 06_detect_wyckoff.mmd
 │   │   ├── 07_detect_trb.mmd
-│   │   ├── 08_scout_heiusdt.mmd
+│   │   ├── 08_scout_velvetusdt.mmd
 │   │   ├── 09_execution_paper.mmd
 │   │   ├── 10_yardimci_servisler.mmd
 │   │   └── 11_ci_kubernetes_tla.mmd
@@ -194,7 +194,7 @@
 ├── .github
 │   └── workflows
 │       └── test-suite.yml
-├── heiusdt
+├── velvetusdt
 │   ├── src
 │   │   ├── bin
 │   │   │   ├── alerts.rs
@@ -297,14 +297,14 @@
 
 ### 1.1 Çalışma Alanı (Workspace)
 
-`Cargo.toml` (kök): `members` listesi 19 crate içerir (`contracts`, `transport`, `core`, `adapter`, `risk-worker`, `cold-starter`, `cold-storage`, `os-utils`, `execution-engine`, `ohlcv-engine`, `detect-sr/trend/ms/liquidity/pattern/wyckoff/trb`, `paper-service`, `alert-service`, `price-feed`, `heiusdt`, `scout-service`). Resolver 2. Ortak (workspace) bağımlılıklar: `rust_decimal 1.34` (maths + serde), `ndarray 0.15` (rayon), `rayon 1.8`, `wide 0.7` (SIMD).
+`Cargo.toml` (kök): `members` listesi 19 crate içerir (`contracts`, `transport`, `core`, `adapter`, `risk-worker`, `cold-starter`, `cold-storage`, `os-utils`, `execution-engine`, `ohlcv-engine`, `detect-sr/trend/ms/liquidity/pattern/wyckoff/trb`, `paper-service`, `alert-service`, `price-feed`, `velvetusdt`, `scout-service`). Resolver 2. Ortak (workspace) bağımlılıklar: `rust_decimal 1.34` (maths + serde), `ndarray 0.15` (rayon), `rayon 1.8`, `wide 0.7` (SIMD).
 
 ### 1.2 Katman Modeli (Layer'dan Layer'a)
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │  Uygulamalar: core (DATA/PAPER/STRATEGY/BACKTEST/CORRELATION)│
-│  Servisler: price-feed, scout, heiusdt, paper, alert, detect-*│
+│  Servisler: price-feed, scout, velvetusdt, paper, alert, detect-*│
 ├───────────────────────────────────────────────────────────────┤
 │  Katman 1: transport (shm ring buffer, torn-read korumalı)    │
 ├───────────────────────────────────────────────────────────────┤
@@ -323,7 +323,7 @@ Binance WS (fstream) ── raw JSON ──▶ simd_json EventParser ──▶ D
                     │
                     ├──▶ SQLite batch writer (market_data.db)
                     ├──▶ TitaniumOrchestrator (strateji → RiskEngine → gateway)
-                    └──▶ consumular: alert / paper-feed bridge / heiusdt / detect-trb
+                    └──▶ consumular: alert / paper-feed bridge / velvetusdt / detect-trb
 ```
 
 ### 1.3 Üç Nesil Kod
@@ -364,7 +364,7 @@ Binance WS (fstream) ── raw JSON ──▶ simd_json EventParser ──▶ D
 - `CSV_PATH` (core backtest)
 - `TRADING_MODE` (execution): LIVE|PAPER
 - `PAPER_SLED_PATH`, `PAPER_JWT_SECRET`, `PAPER_PG_*`
-- `PRICE_FEED_SYMBOLS`, `PRICE_FEED_PORT`, `ALERT_VOICE_CMD`, `HEIUSDT_WAIT_SEC`
+- `PRICE_FEED_SYMBOLS`, `PRICE_FEED_PORT`, `ALERT_VOICE_CMD`, `VELVETUSDT_WAIT_SEC`
 - `.env` yalnızca dummy key içerir (kod tarafında okunmaz)
 
 # 2️⃣ KATMAN 0 — CONTRACTS (`contracts/`)
@@ -501,8 +501,8 @@ CSV (symbol,price,quantity,ts) → sahte event stream → ring'e push; "canlı v
 ## 4.14 `cli/`
 
 - `paper_cli.rs`: REPL (rustyline): balance, order (limit/market), position; 10k USDT başlangıç, %20 max drawdown
-- `strategy_cli.rs`: heiusdt binary 'spawn/restart' orkestratörü
-- `correlation_cli.rs`: HEIUSDT trade'leri üzerine Pearson + 3 anomali (emilim/pump/tuzak) + cluster uyarısı
+- `strategy_cli.rs`: velvetusdt binary 'spawn/restart' orkestratörü
+- `correlation_cli.rs`: VELVETUSDT trade'leri üzerine Pearson + 3 anomali (emilim/pump/tuzak) + cluster uyarısı
 
 # 5️⃣ VERİ ALIM KATMANI
 
@@ -526,7 +526,7 @@ CSV (symbol,price,quantity,ts) → sahte event stream → ring'e push; "canlı v
 - `GET /api/lastprice`, `/api/lastprice/{SYM}`, `/health` (axum, default :3004)
 - `/tmp/price_feed.json` — 1 sn'de bir tam dump (cold-start için)
 - **Reconnect**: WS kopunca 3sn bekle, sonsuz yeniden bağlan
-- Tüketiciler: paper-service bridge, alert-service, heiusdt
+- Tüketiciler: paper-service bridge, alert-service, velvetusdt
 - `PRICE_FEED_SYMBOLS` env veya `alerts.toml`'dan sembol listesi (string-kırpma ile)
 
 ## 5.3 `ohlcv-engine/` — Kline API + Client
@@ -627,7 +627,7 @@ Tek geçiş (i in 2..n) üçlü pencere ile: Hammer, Shooting Star, Engulfing (b
 
 ---
 
-# 7️⃣ SCOUT & HEIUSDT — SINYAL ÜRETİM ÇEKİRDEĞİ
+# 7️⃣ SCOUT & VELVETUSDT — SINYAL ÜRETİM ÇEKİRDEĞİ
 
 ## 7.1 `scout-service` — Tüm Piyasayı Tarayan Fırsat Radarı
 
@@ -637,7 +637,7 @@ Tek geçiş (i in 2..n) üçlü pencere ile: Hammer, Shooting Star, Engulfing (b
 - `Verdict` (5): GUCLU (eff≥0.05 ∧ score≥30), IYI, NORMAL, BOT/GURULTU (eff<0.01 ∧ ob>200), ZAYIF
 - Çıktı: `wire::encode` → `/dev/shm/cycle_finance_scout`; `bin/probe.rs` tüketici
 
-## 7.2 `heiusdt` — HEIUSDT Breakout Stratejisi
+## 7.2 `velvetusdt` — VELVETUSDT Breakout Stratejisi
 
 - `main.rs`: price-feed ring okuyucu (ask>bid>mark) → 500ms wake, 20dk değerlendirme penceresi → detect-ms seviyeleri ile karşılaştır → MARKET emir (JWT) → paper-service; açık pozisyon varken yeni emir yok; `--dry-run`
 - `metrics.rs` — kurumsal tick-by-tick mikroyapı (7 aşama): Lee-Ready imza → WL imbalance (ω=e^(−λi)) → EffDelta (s_eff/s_bar) → Absorpsiyon → **aVPIN** (toksik akış ≥0.6 → sinyal 0) → Hasbrouck OLS → Alpha Basket (z-skor + logit); parametreler `/tmp/listener_metrics.conf`'tan runtime okunur
@@ -748,7 +748,7 @@ Lock-free veri hattının soyut modeli:
 
 ## 10.5 Mermaid Akış Şemaları (`docs/flowcharts/`)
 
-11 diyagram: genel bakış, contracts class diyagramı, transport sequence, core, detektör nesilleri, wyckoff, trb, scout+heiusdt, execution/paper, yardımcı servisler, CI/k8s/TLA.
+11 diyagram: genel bakış, contracts class diyagramı, transport sequence, core, detektör nesilleri, wyckoff, trb, scout+velvetusdt, execution/paper, yardımcı servisler, CI/k8s/TLA.
 
 ---
 
@@ -771,7 +771,7 @@ Lock-free veri hattının soyut modeli:
 | 13 | `[u8;16]` sembol kısıtı — 16+ karakter semboller kesilir | 🟡 Düşük |
 | 14 | send dev dou doubling: actor_rng vs db_writer ayrı kanallar — tutarlılık garantisi yok (best effort) | 🟠 Orta |
 
-**Öncelikli yol haritası önerisi:** (1) detektör → orchestration köprü (opportunitiy frame'lerini Strategy'ye çevir), (2) scout verdict'i heiusdt ile birleştir, (3) adapter reconnect ekle, (4) 1. nesil servislere wine test + Result hata modeli taşı.
+**Öncelikli yol haritası önerisi:** (1) detektör → orchestration köprü (opportunitiy frame'lerini Strategy'ye çevir), (2) scout verdict'i velvetusdt ile birleştir, (3) adapter reconnect ekle, (4) 1. nesil servislere wine test + Result hata modeli taşı.
 
 
 ---
@@ -797,7 +797,7 @@ members = [
     "paper-service",
     "alert-service",
     "price-feed",
-    "heiusdt",
+    "velvetusdt",
     "scout-service",
 ]
 resolver = "2"
@@ -2504,7 +2504,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "heiusdt"
+name = "velvetusdt"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -6522,7 +6522,7 @@ price = 150
 cooldown_sec = 60
 
 [[alerts]]
-symbol = "HEIUSDT"
+symbol = "VELVETUSDT"
 condition = "above"
 price = 0.21628
 voice = "HEI 0 virgül 21628 seviyesini yukarı kırdı"
@@ -6613,7 +6613,7 @@ copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
     core paper-service paper-cli alert-service detect-ms
-    risk-worker cold-starter price-feed heiusdt listener alerts risk_analysis
+    risk-worker cold-starter price-feed velvetusdt listener alerts risk_analysis
     detect-sr detect-trend detect-liquidity detect-pattern
     detect-wyckoff detect-trb
   )
@@ -7622,7 +7622,7 @@ mod tests {
 
     #[test]
     fn trade_sell_side() {
-        let ev = OwnedEvent::new_trade("HEIUSDT", Decimal::from_str("0.02162800").unwrap(),
+        let ev = OwnedEvent::new_trade("VELVETUSDT", Decimal::from_str("0.02162800").unwrap(),
             Decimal::from_str("100000").unwrap(), 1234, false);
         let dec = roundtrip(&ev).expect("roundtrip");
         assert_same(&ev, &dec);
@@ -7659,7 +7659,7 @@ mod tests {
 
     #[test]
     fn funding_roundtrip() {
-        let ev = OwnedEvent::new_funding_rate("HEIUSDT",
+        let ev = OwnedEvent::new_funding_rate("VELVETUSDT",
             Decimal::from_str("0.021628").unwrap(), Decimal::from_str("0.021630").unwrap(),
             Decimal::from_str("-0.00012345").unwrap(), 1_766_800_000_000);
         let dec = roundtrip(&ev).expect("roundtrip");
@@ -7696,7 +7696,7 @@ mod tests {
 
     #[test]
     fn opportunity_roundtrip() {
-        let ev = OwnedEvent::new_opportunity("HEIUSDT",
+        let ev = OwnedEvent::new_opportunity("VELVETUSDT",
             Decimal::from_str("12541.78").unwrap(),
             Decimal::from_str("2.1999").unwrap(),
             Decimal::from_str("60.13").unwrap(),
@@ -8343,7 +8343,7 @@ pub fn start_correlation_cli() {
 
     println!("========================================");
     println!("📈 KORELASYON TERMINALİ v5.0 (ASENKRON KUYRUK)");
-    println!("Hedef Parite: HEIUSDT");
+    println!("Hedef Parite: VELVETUSDT");
     println!("Analiz Penceresi: {} sn | Takip Penceresi: {} sn", window_sec, track_sec);
     println!("Kümeleme (Clustering) & Kendi Kendini Doğrulama Aktif!");
     println!("========================================");
@@ -8363,7 +8363,7 @@ pub fn start_correlation_cli() {
     loop {
         if let Some(slot) = gen_ring.read_slot(read_cursor) {
             if let Some(owned_event) = wire::decode(&slot.data[..slot.len as usize]) {
-                if owned_event.symbol.starts_with(b"HEIUSDT") {
+                if owned_event.symbol.starts_with(b"VELVETUSDT") {
                     if let EventType::Trade { price, quantity: qty, timestamp, is_buyer_maker: _ } = owned_event.payload {
                         let record = TradeRecord {
                             timestamp,
@@ -8660,16 +8660,16 @@ pub fn start_paper_cli() {
 ├── core/src/cli/strategy_cli.rs
 
 ```rust
-//! STRATEGY terminali — HEIUSDT kırılım stratejisini çalıştırır.
+//! STRATEGY terminali — VELVETUSDT kırılım stratejisini çalıştırır.
 //!
-//! Strateji Rust'ta (`heiusdt` crate) çalışır: detect-ms'ten seviye/yapı
+//! Strateji Rust'ta (`velvetusdt` crate) çalışır: detect-ms'ten seviye/yapı
 //! analizi alır, kırılım koşullarını kontrol eder, paper-service'e emir açar.
 
 use std::process::{Child, Command};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-const HEIUSDT_BIN: &str = "/home/smhvz/Desktop/PROJE/target/debug/heiusdt";
+const VELVETUSDT_BIN: &str = "/home/smhvz/Desktop/PROJE/target/debug/velvetusdt";
 
 struct StrategyChild {
     child: Child,
@@ -8677,18 +8677,18 @@ struct StrategyChild {
 
 pub fn start_strategy_cli() {
     println!("========================================");
-    println!("🎯 STRATEGY ENGINE — HEIUSDT KIRILIM");
-    println!("  Binary: {}", HEIUSDT_BIN);
+    println!("🎯 STRATEGY ENGINE — VELVETUSDT KIRILIM");
+    println!("  Binary: {}", VELVETUSDT_BIN);
     println!("  detect-ms :3002 + paper-service :8080");
     println!("========================================");
 
     let running = Arc::new(AtomicBool::new(false));
     let mut child: Option<StrategyChild> = spawn_strategy();
     if child.is_none() {
-        println!("❌ HEIUSDT stratejisi başlatılamadı.");
+        println!("❌ VELVETUSDT stratejisi başlatılamadı.");
     } else {
         running.store(true, Ordering::SeqCst);
-        println!("✅ HEIUSDT stratejisi çalışıyor.");
+        println!("✅ VELVETUSDT stratejisi çalışıyor.");
     }
 
     let mut rl = rustyline::DefaultEditor::new().unwrap();
@@ -8705,14 +8705,14 @@ pub fn start_strategy_cli() {
                     "help" => {
                         println!("Commands:");
                         println!("  status      - Show strategy status");
-                        println!("  restart     - Restart HEIUSDT strategy");
+                        println!("  restart     - Restart VELVETUSDT strategy");
                         println!("  exit        - Quit the terminal");
                     }
                     "status" => {
                         if running.load(Ordering::SeqCst) {
-                            println!("  🎯 HEIUSDT Kırılım — RUNNING");
+                            println!("  🎯 VELVETUSDT Kırılım — RUNNING");
                         } else {
-                            println!("  🎯 HEIUSDT Kırılım — DURDU");
+                            println!("  🎯 VELVETUSDT Kırılım — DURDU");
                         }
                     }
                     "restart" => {
@@ -8723,7 +8723,7 @@ pub fn start_strategy_cli() {
                         child = spawn_strategy();
                         if child.is_some() {
                             running.store(true, Ordering::SeqCst);
-                            println!("✅ HEIUSDT stratejisi yeniden başlatıldı.");
+                            println!("✅ VELVETUSDT stratejisi yeniden başlatıldı.");
                         } else {
                             running.store(false, Ordering::SeqCst);
                             println!("❌ Yeniden başlatılamadı.");
@@ -8746,7 +8746,7 @@ pub fn start_strategy_cli() {
 }
 
 fn spawn_strategy() -> Option<StrategyChild> {
-    match Command::new(HEIUSDT_BIN)
+    match Command::new(VELVETUSDT_BIN)
         .current_dir("/home/smhvz/Desktop/PROJE")
         .spawn()
     {
@@ -10223,7 +10223,7 @@ use serde_json::json;
 async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     println!("Binance WS: Limiting subscriptions to specific symbols...");
     
-    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "heiusdt"];
+    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "velvetusdt"];
     let mut pairs = Vec::new();
     
     for sym in target_symbols {
@@ -13225,8 +13225,8 @@ use rust_decimal::Decimal;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Hangi sembolün çekileceği (Örn: HEIUSDT, BTCUSDT)
-    #[arg(short, long, default_value = "HEIUSDT")]
+    /// Hangi sembolün çekileceği (Örn: VELVETUSDT, BTCUSDT)
+    #[arg(short, long, default_value = "VELVETUSDT")]
     symbol: String,
 
     /// Mum aralığı (Örn: 1m, 5m, 1h, 1d)
@@ -13314,7 +13314,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("API Sunucusu http://{} üzerinde dinleniyor.", addr);
-    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=HEIUSDT&interval=15m&limit=100");
+    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=VELVETUSDT&interval=15m&limit=100");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -13701,7 +13701,7 @@ use rust_decimal::Decimal;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    #[arg(short, long, default_value = "HEIUSDT")]
+    #[arg(short, long, default_value = "VELVETUSDT")]
     symbol: String,
 
     #[arg(short, long, default_value = "1h")]
@@ -14272,7 +14272,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3001));
     println!("API Sunucusu http://{} üzerinde dinleniyor.", addr);
-    println!("Örnek kullanım: http://127.0.0.1:3001/api/trend?symbol=HEIUSDT&interval=1h&limit=500\n");
+    println!("Örnek kullanım: http://127.0.0.1:3001/api/trend?symbol=VELVETUSDT&interval=1h&limit=500\n");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -23515,8 +23515,8 @@ fn load_symbols() -> Vec<String> {
             }
         }
     }
-    if !syms.contains(&"HEIUSDT".to_string()) {
-        syms.push("HEIUSDT".to_string());
+    if !syms.contains(&"VELVETUSDT".to_string()) {
+        syms.push("VELVETUSDT".to_string());
     }
     syms
 }
@@ -23827,11 +23827,11 @@ async fn main() {
 ```
 
 
-├── heiusdt/Cargo.toml
+├── velvetusdt/Cargo.toml
 
 ```toml
 [package]
-name = "heiusdt"
+name = "velvetusdt"
 version = "0.1.0"
 edition = "2021"
 
@@ -23848,16 +23848,16 @@ rust_decimal = { workspace = true }
 ```
 
 
-├── heiusdt/src/bin/alerts.rs
+├── velvetusdt/src/bin/alerts.rs
 
 ```rust
 //! alerts.toml yönetim aracı (Rust) — Python karşılığı: scripts/alerts_cli.py
 //!
 //! Kullanım:
 //!   alerts list
-//!   alerts add --symbol HEIUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
-//!   alerts update --symbol HEIUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
-//!   alerts remove --symbol HEIUSDT --condition above --price 0.21628
+//!   alerts add --symbol VELVETUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
+//!   alerts update --symbol VELVETUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
+//!   alerts remove --symbol VELVETUSDT --condition above --price 0.21628
 
 use std::process::exit;
 
@@ -24077,7 +24077,7 @@ fn main() {
 ```
 
 
-├── heiusdt/src/bin/listener.rs
+├── velvetusdt/src/bin/listener.rs
 
 ```rust
 //! LISTENER — DATA MERKEZİ mikro-yapı metrikleri + korelasyon tabloları (Rust).
@@ -24096,7 +24096,7 @@ fn main() {
 //!
 //! Çıktılar: konsol + /tmp/listener_metrics.json
 
-use heiusdt::metrics::{normalized_corr, CorrSeries, DepthLevel, SymbolMetrics};
+use velvetusdt::metrics::{normalized_corr, CorrSeries, DepthLevel, SymbolMetrics};
 use rust_decimal::prelude::ToPrimitive;
 
 use transport::ring_buffer::GenerationalRingBuffer;
@@ -24256,8 +24256,8 @@ fn load_symbols() -> Vec<String> {
             }
         }
     }
-    if !syms.contains(&"HEIUSDT".to_string()) {
-        syms.push("HEIUSDT".to_string());
+    if !syms.contains(&"VELVETUSDT".to_string()) {
+        syms.push("VELVETUSDT".to_string());
     }
     syms
 }
@@ -24365,7 +24365,7 @@ fn render(symbols: &HashMap<String, SymbolMetrics>,
 ```
 
 
-├── heiusdt/src/bin/risk_analysis.rs
+├── velvetusdt/src/bin/risk_analysis.rs
 
 ```rust
 //! Risk analizi (Rust) — market_data.db'deki trades tablosunu SQL ile özetler.
@@ -24483,24 +24483,24 @@ fn main() {
 ```
 
 
-├── heiusdt/src/lib.rs
+├── velvetusdt/src/lib.rs
 
 ```rust
-//! heiusdt — HEIUSDT stratejisi + mikro-yapı metrik çekirdeği.
+//! velvetusdt — VELVETUSDT stratejisi + mikro-yapı metrik çekirdeği.
 
 pub mod metrics;
 ```
 
 
-├── heiusdt/src/main.rs
+├── velvetusdt/src/main.rs
 
 ```rust
-//! HEIUSDT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
+//! VELVETUSDT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
 //!
 //! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
 //! bir REST polling ile uyanıyordu; bu sürüm fiyatı price-feed ring'inden
 //! **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
-//! (varsayılan 20 dakika, `/tmp/heiusdt_wait_sec.txt` ile dinamik).
+//! (varsayılan 20 dakika, `/tmp/velvetusdt_wait_sec.txt` ile dinamik).
 //!
 //! Akış:
 //! ```text
@@ -24524,7 +24524,7 @@ use transport::ring_buffer::GenerationalRingBuffer;
 const DETECT_MS_URL: &str = "http://127.0.0.1:3002";
 const PRICE_FEED_URL: &str = "http://127.0.0.1:3004";
 const PAPER_API: &str = "http://127.0.0.1:8080";
-const WAIT_FILE: &str = "/tmp/heiusdt_wait_sec.txt";
+const WAIT_FILE: &str = "/tmp/velvetusdt_wait_sec.txt";
 /// Ring'de yeni event yoksa uyanma sınırı — döngü asla tamamen uykuda kalmaz.
 const WAKE_INTERVAL: Duration = Duration::from_millis(500);
 
@@ -24545,16 +24545,16 @@ fn env_or(key: &str, default: &str) -> String {
 }
 
 fn load_config() -> Config {
-    let check_every: usize = env_or("HEIUSDT_CHECK_EVERY", "20").parse().unwrap_or(20);
-    let wait_sec: u64 = env_or("HEIUSDT_WAIT_SEC", &(check_every * 60).to_string())
+    let check_every: usize = env_or("VELVETUSDT_CHECK_EVERY", "20").parse().unwrap_or(20);
+    let wait_sec: u64 = env_or("VELVETUSDT_WAIT_SEC", &(check_every * 60).to_string())
         .parse()
         .unwrap_or((check_every * 60) as u64);
     let args: Vec<String> = env::args().collect();
     Config {
-        symbol: env_or("HEIUSDT_SYMBOL", "HEIUSDT"),
-        interval: env_or("HEIUSDT_INTERVAL", "1m"),
-        limit: env_or("HEIUSDT_LIMIT", "100").parse().unwrap_or(100),
-        qty: env_or("HEIUSDT_QTY", "1000"),
+        symbol: env_or("VELVETUSDT_SYMBOL", "VELVETUSDT"),
+        interval: env_or("VELVETUSDT_INTERVAL", "1m"),
+        limit: env_or("VELVETUSDT_LIMIT", "100").parse().unwrap_or(100),
+        qty: env_or("VELVETUSDT_QTY", "1000"),
         wait_sec,
         paper_user: env_or("PAPER_ADMIN_USER", "admin"),
         paper_pass: env_or("PAPER_ADMIN_PASS", "changeme123"),
@@ -24601,7 +24601,7 @@ async fn get_positions(client: &reqwest::Client, token: &str) -> Value {
 
 async fn place_order(client: &reqwest::Client, cfg: &Config, token: &str, side: &str) -> Value {
     let oid = format!(
-        "heiusdt-{}",
+        "velvetusdt-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -24831,7 +24831,7 @@ async fn analyze_once(client: &reqwest::Client, cfg: &Config, price_override: Op
 async fn main() {
     let cfg = load_config();
     println!("══════════════════════════════════════════════════");
-    println!("  🎯 HEIUSDT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
+    println!("  🎯 VELVETUSDT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
     println!("  Pencere: {} | Bekleme: {} sn | Kaynak: price-feed ring", cfg.limit, cfg.wait_sec);
     println!("  Paper: {PAPER_API} | detect-ms: {DETECT_MS_URL}");
     if cfg.dry_run {
@@ -24876,7 +24876,7 @@ async fn main() {
                 tokio::time::sleep(Duration::from_secs(10)).await;
                 continue;
             }
-            println!("  😴 {sec} sn ({:.1} dk) bekleniyor... (heiusdt-wait ile değişir)\n", sec as f64 / 60.0);
+            println!("  😴 {sec} sn ({:.1} dk) bekleniyor... (velvetusdt-wait ile değişir)\n", sec as f64 / 60.0);
         }
     }
 }
@@ -24952,7 +24952,7 @@ mod tests {
 
     #[test]
     fn event_price_prefers_ask() {
-        let ev = OwnedEvent::new_bookticker("HEIUSDT",
+        let ev = OwnedEvent::new_bookticker("VELVETUSDT",
             rust_decimal::Decimal::from_str_exact("0.0200").unwrap(),
             rust_decimal::Decimal::ONE,
             rust_decimal::Decimal::from_str_exact("0.0205").unwrap(),
@@ -24963,7 +24963,7 @@ mod tests {
 ```
 
 
-├── heiusdt/src/metrics.rs
+├── velvetusdt/src/metrics.rs
 
 ```rust
 //! Microstructure Metrics — kurumsal tick-by-tick metrik çekirdeği.
@@ -26665,7 +26665,7 @@ help-cycle() {
   echo -e "  ${_G}alert-start${_N} / ${_R}alert-stop${_N}        Alert-service"
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
-  echo -e "  ${_G}heiusdt-start${_N} / ${_R}heiusdt-stop${_N}    HEIUSDT kırılım stratejisi"
+  echo -e "  ${_G}velvetusdt-start${_N} / ${_R}velvetusdt-stop${_N}    VELVETUSDT kırılım stratejisi"
 
   echo -e "\n${_Y}━━━  🛰️  LISTENER  (Anlık Metrik Analizi)  ━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}listener-start${_N}      Pane 0.2'de başlat"
@@ -26685,7 +26685,7 @@ help-cycle() {
   echo -e "  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)"
   echo -e "  ${_C}pricefeed-stop${_N}      Durdur"
   echo -e "  ${_C}pricefeed-status${_N}    Çalışıyor mu? CPU/RAM + health"
-  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query HEIUSDT)"
+  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query VELVETUSDT)"
   echo -e "  ${_C}pricefeed-log${_N}       Canlı log izle"
 
   echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -26714,7 +26714,7 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
-  echo -e "  ${_C}alert-add HEIUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
+  echo -e "  ${_C}alert-add VELVETUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
   echo -e "  ${_C}alert-update SYM cond OLD NEW${_N}   Alarmı güncelle"
   echo -e "  ${_C}alert-remove SYM cond PRICE${_N}     Alarmı sil"
   echo -e "  ${_C}alert-reload${_N}         Alert servisini yeniden başlat"
@@ -26732,7 +26732,7 @@ help-cycle() {
   echo -e "  ${_C}detect-wyckoff-stop${_N}   Servisi durdur"
   echo -e "  ${_C}detect-wyckoff-status${_N} Çalışıyor mu? CPU/RAM göster"
   echo -e "  ${_C}detect-wyckoff-query${_N}  BTCUSDT 1h analiz (JSON çıktı)"
-  echo -e "  ${_C}detect-wyckoff-query${_N}  HEIUSDT 15m 500${_N}   Özel sorgu"
+  echo -e "  ${_C}detect-wyckoff-query${_N}  VELVETUSDT 15m 500${_N}   Özel sorgu"
 
   echo -e "\n${_Y}━━━  🌊 DETECT-TRB  (Navier-Stokes Çözücü :3006)  ━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}detect-trb-start${_N}      Servisi başlat (port 3006)"
@@ -26741,14 +26741,14 @@ help-cycle() {
   echo -e "  ${_C}detect-trb-query${_N}      Son raporu göster (JSON çıktı)"
   echo -e "  ${_C}detect-trb-start --symbol ETHUSDT --port 3007${_N}   Özel parametreler"
 
-  echo -e "\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}heiusdt-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
-  echo -e "  ${_C}heiusdt-stop${_N}         Stratejiyi durdur"
-  echo -e "  ${_C}heiusdt-status${_N}       Çalışıyor mu? CPU/RAM göster"
-  echo -e "  ${_C}heiusdt-query${_N}        Tek seferlik analiz (emir açmaz)"
-  echo -e "  ${_C}heiusdt-query --dry-run${_N}  Analiz + kırılım simülasyonu"
-  echo -e "  ${_C}heiusdt-wait 600${_N}     Bekleme süresini ayarla (saniye)"
-  echo -e "  ${_C}heiusdt-log${_N}          Canlı strateji logu izle"
+  echo -e "\n${_Y}━━━  🎯 VELVETUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}velvetusdt-start${_N}        Stratejiyi başlat (VELVETUSDT 1m, 100 pencere)"
+  echo -e "  ${_C}velvetusdt-stop${_N}         Stratejiyi durdur"
+  echo -e "  ${_C}velvetusdt-status${_N}       Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}velvetusdt-query${_N}        Tek seferlik analiz (emir açmaz)"
+  echo -e "  ${_C}velvetusdt-query --dry-run${_N}  Analiz + kırılım simülasyonu"
+  echo -e "  ${_C}velvetusdt-wait 600${_N}     Bekleme süresini ayarla (saniye)"
+  echo -e "  ${_C}velvetusdt-log${_N}          Canlı strateji logu izle"
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 4)"
@@ -26767,7 +26767,7 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 3${_N}           🛡️ PAPER sekmesi"
   echo -e "  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi"
   echo -e "  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi"
-  echo -e "  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 6${_N}           VELVETUSDT sekmesi"
   echo -e "  ${_B}Ctrl+B → 7${_N}           WYCKOFF sekmesi"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
 
@@ -26827,7 +26827,7 @@ _tmux_pane() {
     "⚠️RISK")  pane="0.1" ;;
     "💻SHELL")  pane="0.3" ;;
     *)
-      # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
+      # Tanınmayan → yeni pencere (ör. DETECT-MS, VELVETUSDT)
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -x 220 -y 50
         tmux rename-window -t "$session:0" "Trading"
@@ -27215,9 +27215,9 @@ alert-list() {
   "$CYCLE_ROOT/target/debug/alerts" list
   echo ""
   echo "Kullanım:"
-  echo "  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]"
-  echo "  alert-update HEIUSDT above 0.21628 0.22 [voice] [cooldown]"
-  echo "  alert-remove HEIUSDT above 0.21628"
+  echo "  alert-add VELVETUSDT above 0.22 [voice metni] [cooldown]"
+  echo "  alert-update VELVETUSDT above 0.21628 0.22 [voice] [cooldown]"
+  echo "  alert-remove VELVETUSDT above 0.21628"
 }
 alert-reload() {
   pkill -x alert-service 2>/dev/null || true
@@ -27499,92 +27499,92 @@ detect-trb-query() {
 }
 
 # ============================================================
-#  HEIUSDT KIRILIM STRATEJİSİ  (strategies/heiusdt_breakout.py)
-#  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
+#  VELVETUSDT KIRILIM STRATEJİSİ  (strategies/velvetusdt_breakout.py)
+#  detect-ms + paper-service kullanır. VELVETUSDT 1m, 100 pencere,
 #  her 20 pencerede bir analiz.
 # ============================================================
-heiusdt-start() {
+velvetusdt-start() {
   _start_guard
-  if pgrep -x heiusdt &>/dev/null; then
-    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1))"
+  if pgrep -x velvetusdt &>/dev/null; then
+    echo "⚠️  VELVETUSDT stratejisi zaten çalışıyor (pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1))"
     return 1
   fi
   # Bağımlılık kontrolü
-  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
-    echo "⚠️  detect-ms yanıt vermiyor → heiusdt-start ile başlatın"
+  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=VELVETUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
+    echo "⚠️  detect-ms yanıt vermiyor → velvetusdt-start ile başlatın"
     return 1
   fi
-  echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
-  _tmux_pane "🎯HEIUSDT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/heiusdt" Enter
+  echo "🎯 VELVETUSDT stratejisi başlatılıyor (VELVETUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
+  _tmux_pane "🎯VELVETUSDT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/velvetusdt" Enter
   sleep 2
-  if pgrep -x heiusdt &>/dev/null; then
-    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1)]"
-    echo "   Pencere: cycle → 🎯HEIUSDT"
+  if pgrep -x velvetusdt &>/dev/null; then
+    echo "✅ VELVETUSDT stratejisi başladı [pid: $(pgrep -f '[h]eiusdt_breakout.py' | head -1)]"
+    echo "   Pencere: cycle → 🎯VELVETUSDT"
   else
-    echo "❌ HEIUSDT stratejisi başlatılamadı."
+    echo "❌ VELVETUSDT stratejisi başlatılamadı."
   fi
 }
 
-heiusdt-stop() {
+velvetusdt-stop() {
   _start_guard
   local pid
-  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x velvetusdt 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
     pkill -TERM -f "[h]eiusdt_breakout.py" 2>/dev/null
     sleep 1
     pkill -KILL -f "[h]eiusdt_breakout.py" 2>/dev/null || true
-    echo "✅ HEIUSDT stratejisi durduruldu [pid:$pid]"
+    echo "✅ VELVETUSDT stratejisi durduruldu [pid:$pid]"
   else
-    echo "⚠️  HEIUSDT stratejisi zaten çalışmıyor"
+    echo "⚠️  VELVETUSDT stratejisi zaten çalışmıyor"
   fi
 }
 
-heiusdt-status() {
+velvetusdt-status() {
   local pid
-  pid=$(pgrep -x heiusdt 2>/dev/null | head -1 || true)
+  pid=$(pgrep -x velvetusdt 2>/dev/null | head -1 || true)
   if [ -n "$pid" ]; then
     local cpu mem
     cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
     mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ HEIUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "✅ VELVETUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
   else
-    echo "✘  HEIUSDT stratejisi durdurulmuş"
+    echo "✘  VELVETUSDT stratejisi durdurulmuş"
   fi
 }
 
-heiusdt-log() {
-  tail -f /tmp/heiusdt.log
+velvetusdt-log() {
+  tail -f /tmp/velvetusdt.log
 }
 
 # Bekleme süresini saniye cinsinden ayarla (çalışan strateji bir sonraki döngüde uygular)
-# Kullanım: heiusdt-wait 600   (10 dakika)  |  heiusdt-wait 1200  (20 dakika)
-heiusdt-wait() {
+# Kullanım: velvetusdt-wait 600   (10 dakika)  |  velvetusdt-wait 1200  (20 dakika)
+velvetusdt-wait() {
   _start_guard
   local sec="${1:-}"
   if [ -z "$sec" ]; then
-    local cur; cur=$(cat /tmp/heiusdt_wait_sec.txt 2>/dev/null || echo "1200")
+    local cur; cur=$(cat /tmp/velvetusdt_wait_sec.txt 2>/dev/null || echo "1200")
     echo "ℹ️  Mevcut bekleme: $cur sn"
-    echo "Kullanım: heiusdt-wait <saniye>   (örn. heiusdt-wait 600 → 10dk)"
+    echo "Kullanım: velvetusdt-wait <saniye>   (örn. velvetusdt-wait 600 → 10dk)"
     return 0
   fi
   if ! echo "$sec" | grep -qE '^[0-9]+$' || [ "$sec" -lt 10 ]; then
     echo "❌ Saniye değeri geçerli değil (min 10): $sec"
     return 1
   fi
-  echo "$sec" > /tmp/heiusdt_wait_sec.txt
+  echo "$sec" > /tmp/velvetusdt_wait_sec.txt
   echo "✅ Bekleme süresi ayarlandı: $sec sn ($((sec/60)) dk)"
   echo "   Çalışan strateji bir sonraki döngüde bu değeri kullanır."
-  if pgrep -x heiusdt >/dev/null 2>&1; then
+  if pgrep -x velvetusdt >/dev/null 2>&1; then
     echo "   ℹ️  Strateji çalışıyor — yeni süre otomatik uygulanacak."
   fi
 }
 
-heiusdt-query() {
-  # Kullanım: heiusdt-query [--dry-run]
+velvetusdt-query() {
+  # Kullanım: velvetusdt-query [--dry-run]
   if [ "${1:-}" = "--dry-run" ]; then
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once --dry-run
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/velvetusdt --once --dry-run
   else
-    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/heiusdt --once
+    cd "$CYCLE_ROOT" && $CYCLE_ROOT/target/debug/velvetusdt --once
   fi
 }
 
@@ -27612,7 +27612,7 @@ echo -e "${_D}[cycle_env] Yüklendi — ROOT: $CYCLE_ROOT | API: $CYCLE_API${_N}
 #  Pencere 3 — 🛡️ PAPER (sekme terminal)
 #  Pencere 4 — Monitor  (CPU/RAM/GPU izleme)
 #  Pencere 5 — DETECT-MS (MSMP :3002)
-#  Pencere 6 — HEIUSDT (Kırılım stratejisi)
+#  Pencere 6 — VELVETUSDT (Kırılım stratejisi)
 #  Pencere 7 — WYCKOFF (:3005)
 #  Pencere 8 — TURBULANS/DETECT-TRB (:3006)
 #  Pencere 9 — SCOUT (Binance USDT tarayıcı → /dev/shm/cycle_finance_scout)
@@ -27822,14 +27822,14 @@ sleep 2
 cd $ROOT && $BIN/detect-ms
 " Enter
 
-# ── Pencere 6: HEIUSDT STRATEJİ ─────────────────────────────
-tmux new-window -t "$SESSION:6" -n "HEIUSDT"
+# ── Pencere 6: VELVETUSDT STRATEJİ ─────────────────────────────
+tmux new-window -t "$SESSION:6" -n "VELVETUSDT"
 tmux send-keys -t "$SESSION:6" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '🎯  HEIUSDT  (Kırılım Stratejisi)'
+echo '🎯  VELVETUSDT  (Kırılım Stratejisi)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
-cd $ROOT && $BIN/heiusdt
+cd $ROOT && $BIN/velvetusdt
 " Enter
 
 # ── Pencere 7: WYCKOFF ANALİZ ───────────────────────────────
@@ -28568,7 +28568,7 @@ flowchart TB
     subgraph TRADE["Strateji & Yürütme"]
         PRICEF["price-feed daemon :3004"]
         SCOUT["scout-service (fırsat radarı)"]
-        HEI["heiusdt (breakout stratejisi)"]
+        HEI["velvetusdt (breakout stratejisi)"]
         PAPER["paper-service REST :8080<br/>JWT · actor · event store"]
         EXEC["execution-engine<br/>PAPER actor / LIVE"]
         OHLCV["ohlcv-engine (klines client)"]
@@ -28674,7 +28674,7 @@ sequenceDiagram
     autonumber
     participant U as Üretici (core / price-feed / scout)
     participant R as GenerationalRingBuffer<br/>(/dev/shm · 160k slot)
-    participant T as Tüketici (paper / alert / heiusdt / trb)
+    participant T as Tüketici (paper / alert / velvetusdt / trb)
 
     Note over R: Slot = [seq: u64 | len: u16 | data: [u8; 702]] → 768 B aligned
     U->>R: head = seq al
@@ -28913,7 +28913,7 @@ flowchart TB
 ```
 
 
-├── docs/flowcharts/08_scout_heiusdt.mmd
+├── docs/flowcharts/08_scout_velvetusdt.mmd
 
 ```mermaid
 flowchart LR
@@ -28933,9 +28933,9 @@ flowchart LR
         PRB["probe.rs tüketici"]
     end
 
-    subgraph HEI["heiusdt — Breakout Stratejisi"]
+    subgraph HEI["velvetusdt — Breakout Stratejisi"]
         PRR["price-feed ring okuyucu<br/>(ask > bid > mark)"]
-        ST["HEIUSDT_WAIT_SEC · 500ms wake"]
+        ST["VELVETUSDT_WAIT_SEC · 500ms wake"]
         LV["detect-ms :3002 seviyeleri"]
         EV2["evaluate() saf fonksiyon"]
         ORD2["MARKET emir JWT → paper"]
@@ -28982,7 +28982,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph ORD_FLOW["Emir Akışı"]
-        STRAT["Strateji (heiusdt / orchestrator)"]
+        STRAT["Strateji (velvetusdt / orchestrator)"]
         OR_RING[OrderRingBuffer 10k]
         BRIDGE["paper-service/spawn_order_reader<br/>IpcOrder → SubmitOrder"]
     end

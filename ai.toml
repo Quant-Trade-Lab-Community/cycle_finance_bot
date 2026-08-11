@@ -13,7 +13,7 @@ timeout_secs = 60
 
 [schedule]
 interval_secs = 60
-symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HEIUSDT"]
+symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "VELVETUSDT"]
 approval_wait_secs = 60
 
 [execution]

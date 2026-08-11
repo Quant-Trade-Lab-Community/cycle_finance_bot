@@ -529,7 +529,7 @@ WS | REST → parse → validate → ring buffer → TimescaleDB
 
 > **Likidasyon notu:** Binance'te piyasa geneli likidasyon için REST endpoint **yoktur** (`allForceOrders` 404; yalnızca kullanıcının kendi `forceOrders`u vardır). Bu ağda `forceOrder` WS stream'i de iletilmediğinden `flow-liquidation` WS aboneliğinde kalır ve tablo bu ağda boş olur; stream'in çalıştığı ağda anında dolar.
 
-**Ortam değişkenleri:** `CYCLE_FLOW_SYMBOLS` (varsayılan `BTCUSDT,ETHUSDT,SOLUSDT,HEIUSDT`) · `TIMESCALEDB_URL` · `CYCLE_REST_POLL_MS` · `CYCLE_GATE_CAPACITY` / `CYCLE_GATE_RATE`
+**Ortam değişkenleri:** `CYCLE_FLOW_SYMBOLS` (varsayılan `BTCUSDT,ETHUSDT,SOLUSDT,VELVETUSDT`) · `TIMESCALEDB_URL` · `CYCLE_REST_POLL_MS` · `CYCLE_GATE_CAPACITY` / `CYCLE_GATE_RATE`
 
 **Bağımlılıklar:** `gateway`, `pipeline`, `transport`, `persistence`, `os-utils`, `tokio`, `flume`, `simd-json`, `rust_decimal`, `serde_json`, `reqwest`
 

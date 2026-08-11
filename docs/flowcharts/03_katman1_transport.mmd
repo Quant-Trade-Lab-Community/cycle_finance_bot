@@ -2,7 +2,7 @@ sequenceDiagram
     autonumber
     participant U as Üretici (core / price-feed / scout)
     participant R as GenerationalRingBuffer<br/>(/dev/shm · 160k slot)
-    participant T as Tüketici (paper / alert / heiusdt / trb)
+    participant T as Tüketici (paper / alert / velvetusdt / trb)
 
     Note over R: Slot = [seq: u64 | len: u16 | data: [u8; 702]] → 768 B aligned
     U->>R: head = seq al

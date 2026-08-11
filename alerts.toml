@@ -36,7 +36,7 @@ price = 150
 cooldown_sec = 60
 
 [[alerts]]
-symbol = "HEIUSDT"
+symbol = "VELVETUSDT"
 condition = "above"
 price = 0.21628
 voice = "HEI 0 virgül 21628 seviyesini yukarı kırdı"

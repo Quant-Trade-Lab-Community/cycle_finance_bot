@@ -526,7 +526,7 @@ flowchart TD
 
 ### `src/cli/correlation_cli.rs` — Anomali Analiz Terminali
 
-**Detaylı açıklama:** Market ring'inden yalnızca HEIUSDT trade'lerini okuyup iki pencere
+**Detaylı açıklama:** Market ring'inden yalnızca VELVETUSDT trade'lerini okuyup iki pencere
 (analiz `window_sec` + takip `track_sec`) üzerinde hacim/fiyat ilişkisini izler.
 `flat_threshold` 0.001, `breakout_threshold` 0.005. Üç anomali türü:
 1. **EMİLİM:** Hacim patlamış, fiyat yatay → patlama beklenir.
@@ -542,7 +542,7 @@ için veri hattı üzerinde yüzey analizi. (Not: İsmine rağmen istatistiksel 
 ```mermaid
 flowchart TD
     R["read_slot(cursor)"] --> D["wire::decode"]
-    D --> H{"HEIUSDT + Trade?"}
+    D --> H{"VELVETUSDT + Trade?"}
     H -->|"hayır"| NX["cursor++ / spin"]
     H -->|"evet"| HIS["history deque'e ekle + eskiyi temizle"]
     HIS --> A{"window doldu mu?"}
@@ -715,7 +715,7 @@ flowchart LR
 
 ### `src/binance.rs` — Binance Futures WS İstemcisi
 
-**Detaylı açıklama:** Hedef semboller (`btcusdt, ethusdt, solusdt, heiusdt`) için
+**Detaylı açıklama:** Hedef semboller (`btcusdt, ethusdt, solusdt, velvetusdt`) için
 `@trade` + `@depth20@100ms` stream'lerini kurar. Tek WS bağlantısına en fazla 200 stream
 (Binance sınırı) — stream'ler 600ms arayla açılan chunk'lara bölünür (WAF/DDoS koruması:
 eşzamanlı çok bağlantı IP'yi banlar). Her chunk: bağlan → `SUBSCRIBE` → 30sn'de bir Ping (idle

@@ -1,42 +1,36 @@
-//! BREAKOUT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
+//! BREAKOUT Kırılım Stratejisi (Rust) — Kripto Futures Tek Zaman Dilimi
 //!
-//! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
-//!   bir REST polling ile uyanıyordu; bu sürüm fiyatı trade flow ring'inden
-//!   **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
-//! (varsayılan 20 dakika, `/tmp/breakout_wait_sec.txt` ile dinamik).
-//!
-//! **Sinyal üretici mod**: Emir AÇMAZ. Sadece kırılım algılandığında
-//! sembol + yön (BUY/SELL) bilgisini üretir.
+//! **Sinyal üretici mod**: Emir AÇMAZ. Kırılım algılandığında sembol + yön
+//! (BUY/SELL) + kalite/sahte/kesinlik skorları üretir.
 //!
 //! Akış:
 //! ```text
-//! flow ring (/cycle_finance_trades)
-//!   → ring okuyucu std thread (fiyat event'leri)
-//!   → mpsc UnboundedChannel → [actor döngüsü]
-//!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
-//!                                └─ bekleme aralığı dolmuşsa değerlendirme:
-//!                                   detect-ms (:3002) → kırılım → sinyal (sembol+yön)
+//! ohlcv-engine (Binance klines, N=200 mum)  [10 sn'de bir tazelenir]
+//!   + detect-ms (:3002) seviyeleri (SH→R, SL→S)  [10 sn'de bir]
+//!   + flow ring'leri (CVD, OI, funding, mark, last, liq)  [her saniye]
+//!   → breakout::compute() → {direction, quality, fake, certainty}
 //! ```
 
-use transport::events::{EventType, OwnedEvent};
-use transport::wire;
-use rust_decimal::prelude::*;
+use breakout_strategy::breakout::{self, BreakoutInput};
+use breakout_strategy::feed::Feed;
+use breakout_strategy::indicators;
+use ohlcv_engine::client::BinanceClient;
+use rust_decimal::prelude::ToPrimitive;
 use serde_json::Value;
 use std::env;
-use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
-use transport::ring_buffer::GenerationalRingBuffer;
+use std::time::Duration;
 
 const DETECT_MS_URL: &str = "http://127.0.0.1:3002";
-const WAIT_FILE: &str = "/tmp/breakout_wait_sec.txt";
-/// Ring'de yeni event yoksa uyanma sınırı — döngü asla tamamen uykuda kalmaz.
-const WAKE_INTERVAL: Duration = Duration::from_millis(500);
+/// Spesifikasyona göre analiz penceresi (N=200 bar).
+const CANDLE_LIMIT: usize = 200;
+/// Değerlendirme periyodu (her saniye).
+const EVAL_MS: u64 = 1_000;
+/// Mum + seviye önbellek tazeleme periyodu (Binance yükünü düşük tutar).
+const CACHE_REFRESH_SEC: u64 = 10;
 
 struct Config {
     symbol: String,
     interval: String,
-    limit: usize,
-    wait_sec: u64,
     once: bool,
 }
 
@@ -45,16 +39,10 @@ fn env_or(key: &str, default: &str) -> String {
 }
 
 fn load_config() -> Config {
-    let check_every: usize = env_or("BREAKOUT_CHECK_EVERY", "20").parse().unwrap_or(20);
-    let wait_sec: u64 = env_or("BREAKOUT_WAIT_SEC", &(check_every * 60).to_string())
-        .parse()
-        .unwrap_or((check_every * 60) as u64);
     let args: Vec<String> = env::args().collect();
     Config {
-        symbol: env_or("BREAKOUT_SYMBOL", "HEIUSDT"),
+        symbol: env_or("BREAKOUT_SYMBOL", "VELVETUSDT"),
         interval: env_or("BREAKOUT_INTERVAL", "1m"),
-        limit: env_or("BREAKOUT_LIMIT", "100").parse().unwrap_or(100),
-        wait_sec,
         once: args.iter().any(|a| a == "--once"),
     }
 }
@@ -67,222 +55,174 @@ async fn http_get(client: &reqwest::Client, url: &str) -> Value {
     }
 }
 
-async fn fetch_analysis(client: &reqwest::Client, cfg: &Config) -> Value {
+/// detect-ms'ten seviye raporunu çeker; en iyi DİRENÇ (SH) ve DESTEK (SL) fiyatını döner.
+async fn fetch_levels(client: &reqwest::Client, cfg: &Config) -> (f64, f64) {
     let url = format!(
         "{DETECT_MS_URL}/api/ms?symbol={}&interval={}&limit={}",
-        cfg.symbol, cfg.interval, cfg.limit
+        cfg.symbol, cfg.interval, CANDLE_LIMIT
     );
-    http_get(client, &url).await
-}
-
-// ── Seviye seçimi ────────────────────────────────────────────
-fn best_level(levels: &[Value], level_type: &str) -> Option<(f64, f64)> {
-    levels
-        .iter()
-        .filter(|l| l.get("level_type").and_then(|x| x.as_str()) == Some(level_type))
-        .filter_map(|l| {
-            let price = l.get("price").and_then(|x| x.as_str()).and_then(|s| s.parse::<f64>().ok())?;
-            let score = l.get("priority_score").and_then(|x| x.as_str()).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
-            Some((price, score))
-        })
-        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
-}
-
-// ── Kırılım değerlendirme (saf fonksiyon — test edilebilir) ──
-fn evaluate(data: &Value, price: f64) -> (Option<String>, String) {
-    if data.get("error").is_some() {
-        return (None, format!("detect-ms hatası: {}", data.get("error").unwrap()));
-    }
+    let data = http_get(client, &url).await;
     let levels = match data.get("levels").and_then(|l| l.as_array()) {
-        Some(l) if !l.is_empty() => l,
-        _ => return (None, "Seviye yok".to_string()),
+        Some(l) => l,
+        None => return (0.0, 0.0),
     };
 
-    let ats: f64 = data.get("ats").and_then(|a| a.as_str()).and_then(|s| s.parse().ok()).unwrap_or(0.0);
-    let trend = data.get("trend_label").and_then(|t| t.as_str()).unwrap_or("");
-    let confluence = data.get("confluence_index").and_then(|c| c.as_str()).unwrap_or("");
-    let log = format!("Fiyat={price:.6}  ATS={ats:.4}  Trend={trend}  Confluence=%{confluence}");
+    let mut best_sh = 0.0;
+    let mut best_sh_score = f64::NEG_INFINITY;
+    let mut best_sl = 0.0;
+    let mut best_sl_score = f64::NEG_INFINITY;
 
-    if ats > 0.0 {
-        match best_level(levels, "SH") {
-            Some((lv, score)) => {
-                if price > lv {
-                    (Some("BUY".into()), format!("{log} | 🎯 DİRENC KIRILDI SH={lv} (skor:{score}) → BUY"))
-                } else {
-                    (None, format!("{log} | Direnc yukarı kırılmadı SH={lv}"))
-                }
-            }
-            None => (None, format!("{log} | Direnc yok")),
-        }
-    } else if ats < 0.0 {
-        match best_level(levels, "SL") {
-            Some((lv, score)) => {
-                if price < lv {
-                    (Some("SELL".into()), format!("{log} | 🎯 DESTEK KIRILDI SL={lv} (skor:{score}) → SELL"))
-                } else {
-                    (None, format!("{log} | Destek aşağı kırılmadı SL={lv}"))
-                }
-            }
-            None => (None, format!("{log} | Destek yok")),
-        }
-    } else {
-        (None, format!("{log} | Nötr trend"))
-    }
-}
-
-// ── Bekleme süresi (dinamik) ─────────────────────────────────
-fn current_wait_sec(default: u64) -> u64 {
-    if let Ok(content) = std::fs::read_to_string(WAIT_FILE) {
-        if let Ok(v) = content.trim().parse::<u64>() {
-            if v > 0 {
-                return v;
-            }
+    for l in levels {
+        let Some(lt) = l.get("level_type").and_then(|x| x.as_str()) else { continue };
+        let Some(price) = l.get("price").and_then(|x| x.as_str()).and_then(|s| s.parse::<f64>().ok()) else { continue };
+        let score = l.get("priority_score").and_then(|x| x.as_str()).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
+        match lt {
+            "SH" if score > best_sh_score => { best_sh = price; best_sh_score = score; }
+            "SL" if score > best_sl_score => { best_sl = price; best_sl_score = score; }
+            _ => {}
         }
     }
-    default
+    (best_sh, best_sl)
 }
 
-// ── Ring okuyucu (Katman 2 trans sözleşmesi) ─────────────────
-/// Trade flow ring'indeki ilgili sembolün fiyat event'lerini kanala basar.
-fn spawn_price_reader(symbol: &str, tx: mpsc::UnboundedSender<f64>) {
-    let symbol = symbol.to_ascii_uppercase();
-    std::thread::spawn(move || {
-        let gen_ring = GenerationalRingBuffer::with_name("/cycle_finance_trades", 20_000);
-        let mut cursor = gen_ring.get_head();
-        let mut symbol_buf = [0u8; 16];
-        let bytes = symbol.as_bytes();
-        let len = bytes.len().min(16);
-        symbol_buf[..len].copy_from_slice(&bytes[..len]);
-
-        loop {
-            match gen_ring.read_slot(cursor) {
-                Some(slot) => {
-                    if let Some(ev) = wire::decode(&slot.data[..slot.len as usize]) {
-                        if ev.symbol == symbol_buf {
-                            if let Some(price) = event_price(&ev) {
-                                if tx.send(price).is_err() {
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    cursor += 1;
-                }
-                None => {
-                    let head = gen_ring.get_head();
-                    if head > cursor {
-                        cursor = head; // üretici arayı kapattı
-                    } else {
-                        std::thread::sleep(std::time::Duration::from_micros(500));
-                    }
-                }
-            }
+/// Seviyeye dokunuş sayısı (T_cnt) ve dokunuş anlarındaki ortalama hacim (V_touch_avg).
+/// Dokunuş: mum seviyeyi 0.5·ATR bant içinde test ettiyse sayılır.
+fn compute_touches(candles: &[ohlcv_engine::Kline], resistance: f64, support: f64, atr: f64) -> (u32, f64) {
+    let band = 0.5 * atr;
+    let mut count = 0u32;
+    let mut vol_sum = 0.0;
+    for c in candles {
+        let high = c.high.to_f64().unwrap_or(0.0);
+        let low = c.low.to_f64().unwrap_or(0.0);
+        let vol = c.volume.to_f64().unwrap_or(0.0);
+        let hit_r = resistance > 0.0 && (high - resistance).abs() < band;
+        let hit_s = support > 0.0 && (low - support).abs() < band;
+        if hit_r || hit_s {
+            count += 1;
+            vol_sum += vol;
         }
-    });
+    }
+    let v_avg = if count > 0 { vol_sum / count as f64 } else { 0.0 };
+    (count, v_avg)
 }
 
-/// Event'ten stratejinin kullanacağı tek fiyatı çıkarır (bridge ile aynı öncelik).
-fn event_price(ev: &OwnedEvent) -> Option<f64> {
-    match &ev.payload {
-        EventType::Trade { price, .. } => price.to_f64(),
-        EventType::BookTicker { best_ask_price, best_bid_price, .. } => {
-            let ask = best_ask_price.to_f64()?;
-            if ask > 0.0 {
-                Some(ask)
-            } else {
-                let bid = best_bid_price.to_f64()?;
-                (bid > 0.0).then_some(bid)
-            }
-        }
-        EventType::FundingRate { mark_price, .. } => mark_price.to_f64(),
-        _ => None,
-    }
-}
-
-// ── Tek değerlendirme ────────────────────────────────────────
-struct EvalOutcome {
-    ok: bool,
-    msg: String,
-}
-
-async fn analyze_once(client: &reqwest::Client, cfg: &Config, price_override: Option<f64>) -> EvalOutcome {
-    let data = fetch_analysis(client, cfg).await;
-    if data.get("error").is_some() {
-        let e = data.get("error").unwrap();
-        return EvalOutcome { ok: false, msg: format!("⚠️ detect-ms erişilemiyor: {e}") };
-    }
-
-    let price = price_override
-        .filter(|p| *p > 0.0)
-        .or_else(|| {
-            data.get("current_price").and_then(|c| c.as_str()).and_then(|s| s.parse::<f64>().ok())
-        })
-        .unwrap_or(0.0);
-    let (signal, msg) = evaluate(&data, price);
-    let feed_tag = if price_override.is_some() { "flow-ring" } else { "detect-ms" };
-
-    let Some(side) = signal else {
-        return EvalOutcome { ok: true, msg: format!("{msg}") };
-    };
-
-    EvalOutcome {
-        ok: true,
-        msg: format!("📡 SİNYAL → Sembol: {} | Yön: {} (fiyat: {feed_tag}) | {msg}", cfg.symbol, side),
-    }
+fn timestamp() -> String {
+    chrono::Local::now().format("%H:%M:%S").to_string()
 }
 
 #[tokio::main]
 async fn main() {
     let cfg = load_config();
     println!("══════════════════════════════════════════════════");
-    println!("  🎯 BREAKOUT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})", cfg.symbol, cfg.interval);
-    println!("  Pencere: {} | Bekleme: {} sn | Kaynak: flow ring (trades)", cfg.limit, cfg.wait_sec);
-    println!("  detect-ms: {DETECT_MS_URL}");
-    println!("  📡 MOD: Sinyal üretici (sembol + yön, emir AÇILMAZ)");
+    println!("  🎯 BREAKOUT — TEK ZAMAN DİLİMİ KIRILIM TESPİTİ  ({} {})", cfg.symbol, cfg.interval);
+    println!("  Pencere: {CANDLE_LIMIT} mum | Güncelleme: her {} sn | Veri: klines + detect-ms + flow ring'leri (RAM)", EVAL_MS / 1000);
+    println!("  📡 MOD: Sinyal üretici (sembol + yön + Q/F/C, emir AÇILMAZ)");
     println!("══════════════════════════════════════════════════");
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
-        .build()
-        .expect("reqwest client");
+    let http = reqwest::Client::new();
+    let klines = BinanceClient::new();
+    let mut feed = Feed::new(&cfg.symbol);
 
-    if cfg.once {
-        let r = analyze_once(&client, &cfg, None).await;
-        println!("[{}] {}", timestamp(), r.msg);
-        return;
-    }
-
-    // Event-driven döngü: fiyat anlık (ring), değerlendirme bekleme aralığında.
-    let (tx, mut rx) = mpsc::unbounded_channel::<f64>();
-    spawn_price_reader(&cfg.symbol, tx);
-
-    let mut latest_price: Option<f64> = None;
-    let mut last_eval = Instant::now() - Duration::from_secs(cfg.wait_sec);
-    let mut startup = true;
+    // Önbellek: mumlar + seviyeler (CACHE_REFRESH_SEC'te bir tazelenir).
+    let mut cached_candles: Vec<ohlcv_engine::Kline> = Vec::new();
+    let mut cached_r = 0.0;
+    let mut cached_s = 0.0;
+    let mut last_refresh = std::time::Instant::now() - Duration::from_secs(CACHE_REFRESH_SEC + 1);
+    let mut last_cache_err = std::time::Instant::now() - Duration::from_secs(60);
 
     loop {
-        let evt = tokio::time::timeout(WAKE_INTERVAL, rx.recv()).await;
-        if let Ok(Some(p)) = evt {
-            latest_price = Some(p);
-        }
-
-        let sec = current_wait_sec(cfg.wait_sec);
-        if startup || last_eval.elapsed().as_secs() >= sec {
-            last_eval = Instant::now();
-            startup = false;
-
-            let r = analyze_once(&client, &cfg, latest_price).await;
-            println!("[{}] {}", timestamp(), r.msg);
-            if !r.ok {
-                println!("  🔄 10 sn sonra yeniden deneniyor...");
-                tokio::time::sleep(Duration::from_secs(10)).await;
-                continue;
+        // 1) Önbellek tazele (10 sn): mumlar + detect-ms seviyeleri.
+        if last_refresh.elapsed().as_secs() >= CACHE_REFRESH_SEC {
+            match klines.fetch_klines(&cfg.symbol, &cfg.interval, CANDLE_LIMIT).await {
+                Ok(c) if !c.is_empty() => {
+                    cached_candles = c;
+                    if cached_candles.is_empty() {
+                        eprintln!("[{}] ⚠️ klines boş ({} {})", timestamp(), cfg.symbol, cfg.interval);
+                    }
+                }
+                Ok(_) => {
+                    if last_cache_err.elapsed().as_secs() >= 30 {
+                        eprintln!("[{}] ⚠️ klines boş — yeniden deneniyor ({} {})", timestamp(), cfg.symbol, cfg.interval);
+                        last_cache_err = std::time::Instant::now();
+                    }
+                }
+                Err(e) => {
+                    if last_cache_err.elapsed().as_secs() >= 30 {
+                        eprintln!("[{}] ⚠️ klines hatası: {e} — eski mumlarla devam ({} {})", timestamp(), cfg.symbol, cfg.interval);
+                        last_cache_err = std::time::Instant::now();
+                    }
+                }
             }
-            println!("  😴 {sec} sn ({:.1} dk) bekleniyor... (breakout-wait ile değişir)\n", sec as f64 / 60.0);
+            let (r, s) = fetch_levels(&http, &cfg).await;
+            cached_r = r;
+            cached_s = s;
+            last_refresh = std::time::Instant::now();
         }
-    }
-}
 
-fn timestamp() -> String {
-    chrono::Local::now().format("%H:%M:%S").to_string()
+        if cached_candles.is_empty() {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            continue;
+        }
+
+        // 2) Göstergeler (önbellekli mumlar).
+        let atr = indicators::atr(&cached_candles, 14);
+        let vols: Vec<f64> = cached_candles.iter().map(|c| c.volume.to_f64().unwrap_or(0.0)).collect();
+        let v_avg = indicators::sma(&vols, 20);
+        let (high_14, low_14) = indicators::high_low(&cached_candles, 14);
+        let Some((p_open, p_high, p_low, p_close, vol_current)) = indicators::last_candle(&cached_candles) else {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            continue;
+        };
+        let (touches, v_touch_avg) = compute_touches(&cached_candles, cached_r, cached_s, atr);
+
+        // 3) Flow ring'leri (her saniye taze).
+        let snap = feed.poll();
+
+        // 4) Algoritma.
+        let input = BreakoutInput {
+            symbol: cfg.symbol.clone(),
+            p_high,
+            p_low,
+            p_open,
+            p_close,
+            atr,
+            v_avg,
+            volume_current: vol_current,
+            high_14,
+            low_14,
+            resistance: cached_r,
+            support: cached_s,
+            touches,
+            v_touch_avg,
+            oi: snap.oi,
+            oi_prev: snap.oi_prev,
+            funding_rate: snap.funding_rate,
+            funding_mean_20: snap.funding_mean_20,
+            funding_std_20: snap.funding_std_20,
+            cvd_now: snap.cvd_now,
+            cvd_prev_10: snap.cvd_prev_10,
+            cvd_sigma: snap.cvd_sigma,
+            liq_current: snap.liq_current,
+            liq_avg: snap.liq_avg,
+            mark: snap.mark,
+            last: snap.last,
+        };
+        let r = breakout::compute(&input);
+
+        println!("[{}] {}", timestamp(), serde_json::to_string(&r.to_json()).unwrap_or_default());
+        let signal = match r.direction {
+            "UP" => "📈 BUY",
+            "DOWN" => "📉 SELL",
+            _ => "· NÖTR",
+        };
+        println!(
+            "  {signal} | seviye: {} | Q=%{:.1} F=%{:.1} C=%{:.1} | ATR={:.4} T_cnt={} R={} S={}",
+            r.broken_level, r.quality, r.fake, r.certainty, atr, touches, cached_r, cached_s
+        );
+
+        if cfg.once {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(EVAL_MS)).await;
+    }
 }

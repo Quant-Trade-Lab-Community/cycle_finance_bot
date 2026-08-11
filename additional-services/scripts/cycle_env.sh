@@ -104,7 +104,7 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
-  echo -e "  ${_C}alert-add HEIUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
+  echo -e "  ${_C}alert-add VELVETUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
   echo -e "  ${_C}alert-update SYM cond OLD NEW${_N}   Alarmı güncelle"
   echo -e "  ${_C}alert-remove SYM cond PRICE${_N}     Alarmı sil"
   echo -e "  ${_C}alert-reload${_N}         Alert servisini yeniden başlat"
@@ -118,7 +118,7 @@ help-cycle() {
   echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
 
   echo -e "\n${_Y}━━━  🎯 KIRILIM STRATEJİSİ (breakout)  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}strat run breakout${_N}      Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
+  echo -e "  ${_C}strat run breakout${_N}      Stratejiyi başlat (VELVETUSDT 1m, 100 pencere)"
   echo -e "  ${_C}strat stop breakout${_N}     Stratejiyi durdur"
   echo -e "  ${_C}strat status${_N}            Çalışıyor mu? CPU/RAM göster"
   echo -e "  ${_C}breakout-query${_N}          Tek seferlik analiz (emir açmaz)"
@@ -678,9 +678,9 @@ alert-list() {
   "$CYCLE_ROOT/target/debug/alerts" list
   echo ""
   echo "Kullanım:"
-  echo "  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]"
-  echo "  alert-update HEIUSDT above 0.21628 0.22 [voice] [cooldown]"
-  echo "  alert-remove HEIUSDT above 0.21628"
+  echo "  alert-add VELVETUSDT above 0.22 [voice metni] [cooldown]"
+  echo "  alert-update VELVETUSDT above 0.21628 0.22 [voice] [cooldown]"
+  echo "  alert-remove VELVETUSDT above 0.21628"
 }
 alert-reload() {
   pkill -x alert-service 2>/dev/null || true

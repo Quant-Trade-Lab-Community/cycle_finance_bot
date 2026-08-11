@@ -240,7 +240,7 @@
     N --&gt;|&quot;diğer&quot;| R[&quot;signal = 0&lt;br&gt;Nötr&quot;]
 </pre>
 <h3 id="breakout-strategy-src-bin-listener-rs"><code>breakout-strategy/src/bin/listener.rs</code><a class="headerlink" href="#breakout-strategy-src-bin-listener-rs" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> Veri merkezi izleyici binary'sidir. Ana thread DATA ring'ini (<code>/dev/shm/cycle_finance_ring</code>) 160k kapasiteyle okur, <code>wire::decode</code> sonrası <code>alerts.toml</code> sembol listesinden (HEIUSDT her zaman eklenir) geçenler için <code>SymbolMetrics</code> tutar; <code>Trade</code> → <code>process_tick</code> + hacim korelasyon serisi, <code>Orderbook</code> → ilk 5 kademe derinliği (<code>update_depth</code> + <code>refresh</code>) işler. Ayrı thread (<code>spawn_price_corr_thread</code>) <code>:3004/api/lastprice</code>'tan 200 ms'de bir fiyat çekip fiyat korelasyon serilerine yazar. Her 2 sn'de bir <code>render</code> iki korelasyon matrisini (fiyat ve hacim, normalize Pearson) + mikro-yapı metrik tablosunu çizer ve <code>/tmp/listener_metrics.json</code>'a yazar. Pencere süreleri conf dosyasından hot-reload edilir.
+<p><strong>Detaylı açıklama:</strong> Veri merkezi izleyici binary'sidir. Ana thread DATA ring'ini (<code>/dev/shm/cycle_finance_ring</code>) 160k kapasiteyle okur, <code>wire::decode</code> sonrası <code>alerts.toml</code> sembol listesinden (VELVETUSDT her zaman eklenir) geçenler için <code>SymbolMetrics</code> tutar; <code>Trade</code> → <code>process_tick</code> + hacim korelasyon serisi, <code>Orderbook</code> → ilk 5 kademe derinliği (<code>update_depth</code> + <code>refresh</code>) işler. Ayrı thread (<code>spawn_price_corr_thread</code>) <code>:3004/api/lastprice</code>'tan 200 ms'de bir fiyat çekip fiyat korelasyon serilerine yazar. Her 2 sn'de bir <code>render</code> iki korelasyon matrisini (fiyat ve hacim, normalize Pearson) + mikro-yapı metrik tablosunu çizer ve <code>/tmp/listener_metrics.json</code>'a yazar. Pencere süreleri conf dosyasından hot-reload edilir.
 <strong>Neden kullandık:</strong> Trade + derinlik + REST fiyatını tek ekranda birleştirip semboller arası fiyat/hacim korelasyonunu normalize 0-1 çizdirmek; izleyiciyi ayrı binary yaparak ana stratejiyi etkilemeden çalıştırmak; konsol + JSON çift çıktı ile otomasyona uygunluk sağlamak.</p>
 <pre class="mermaid">flowchart TD
     subgraph A[&quot;Veri Kaynakları&quot;]
@@ -372,7 +372,7 @@ transport = { path = &quot;../../cycle-engine/transport&quot; }
 rust_decimal = { workspace = true }
 </code></pre>
 <h3 id="strategies-engine-breakout-strategy-src-lib-rs"><code>strategies-engine/breakout-strategy/src/lib.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-lib-rs" title="Permanent link">&para;</a></h3>
-<pre><code class="language-rust">//! heiusdt — HEIUSDT stratejisi + mikro-yapı metrik çekirdeği.
+<pre><code class="language-rust">//! velvetusdt — VELVETUSDT stratejisi + mikro-yapı metrik çekirdeği.
 
 pub mod metrics;
 </code></pre>
@@ -431,7 +431,7 @@ fn load_config() -&gt; Config {
         .unwrap_or((check_every * 60) as u64);
     let args: Vec&lt;String&gt; = env::args().collect();
     Config {
-        symbol: env_or(&quot;BREAKOUT_SYMBOL&quot;, &quot;HEIUSDT&quot;),
+        symbol: env_or(&quot;BREAKOUT_SYMBOL&quot;, &quot;VELVETUSDT&quot;),
         interval: env_or(&quot;BREAKOUT_INTERVAL&quot;, &quot;1m&quot;),
         limit: env_or(&quot;BREAKOUT_LIMIT&quot;, &quot;100&quot;).parse().unwrap_or(100),
         wait_sec,
@@ -1273,9 +1273,9 @@ pub fn normalized_corr(a: &amp;[f64], b: &amp;[f64]) -&gt; f64 {
 //!
 //! Kullanım:
 //!   alerts list
-//!   alerts add --symbol HEIUSDT --condition above --price 0.22 [--voice &quot;...&quot;] [--cooldown 30] [--tolerance 0.0005]
-//!   alerts update --symbol HEIUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice &quot;...&quot;] [--cooldown 30]
-//!   alerts remove --symbol HEIUSDT --condition above --price 0.21628
+//!   alerts add --symbol VELVETUSDT --condition above --price 0.22 [--voice &quot;...&quot;] [--cooldown 30] [--tolerance 0.0005]
+//!   alerts update --symbol VELVETUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice &quot;...&quot;] [--cooldown 30]
+//!   alerts remove --symbol VELVETUSDT --condition above --price 0.21628
 
 use std::process::exit;
 
@@ -1670,8 +1670,8 @@ fn load_symbols() -&gt; Vec&lt;String&gt; {
             }
         }
     }
-    if !syms.contains(&amp;&quot;HEIUSDT&quot;.to_string()) {
-        syms.push(&quot;HEIUSDT&quot;.to_string());
+    if !syms.contains(&amp;&quot;VELVETUSDT&quot;.to_string()) {
+        syms.push(&quot;VELVETUSDT&quot;.to_string());
     }
     syms
 }

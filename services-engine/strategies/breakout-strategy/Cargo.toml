@@ -16,3 +16,4 @@ chrono = { workspace = true }
 rusqlite = { workspace = true }
 transport = { path = "../../../cycle-engine/transport" }
 rust_decimal = { workspace = true }
+ohlcv-engine = { path = "../../ohlcv-engine" }

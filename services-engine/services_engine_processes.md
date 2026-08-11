@@ -303,7 +303,7 @@ Event-driven kırılım stratejisi (sinyal üretici, emir açmaz). price-feed ri
 breakout-strategy:
   ├── main.rs (308): Event-Driven Kırılım
   │   ├── price-feed ring: /cycle_finance_pricefeed
-  │   ├── detect-ms API: GET /api/ms?symbol=HEIUSDT
+  │   ├── detect-ms API: GET /api/ms?symbol=VELVETUSDT
   │   ├── fiyat ring: /cycle_finance_pricefeed
   │   ├── evaluate: detect-ms + price-feed → sinyal üretir
   │   └── emir açmaz (sinyal üretici — emir açmaz)

@@ -12,7 +12,7 @@ const MAX_RECONNECT_DELAY_MS: u64 = 60_000;
 async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     println!("Binance WS: Limiting subscriptions to specific symbols...");
     
-    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "heiusdt"];
+    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "velvetusdt"];
     let mut pairs = Vec::new();
     
     for sym in target_symbols {

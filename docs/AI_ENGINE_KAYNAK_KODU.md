@@ -230,7 +230,7 @@ flowchart LR
 ```
 
 ### `src/agents/signal.rs`
-**Detaylı açıklama:** Strateji ajanı, `MarketContext`'i compact JSON olarak LLM'e gönderir; sistem promptu BTC/ETH/SOL/HEIUSDT vadeli işlemler için yalnızca yüksek güvenli fırsatlarda BUY/SELL, belirsizlikte HOLD istemektedir (yapı ve indikatörler çelişiyorsa HOLD). LLM yanıtı `parse_signal` ile ayrıştırılır: `quantity == 0` ise aksiyon zorla HOLD yapılır, güven 0..1'e sıkıştırılır. LLM yoksa veya hata verirse `SignalOutput::default()` (HOLD) döner.
+**Detaylı açıklama:** Strateji ajanı, `MarketContext`'i compact JSON olarak LLM'e gönderir; sistem promptu BTC/ETH/SOL/VELVETUSDT vadeli işlemler için yalnızca yüksek güvenli fırsatlarda BUY/SELL, belirsizlikte HOLD istemektedir (yapı ve indikatörler çelişiyorsa HOLD). LLM yanıtı `parse_signal` ile ayrıştırılır: `quantity == 0` ise aksiyon zorla HOLD yapılır, güven 0..1'e sıkıştırılır. LLM yoksa veya hata verirse `SignalOutput::default()` (HOLD) döner.
 **Neden kullandık:**
 - Yön kararını doğal dil kurallarıyla LLM'e bırakarak geleneksel indikatör matrisini esnetir.
 - Fail-safe varsayılan (HOLD) sayesinde LLM arızasında asla sinyal üretilmez.
@@ -555,7 +555,7 @@ impl Default for ScheduleConfig {
                 "BTCUSDT".into(),
                 "ETHUSDT".into(),
                 "SOLUSDT".into(),
-                "HEIUSDT".into(),
+                "VELVETUSDT".into(),
             ],
             approval_wait_secs: 60,
         }
@@ -2048,7 +2048,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 const SYSTEM_PROMPT: &str = r#"Sen Cycle Finance'in strateji/sinyal analistisin.
-Verilen piyasa bağlamına göre BTC/ETH/SOL/HEIUSDT vadeli işlem için yön kararı ver.
+Verilen piyasa bağlamına göre BTC/ETH/SOL/VELVETUSDT vadeli işlem için yön kararı ver.
 Sadece yüksek güvenli fırsatlarda BUY/SELL ver; belirsizlikte HOLD.
 Kural: yapı (detect-ms ats/trend) ile indikatörler (rsi/macd/bbands/vwap/atr) çelişiyorsa HOLD.
 Şu JSON şemasına BİREBİR uy, başka hiçbir şey yazma:

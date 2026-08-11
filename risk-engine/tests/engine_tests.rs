@@ -272,16 +272,16 @@ fn per_symbol_override_tightens_limit() {
     policy.max_position_usdt = d("100000");
     policy.max_notional_per_order = d("100000");
     policy.per_symbol.insert(
-        "HEIUSDT".into(),
+        "VELVETUSDT".into(),
         risk_engine::policy::PerSymbolLimits {
             max_position_usdt: Some(d("100")),
             ..Default::default()
         },
     );
     let engine = engine_with(policy);
-    fresh_mark(&engine, "HEIUSDT", "1");
+    fresh_mark(&engine, "VELVETUSDT", "1");
     // 500 HEI = 500 USDT > 100.
-    let decision = engine.evaluate(market_buy("HEIUSDT", "500"));
+    let decision = engine.evaluate(market_buy("VELVETUSDT", "500"));
     match decision {
         RiskDecision::Rejected { reason, .. } => assert!(matches!(reason, RejectReason::PositionLimitExceeded { .. })),
         _ => panic!("per-symbol pozisyon limiti işlemeli"),

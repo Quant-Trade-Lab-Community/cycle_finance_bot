@@ -15,9 +15,9 @@ flowchart LR
         PRB["probe.rs tüketici"]
     end
 
-    subgraph HEI["heiusdt — Breakout Stratejisi"]
+    subgraph HEI["velvetusdt — Breakout Stratejisi"]
         PRR["price-feed ring okuyucu<br/>(ask > bid > mark)"]
-        ST["HEIUSDT_WAIT_SEC · 500ms wake"]
+        ST["VELVETUSDT_WAIT_SEC · 500ms wake"]
         LV["detect-ms :3002 seviyeleri"]
         EV2["evaluate() saf fonksiyon"]
         ORD2["MARKET emir JWT → paper"]

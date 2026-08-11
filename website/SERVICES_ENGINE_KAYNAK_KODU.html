@@ -531,7 +531,7 @@
   D --&gt;|&quot;hayır&quot;| F[&quot;JSON: status error + message&quot;]
 </pre>
 <h3 id="ohlcv-engine-src-bin-cli-rs"><code>ohlcv-engine/src/bin/cli.rs</code><a class="headerlink" href="#ohlcv-engine-src-bin-cli-rs" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> Terminal radarı adındaki CLI aracıdır. <code>clap</code> ile sembol (varsayılan HEIUSDT), interval (1h) ve limit (10) alır; çekilen her mum için yerel saat, boğa/ayı emojisi, değişim ve değişim %'sini satır satır yazdırır. Hızlı veri kontrolü ve demo amaçlıdır.
+<p><strong>Detaylı açıklama:</strong> Terminal radarı adındaki CLI aracıdır. <code>clap</code> ile sembol (varsayılan VELVETUSDT), interval (1h) ve limit (10) alır; çekilen her mum için yerel saat, boğa/ayı emojisi, değişim ve değişim %'sini satır satır yazdırır. Hızlı veri kontrolü ve demo amaçlıdır.
 <strong>Neden kullandık:</strong>
 - Ring/API olmadan bağımsız doğrulama ve hızlı görsel kontrol sağlar
 - <code>chrono</code> ile mum zamanlarını yerel saate çevirir</p>
@@ -4358,8 +4358,8 @@ use rust_decimal::Decimal;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Hangi sembolün çekileceği (Örn: HEIUSDT, BTCUSDT)
-    #[arg(short, long, default_value = &quot;HEIUSDT&quot;)]
+    /// Hangi sembolün çekileceği (Örn: VELVETUSDT, BTCUSDT)
+    #[arg(short, long, default_value = &quot;VELVETUSDT&quot;)]
     symbol: String,
 
     /// Mum aralığı (Örn: 1m, 5m, 1h, 1d)
@@ -4443,7 +4443,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!(&quot;API Sunucusu http://{} üzerinde dinleniyor.&quot;, addr);
-    println!(&quot;Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=HEIUSDT&amp;interval=15m&amp;limit=100&quot;);
+    println!(&quot;Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=VELVETUSDT&amp;interval=15m&amp;limit=100&quot;);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -6091,8 +6091,8 @@ fn load_symbols() -&gt; Vec&lt;String&gt; {
             }
         }
     }
-    if !syms.contains(&amp;&quot;HEIUSDT&quot;.to_string()) {
-        syms.push(&quot;HEIUSDT&quot;.to_string());
+    if !syms.contains(&amp;&quot;VELVETUSDT&quot;.to_string()) {
+        syms.push(&quot;VELVETUSDT&quot;.to_string());
     }
     syms
 }

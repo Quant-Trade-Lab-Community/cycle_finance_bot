@@ -33,7 +33,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("API Sunucusu http://{} üzerinde dinleniyor.", addr);
-    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=HEIUSDT&interval=15m&limit=100");
+    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=VELVETUSDT&interval=15m&limit=100");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

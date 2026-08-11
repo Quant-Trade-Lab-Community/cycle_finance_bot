@@ -1239,7 +1239,7 @@ enable_liquidity_gate = false
 max_slippage_bps = 50
 blocklist = ["TRXUSDT"]
 
-[symbol.HEIUSDT]
+[symbol.VELVETUSDT]
 max_position_usdt = 500
 max_leverage = 5
 "#;
@@ -1247,7 +1247,7 @@ max_leverage = 5
         assert_eq!(policy.max_leverage, Decimal::from(3));
         assert_eq!(policy.max_drawdown_pct, Decimal::from_str("0.20").unwrap());
         assert!(policy.is_blocked("TRXUSDT"));
-        let eff = policy.effective("HEIUSDT");
+        let eff = policy.effective("VELVETUSDT");
         assert_eq!(eff.max_position_usdt, Decimal::from(500));
         assert_eq!(eff.max_leverage, Decimal::from(5));
         // Override olmayan sembol genel limiti kullanır.
@@ -4009,16 +4009,16 @@ fn per_symbol_override_tightens_limit() {
     policy.max_position_usdt = d("100000");
     policy.max_notional_per_order = d("100000");
     policy.per_symbol.insert(
-        "HEIUSDT".into(),
+        "VELVETUSDT".into(),
         risk_engine::policy::PerSymbolLimits {
             max_position_usdt: Some(d("100")),
             ..Default::default()
         },
     );
     let engine = engine_with(policy);
-    fresh_mark(&engine, "HEIUSDT", "1");
+    fresh_mark(&engine, "VELVETUSDT", "1");
     // 500 HEI = 500 USDT > 100.
-    let decision = engine.evaluate(market_buy("HEIUSDT", "500"));
+    let decision = engine.evaluate(market_buy("VELVETUSDT", "500"));
     match decision {
         RiskDecision::Rejected { reason, .. } => assert!(matches!(reason, RejectReason::PositionLimitExceeded { .. })),
         _ => panic!("per-symbol pozisyon limiti işlemeli"),

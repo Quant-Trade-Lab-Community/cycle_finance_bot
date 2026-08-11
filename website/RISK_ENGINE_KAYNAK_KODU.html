@@ -1223,7 +1223,7 @@ enable_liquidity_gate = false
 max_slippage_bps = 50
 blocklist = [&quot;TRXUSDT&quot;]
 
-[symbol.HEIUSDT]
+[symbol.VELVETUSDT]
 max_position_usdt = 500
 max_leverage = 5
 &quot;#;
@@ -1231,7 +1231,7 @@ max_leverage = 5
         assert_eq!(policy.max_leverage, Decimal::from(3));
         assert_eq!(policy.max_drawdown_pct, Decimal::from_str(&quot;0.20&quot;).unwrap());
         assert!(policy.is_blocked(&quot;TRXUSDT&quot;));
-        let eff = policy.effective(&quot;HEIUSDT&quot;);
+        let eff = policy.effective(&quot;VELVETUSDT&quot;);
         assert_eq!(eff.max_position_usdt, Decimal::from(500));
         assert_eq!(eff.max_leverage, Decimal::from(5));
         // Override olmayan sembol genel limiti kullanır.
@@ -3948,16 +3948,16 @@ fn per_symbol_override_tightens_limit() {
     policy.max_position_usdt = d(&quot;100000&quot;);
     policy.max_notional_per_order = d(&quot;100000&quot;);
     policy.per_symbol.insert(
-        &quot;HEIUSDT&quot;.into(),
+        &quot;VELVETUSDT&quot;.into(),
         risk_engine::policy::PerSymbolLimits {
             max_position_usdt: Some(d(&quot;100&quot;)),
             ..Default::default()
         },
     );
     let engine = engine_with(policy);
-    fresh_mark(&amp;engine, &quot;HEIUSDT&quot;, &quot;1&quot;);
+    fresh_mark(&amp;engine, &quot;VELVETUSDT&quot;, &quot;1&quot;);
     // 500 HEI = 500 USDT &gt; 100.
-    let decision = engine.evaluate(market_buy(&quot;HEIUSDT&quot;, &quot;500&quot;));
+    let decision = engine.evaluate(market_buy(&quot;VELVETUSDT&quot;, &quot;500&quot;));
     match decision {
         RiskDecision::Rejected { reason, .. } =&gt; assert!(matches!(reason, RejectReason::PositionLimitExceeded { .. })),
         _ =&gt; panic!(&quot;per-symbol pozisyon limiti işlemeli&quot;),

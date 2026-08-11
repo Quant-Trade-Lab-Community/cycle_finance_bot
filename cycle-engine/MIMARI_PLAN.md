@@ -73,7 +73,7 @@ sequenceDiagram
 | BTCUSDT | `btcusdt@trade` | `btcusdt@depth20@100ms` |
 | ETHUSDT | `ethusdt@trade` | `ethusdt@depth20@100ms` |
 | SOLUSDT | `solusdt@trade` | `solusdt@depth20@100ms` |
-| HEIUSDT | `heiusdt@trade` | `heiusdt@depth20@100ms` |
+| VELVETUSDT | `velvetusdt@trade` | `velvetusdt@depth20@100ms` |
 
 > **Toplam**: 8 stream, tek WS bağlantısı (200 stream chunk limiti aşılmıyor).
 

@@ -520,7 +520,7 @@ flowchart TD
 ```
 
 ### `ohlcv-engine/src/bin/cli.rs`
-**Detaylı açıklama:** Terminal radarı adındaki CLI aracıdır. `clap` ile sembol (varsayılan HEIUSDT), interval (1h) ve limit (10) alır; çekilen her mum için yerel saat, boğa/ayı emojisi, değişim ve değişim %'sini satır satır yazdırır. Hızlı veri kontrolü ve demo amaçlıdır.
+**Detaylı açıklama:** Terminal radarı adındaki CLI aracıdır. `clap` ile sembol (varsayılan VELVETUSDT), interval (1h) ve limit (10) alır; çekilen her mum için yerel saat, boğa/ayı emojisi, değişim ve değişim %'sini satır satır yazdırır. Hızlı veri kontrolü ve demo amaçlıdır.
 **Neden kullandık:**
 - Ring/API olmadan bağımsız doğrulama ve hızlı görsel kontrol sağlar
 - `chrono` ile mum zamanlarını yerel saate çevirir
@@ -4468,8 +4468,8 @@ use rust_decimal::Decimal;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Hangi sembolün çekileceği (Örn: HEIUSDT, BTCUSDT)
-    #[arg(short, long, default_value = "HEIUSDT")]
+    /// Hangi sembolün çekileceği (Örn: VELVETUSDT, BTCUSDT)
+    #[arg(short, long, default_value = "VELVETUSDT")]
     symbol: String,
 
     /// Mum aralığı (Örn: 1m, 5m, 1h, 1d)
@@ -4556,7 +4556,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("API Sunucusu http://{} üzerinde dinleniyor.", addr);
-    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=HEIUSDT&interval=15m&limit=100");
+    println!("Örnek kullanım: http://127.0.0.1:3000/api/klines?symbol=VELVETUSDT&interval=15m&limit=100");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -6243,8 +6243,8 @@ fn load_symbols() -> Vec<String> {
             }
         }
     }
-    if !syms.contains(&"HEIUSDT".to_string()) {
-        syms.push("HEIUSDT".to_string());
+    if !syms.contains(&"VELVETUSDT".to_string()) {
+        syms.push("VELVETUSDT".to_string());
     }
     syms
 }

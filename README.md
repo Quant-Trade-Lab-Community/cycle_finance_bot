@@ -180,14 +180,14 @@ detect-ms raporundan:
 ### Çıktı
 
 ```
-📡 SİNYAL → Sembol: HEIUSDT | Yön: BUY (fiyat: ring) | Fiyat=0.2135 ATS=2.1 Trend=... Confluence=%
+📡 SİNYAL → Sembol: VELVETUSDT | Yön: BUY (fiyat: ring) | Fiyat=0.2135 ATS=2.1 Trend=... Confluence=%
 ```
 
 ### Konfigürasyon (env)
 
 | Değişken | Varsayılan | Açıklama |
 |---|---|---|
-| `BREAKOUT_SYMBOL` | `HEIUSDT` | Analiz edilecek sembol |
+| `BREAKOUT_SYMBOL` | `VELVETUSDT` | Analiz edilecek sembol |
 | `BREAKOUT_INTERVAL` | `1m` | Kline intervali |
 | `BREAKOUT_LIMIT` | `100` | Analizdeki mum sayısı |
 | `BREAKOUT_WAIT_SEC` | `check_every×60` | Değerlendirme aralığı (sn) |

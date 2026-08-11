@@ -1,6 +1,6 @@
 graph TD
     A([Başlangıç: start_binance_ws_client]) --> B[fetch_usdt_spot_pairs]
-    B --> C[hedef semboller: btcusdt/ethusdt/solusdt/heiusdt]
+    B --> C[hedef semboller: btcusdt/ethusdt/solusdt/velvetusdt]
     C --> D[her sembol için @trade ve @depth20@100ms stream'i ekle]
     D --> E{pairs getirildi mi?}
     E -- Hayır --> F[eprintln: pairs alınamadı]

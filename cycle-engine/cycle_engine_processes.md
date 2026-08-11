@@ -78,7 +78,7 @@ flowchart TD
 > **REST fallback:** Bu ağdan Binance markPrice/indexPrice/lastPrice/openInterest stream'leri WS ile
 > iletilmediği için o akışlar REST ile beslenir (`flows/src/rest.rs`); REST yanıtı WS-format frame'e
 > çevrilir ve aynı `parse → validate → ring → TimescaleDB` hattından geçer. Semboller
-> `CYCLE_FLOW_SYMBOLS` ile değiştirilebilir (varsayılan `BTCUSDT,ETHUSDT,SOLUSDT,HEIUSDT`).
+> `CYCLE_FLOW_SYMBOLS` ile değiştirilebilir (varsayılan `BTCUSDT,ETHUSDT,SOLUSDT,VELVETUSDT`).
 >
 > **Likidasyon:** Binance'te piyasa geneli likidasyon için REST endpoint yoktur (`allForceOrders` 404);
 > `flow-liquidation` WS aboneliğinde kalır — bu ağda stream iletilmediği için tablo boş, stream çalışan ağda anında dolar.

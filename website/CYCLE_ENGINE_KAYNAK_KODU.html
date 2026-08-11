@@ -394,7 +394,7 @@ Tarih: 2026-08-09</p>
 </tr>
 <tr>
 <td><code>src/cli/correlation_cli.rs</code></td>
-<td>CORRELATION modu: ring'den HEIUSDT trade'lerini okuyup hacim/fiyat anomali tespiti + kümeleme uyarıları üretir.</td>
+<td>CORRELATION modu: ring'den VELVETUSDT trade'lerini okuyup hacim/fiyat anomali tespiti + kümeleme uyarıları üretir.</td>
 </tr>
 <tr>
 <td><code>src/engine/mod.rs</code></td>
@@ -3023,7 +3023,7 @@ pub fn start_correlation_cli() {
 
     println!(&quot;========================================&quot;);
     println!(&quot;📈 KORELASYON TERMINALİ v5.0 (ASENKRON KUYRUK)&quot;);
-    println!(&quot;Hedef Parite: HEIUSDT&quot;);
+    println!(&quot;Hedef Parite: VELVETUSDT&quot;);
     println!(&quot;Analiz Penceresi: {} sn | Takip Penceresi: {} sn&quot;, window_sec, track_sec);
     println!(&quot;Kümeleme (Clustering) &amp; Kendi Kendini Doğrulama Aktif!&quot;);
     println!(&quot;========================================&quot;);
@@ -3043,7 +3043,7 @@ pub fn start_correlation_cli() {
     loop {
         if let Some(slot) = gen_ring.read_slot(read_cursor) {
             if let Some(owned_event) = wire::decode(&amp;slot.data[..slot.len as usize]) {
-                if owned_event.symbol.starts_with(b&quot;HEIUSDT&quot;) {
+                if owned_event.symbol.starts_with(b&quot;VELVETUSDT&quot;) {
                     if let EventType::Trade { price, quantity: qty, timestamp, is_buyer_maker: _ } = owned_event.payload {
                         let record = TradeRecord {
                             timestamp,
@@ -3602,7 +3602,7 @@ const MAX_RECONNECT_DELAY_MS: u64 = 60_000;
 async fn fetch_usdt_spot_pairs() -&gt; Result&lt;Vec&lt;String&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
     println!(&quot;Binance WS: Limiting subscriptions to specific symbols...&quot;);
 
-    let target_symbols = vec![&quot;btcusdt&quot;, &quot;ethusdt&quot;, &quot;solusdt&quot;, &quot;heiusdt&quot;];
+    let target_symbols = vec![&quot;btcusdt&quot;, &quot;ethusdt&quot;, &quot;solusdt&quot;, &quot;velvetusdt&quot;];
     let mut pairs = Vec::new();
 
     for sym in target_symbols {
@@ -4571,7 +4571,7 @@ yeni proses, kirli durum taşınmaz). (Not: <code>cycle_tmux.sh</code> bunu zate
 </pre>
 <hr />
 <h3 id="src-cli-correlationcli-rs-anomali-analiz-terminali"><code>src/cli/correlation_cli.rs</code> — Anomali Analiz Terminali<a class="headerlink" href="#src-cli-correlationcli-rs-anomali-analiz-terminali" title="Permanent link">🔗</a></h3>
-<p><strong>Detaylı açıklama:</strong> Market ring'inden yalnızca HEIUSDT trade'lerini okuyup iki pencere
+<p><strong>Detaylı açıklama:</strong> Market ring'inden yalnızca VELVETUSDT trade'lerini okuyup iki pencere
 (analiz <code>window_sec</code> + takip <code>track_sec</code>) üzerinde hacim/fiyat ilişkisini izler.
 <code>flat_threshold</code> 0.001, <code>breakout_threshold</code> 0.005. Üç anomali türü:
 1. <strong>EMİLİM:</strong> Hacim patlamış, fiyat yatay → patlama beklenir.
@@ -4583,7 +4583,7 @@ yeni proses, kirli durum taşınmaz). (Not: <code>cycle_tmux.sh</code> bunu zate
 için veri hattı üzerinde yüzey analizi. (Not: İsmine rağmen istatistiksel korelasyon katsayısı hesaplamaz.)</p>
 <pre class="mermaid">flowchart TD
     R[&quot;read_slot(cursor)&quot;] --&gt; D[&quot;wire::decode&quot;]
-    D --&gt; H{&quot;HEIUSDT + Trade?&quot;}
+    D --&gt; H{&quot;VELVETUSDT + Trade?&quot;}
     H --&gt;|&quot;hayır&quot;| NX[&quot;cursor++ / spin&quot;]
     H --&gt;|&quot;evet&quot;| HIS[&quot;history deque'e ekle + eskiyi temizle&quot;]
     HIS --&gt; A{&quot;window doldu mu?&quot;}
@@ -4716,7 +4716,7 @@ optimizasyonundan kaçınılır.</p>
 <hr />
 <h2 id="adapter-ds-entegrasyonlar">adapter — Dış Entegrasyonlar<a class="headerlink" href="#adapter-ds-entegrasyonlar" title="Permanent link">🔗</a></h2>
 <h3 id="src-binance-rs-binance-futures-ws-istemcisi"><code>src/binance.rs</code> — Binance Futures WS İstemcisi<a class="headerlink" href="#src-binance-rs-binance-futures-ws-istemcisi" title="Permanent link">🔗</a></h3>
-<p><strong>Detaylı açıklama:</strong> Hedef semboller (<code>btcusdt, ethusdt, solusdt, heiusdt</code>) için
+<p><strong>Detaylı açıklama:</strong> Hedef semboller (<code>btcusdt, ethusdt, solusdt, velvetusdt</code>) için
 <code>@trade</code> + <code>@depth20@100ms</code> stream'lerini kurar. Tek WS bağlantısına en fazla 200 stream
 (Binance sınırı) — stream'ler 600ms arayla açılan chunk'lara bölünür (WAF/DDoS koruması:
 eşzamanlı çok bağlantı IP'yi banlar). Her chunk: bağlan → <code>SUBSCRIBE</code> → 30sn'de bir Ping (idle

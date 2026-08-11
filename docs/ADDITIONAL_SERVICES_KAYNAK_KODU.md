@@ -746,7 +746,7 @@ help-cycle() {
   echo -e "  ${_G}listener-start${_N} / ${_R}listener-stop${_N}  Listener (anlık metrik analizi)"
   echo -e "  ${_G}detect-ms-start${_N} / ${_R}detect-ms-stop${_N}  MSMP analiz motoru (:3002)"
   echo -e "  ${_G}calc-ind-start${_N} / ${_R}calc-ind-stop${_N}    İndikatör hesaplama motoru (:3007)"
-  echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    HEIUSDT kırılım stratejisi"
+  echo -e "  ${_G}breakout-start${_N} / ${_R}breakout-stop${_N}    VELVETUSDT kırılım stratejisi"
   echo -e "  ${_G}stream-ohlcv-start${_N} / ${_R}stream-ohlcv-stop${_N}  Canlı OHLCV mum akışı (:3008)"
 
   echo -e "\n${_Y}━━━  🤖 AI ENGINE (LLM Agent Katmanı)  ━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -782,7 +782,7 @@ help-cycle() {
   echo -e "  ${_C}pricefeed-start${_N}     Arka planda başlat (:3004)"
   echo -e "  ${_C}pricefeed-stop${_N}      Durdur"
   echo -e "  ${_C}pricefeed-status${_N}    Çalışıyor mu? CPU/RAM + health"
-  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query HEIUSDT)"
+  echo -e "  ${_C}pricefeed-query SYM${_N} Tek sembol sorgula (örn. pricefeed-query VELVETUSDT)"
   echo -e "  ${_C}pricefeed-log${_N}       Canlı log izle"
 
   echo -e "\n${_Y}━━━  📡 DATA TERMİNALİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -822,7 +822,7 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  🔔 ALERT SERVİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}alert-list${_N}           Aktif uyarıları listele"
-  echo -e "  ${_C}alert-add HEIUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
+  echo -e "  ${_C}alert-add VELVETUSDT above 0.22 \"ses\"${_N}   Yeni alarm ekle"
   echo -e "  ${_C}alert-update SYM cond OLD NEW${_N}   Alarmı güncelle"
   echo -e "  ${_C}alert-remove SYM cond PRICE${_N}     Alarmı sil"
   echo -e "  ${_C}alert-reload${_N}         Alert servisini yeniden başlat"
@@ -835,8 +835,8 @@ help-cycle() {
   echo -e "  ${_C}detect-ms-query ETHUSDT 1h 500${_N}   Özel sorgu"
   echo -e "  ${_C}detect-ms-log${_N}        Canlı log izle"
 
-  echo -e "\n${_Y}━━━  🎯 HEIUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
-  echo -e "  ${_C}breakout-start${_N}        Stratejiyi başlat (HEIUSDT 1m, 100 pencere)"
+  echo -e "\n${_Y}━━━  🎯 VELVETUSDT KIRILIM STRATEJİSİ  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}breakout-start${_N}        Stratejiyi başlat (VELVETUSDT 1m, 100 pencere)"
   echo -e "  ${_C}breakout-stop${_N}         Stratejiyi durdur"
   echo -e "  ${_C}breakout-status${_N}       Çalışıyor mu? CPU/RAM göster"
   echo -e "  ${_C}breakout-query${_N}        Tek seferlik analiz (emir açmaz)"
@@ -869,7 +869,7 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 3${_N}           🛡️ PAPER sekmesi"
   echo -e "  ${_B}Ctrl+B → 4${_N}           Monitor sekmesi"
   echo -e "  ${_B}Ctrl+B → 5${_N}           DETECT-MS sekmesi"
-  echo -e "  ${_B}Ctrl+B → 6${_N}           HEIUSDT sekmesi"
+  echo -e "  ${_B}Ctrl+B → 6${_N}           VELVETUSDT sekmesi"
   echo -e "  ${_B}Ctrl+B → 7${_N}           STREAM-OHLCV sekmesi"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Panel seç / scroll"
 
@@ -930,7 +930,7 @@ _tmux_pane() {
     "💻SHELL")  pane="0.3" ;;
     "📡STREAM-OHLCV") pane="7" ;;
     *)
-      # Tanınmayan → yeni pencere (ör. DETECT-MS, HEIUSDT)
+      # Tanınmayan → yeni pencere (ör. DETECT-MS, VELVETUSDT)
       if ! tmux has-session -t "$session" 2>/dev/null; then
         tmux new-session -d -s "$session" -x 220 -y 50
         tmux rename-window -t "$session:0" "Trading"
@@ -1342,9 +1342,9 @@ alert-list() {
   "$CYCLE_ROOT/target/debug/alerts" list
   echo ""
   echo "Kullanım:"
-  echo "  alert-add HEIUSDT above 0.22 [voice metni] [cooldown]"
-  echo "  alert-update HEIUSDT above 0.21628 0.22 [voice] [cooldown]"
-  echo "  alert-remove HEIUSDT above 0.21628"
+  echo "  alert-add VELVETUSDT above 0.22 [voice metni] [cooldown]"
+  echo "  alert-update VELVETUSDT above 0.21628 0.22 [voice] [cooldown]"
+  echo "  alert-remove VELVETUSDT above 0.21628"
 }
 alert-reload() {
   pkill -x alert-service 2>/dev/null || true
@@ -1752,28 +1752,28 @@ stream-ohlcv-streams() {
 
 # ============================================================
 #  BREAKOUT STRATEJİSİ  (breakout-strategy)
-#  detect-ms + paper-service kullanır. HEIUSDT 1m, 100 pencere,
+#  detect-ms + paper-service kullanır. VELVETUSDT 1m, 100 pencere,
 #  her 20 pencerede bir analiz.
 # ============================================================
 breakout-start() {
   _start_guard
   if pgrep -x breakout-strategy &>/dev/null; then
-    echo "⚠️  HEIUSDT stratejisi zaten çalışıyor (pid: $(pgrep -x breakout-strategy | head -1))"
+    echo "⚠️  VELVETUSDT stratejisi zaten çalışıyor (pid: $(pgrep -x breakout-strategy | head -1))"
     return 1
   fi
   # Bağımlılık kontrolü
-  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=HEIUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
+  if ! curl -s -o /dev/null -w "%{http_code}" "http://$DETECT_MS_ADDR/api/ms?symbol=VELVETUSDT&interval=1m&limit=5" 2>/dev/null | grep -q 200; then
     echo "⚠️  detect-ms yanıt vermiyor → breakout-start ile başlatın"
     return 1
   fi
-  echo "🎯 HEIUSDT stratejisi başlatılıyor (HEIUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
+  echo "🎯 VELVETUSDT stratejisi başlatılıyor (VELVETUSDT 1m, 100 pencere, 20 pencere/kontrol)..."
   _tmux_pane "🎯BREAKOUT" "cd $CYCLE_ROOT && $CYCLE_ROOT/target/debug/breakout-strategy" Enter
   sleep 2
   if pgrep -x breakout-strategy &>/dev/null; then
-    echo "✅ HEIUSDT stratejisi başladı [pid: $(pgrep -x breakout-strategy | head -1)]"
+    echo "✅ VELVETUSDT stratejisi başladı [pid: $(pgrep -x breakout-strategy | head -1)]"
     echo "   Pencere: cycle → 🎯BREAKOUT"
   else
-    echo "❌ HEIUSDT stratejisi başlatılamadı."
+    echo "❌ VELVETUSDT stratejisi başlatılamadı."
   fi
 }
 
@@ -1785,9 +1785,9 @@ breakout-stop() {
     pkill -TERM -x breakout-strategy 2>/dev/null
     sleep 1
     pkill -KILL -x breakout-strategy 2>/dev/null || true
-    echo "✅ HEIUSDT stratejisi durduruldu [pid:$pid]"
+    echo "✅ VELVETUSDT stratejisi durduruldu [pid:$pid]"
   else
-    echo "⚠️  HEIUSDT stratejisi zaten çalışmıyor"
+    echo "⚠️  VELVETUSDT stratejisi zaten çalışmıyor"
   fi
 }
 
@@ -1798,9 +1798,9 @@ breakout-status() {
     local cpu mem
     cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
     mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
-    echo "✅ HEIUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "✅ VELVETUSDT stratejisi ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
   else
-    echo "✘  HEIUSDT stratejisi durdurulmuş"
+    echo "✘  VELVETUSDT stratejisi durdurulmuş"
   fi
 }
 

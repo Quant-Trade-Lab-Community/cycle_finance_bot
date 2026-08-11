@@ -195,7 +195,7 @@ flowchart TD
 ```
 
 ### `breakout-strategy/src/bin/listener.rs`
-**Detaylı açıklama:** Veri merkezi izleyici binary'sidir. Ana thread DATA ring'ini (`/dev/shm/cycle_finance_ring`) 160k kapasiteyle okur, `wire::decode` sonrası `alerts.toml` sembol listesinden (HEIUSDT her zaman eklenir) geçenler için `SymbolMetrics` tutar; `Trade` → `process_tick` + hacim korelasyon serisi, `Orderbook` → ilk 5 kademe derinliği (`update_depth` + `refresh`) işler. Ayrı thread (`spawn_price_corr_thread`) `:3004/api/lastprice`'tan 200 ms'de bir fiyat çekip fiyat korelasyon serilerine yazar. Her 2 sn'de bir `render` iki korelasyon matrisini (fiyat ve hacim, normalize Pearson) + mikro-yapı metrik tablosunu çizer ve `/tmp/listener_metrics.json`'a yazar. Pencere süreleri conf dosyasından hot-reload edilir.
+**Detaylı açıklama:** Veri merkezi izleyici binary'sidir. Ana thread DATA ring'ini (`/dev/shm/cycle_finance_ring`) 160k kapasiteyle okur, `wire::decode` sonrası `alerts.toml` sembol listesinden (VELVETUSDT her zaman eklenir) geçenler için `SymbolMetrics` tutar; `Trade` → `process_tick` + hacim korelasyon serisi, `Orderbook` → ilk 5 kademe derinliği (`update_depth` + `refresh`) işler. Ayrı thread (`spawn_price_corr_thread`) `:3004/api/lastprice`'tan 200 ms'de bir fiyat çekip fiyat korelasyon serilerine yazar. Her 2 sn'de bir `render` iki korelasyon matrisini (fiyat ve hacim, normalize Pearson) + mikro-yapı metrik tablosunu çizer ve `/tmp/listener_metrics.json`'a yazar. Pencere süreleri conf dosyasından hot-reload edilir.
 **Neden kullandık:** Trade + derinlik + REST fiyatını tek ekranda birleştirip semboller arası fiyat/hacim korelasyonunu normalize 0-1 çizdirmek; izleyiciyi ayrı binary yaparak ana stratejiyi etkilemeden çalıştırmak; konsol + JSON çift çıktı ile otomasyona uygunluk sağlamak.
 
 ```mermaid
@@ -352,7 +352,7 @@ rust_decimal = { workspace = true }
 ### `strategies-engine/breakout-strategy/src/lib.rs`
 
 ```rust
-//! heiusdt — HEIUSDT stratejisi + mikro-yapı metrik çekirdeği.
+//! velvetusdt — VELVETUSDT stratejisi + mikro-yapı metrik çekirdeği.
 
 pub mod metrics;
 ```
@@ -414,7 +414,7 @@ fn load_config() -> Config {
         .unwrap_or((check_every * 60) as u64);
     let args: Vec<String> = env::args().collect();
     Config {
-        symbol: env_or("BREAKOUT_SYMBOL", "HEIUSDT"),
+        symbol: env_or("BREAKOUT_SYMBOL", "VELVETUSDT"),
         interval: env_or("BREAKOUT_INTERVAL", "1m"),
         limit: env_or("BREAKOUT_LIMIT", "100").parse().unwrap_or(100),
         wait_sec,
@@ -1262,9 +1262,9 @@ pub fn normalized_corr(a: &[f64], b: &[f64]) -> f64 {
 //!
 //! Kullanım:
 //!   alerts list
-//!   alerts add --symbol HEIUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
-//!   alerts update --symbol HEIUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
-//!   alerts remove --symbol HEIUSDT --condition above --price 0.21628
+//!   alerts add --symbol VELVETUSDT --condition above --price 0.22 [--voice "..."] [--cooldown 30] [--tolerance 0.0005]
+//!   alerts update --symbol VELVETUSDT --condition above --old-price 0.21628 [--price 0.22] [--voice "..."] [--cooldown 30]
+//!   alerts remove --symbol VELVETUSDT --condition above --price 0.21628
 
 use std::process::exit;
 
@@ -1662,8 +1662,8 @@ fn load_symbols() -> Vec<String> {
             }
         }
     }
-    if !syms.contains(&"HEIUSDT".to_string()) {
-        syms.push("HEIUSDT".to_string());
+    if !syms.contains(&"VELVETUSDT".to_string()) {
+        syms.push("VELVETUSDT".to_string());
     }
     syms
 }

@@ -169,7 +169,7 @@ Her klasörün ve dosyanın kısa anlamı. Ayrıntılı açıklamalar aşağıda
 | `src/cli/mod.rs` | CLI modüllerini açar. |
 | `src/cli/paper_cli.rs` | PAPER modu: rustyline terminal; `risk_engine::accounting::Portfolio` ile sanal hesap (status/leverage/margin). Canlı para riski olmadan test. |
 | `src/cli/strategy_cli.rs` | STRATEGY modu: `breakout-strategy` binary'sini spawn eder; restart/status komutlarıyla yönetir. |
-| `src/cli/correlation_cli.rs` | CORRELATION modu: ring'den HEIUSDT trade'lerini okuyup hacim/fiyat anomali tespiti + kümeleme uyarıları üretir. |
+| `src/cli/correlation_cli.rs` | CORRELATION modu: ring'den VELVETUSDT trade'lerini okuyup hacim/fiyat anomali tespiti + kümeleme uyarıları üretir. |
 | `src/engine/mod.rs` | `orchestrator` + `backtester` modüllerini açar. |
 | `src/engine/orchestrator.rs` | `TitaniumOrchestrator` — spin-loop: ring'i okuyup stratejilere verir; sinyalleri `RiskEngine` kapısından geçirip gateway'e gönderir; strateji paniklerini `catch_unwind` ile yakalayıp yeniden başlatır. |
 | `src/engine/backtester.rs` | BACKTEST modu: CSV'den okuyup mock JSON olarak ring'e basar; geçmiş veriyle stratejiyi hızla test eder. |
@@ -2807,7 +2807,7 @@ pub fn start_correlation_cli() {
 
     println!("========================================");
     println!("📈 KORELASYON TERMINALİ v5.0 (ASENKRON KUYRUK)");
-    println!("Hedef Parite: HEIUSDT");
+    println!("Hedef Parite: VELVETUSDT");
     println!("Analiz Penceresi: {} sn | Takip Penceresi: {} sn", window_sec, track_sec);
     println!("Kümeleme (Clustering) & Kendi Kendini Doğrulama Aktif!");
     println!("========================================");
@@ -2827,7 +2827,7 @@ pub fn start_correlation_cli() {
     loop {
         if let Some(slot) = gen_ring.read_slot(read_cursor) {
             if let Some(owned_event) = wire::decode(&slot.data[..slot.len as usize]) {
-                if owned_event.symbol.starts_with(b"HEIUSDT") {
+                if owned_event.symbol.starts_with(b"VELVETUSDT") {
                     if let EventType::Trade { price, quantity: qty, timestamp, is_buyer_maker: _ } = owned_event.payload {
                         let record = TradeRecord {
                             timestamp,
@@ -3421,7 +3421,7 @@ const MAX_RECONNECT_DELAY_MS: u64 = 60_000;
 async fn fetch_usdt_spot_pairs() -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
     println!("Binance WS: Limiting subscriptions to specific symbols...");
     
-    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "heiusdt"];
+    let target_symbols = vec!["btcusdt", "ethusdt", "solusdt", "velvetusdt"];
     let mut pairs = Vec::new();
     
     for sym in target_symbols {
