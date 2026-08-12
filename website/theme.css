@@ -1,0 +1,98 @@
+/* ─────────────────────────────────────────────────────────────
+   Cycle Finance — Kurumsal tema (BlackRock esintili, sade)
+   Bu stil, alt sayfalardaki gömülü temanın üzerine biner.
+   Sayfa kabuğu (nav, başlıklar, tablolar) açık/beyaz;
+   kod blokları okunabilirlik için koyu navy kalır.
+   ───────────────────────────────────────────────────────────── */
+
+:root { color-scheme: light; }
+
+body {
+  background: #ffffff !important;
+  color: #16130d !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* ── ÜST NAV ──────────────────────────────────────────────── */
+.sitenav {
+  background: #ffffff !important;
+  border: 1px solid #e7e3db !important;
+  border-radius: 8px !important;
+  padding: 0.6rem 1rem !important;
+  box-shadow: none !important;
+  color: #16130d !important;
+}
+.sitenav .brand {
+  color: #0a0a0a !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+}
+.sitenav a {
+  color: #6f6a60 !important;
+  background: transparent !important;
+  border-radius: 6px !important;
+  padding: 0.3rem 0.7rem !important;
+  text-decoration: none !important;
+}
+.sitenav a:hover { color: #0a0a0a !important; background: #f6f5f2 !important; }
+.sitenav a.active { color: #0a0a0a !important; background: #f6f5f2 !important; font-weight: 600 !important; }
+
+/* İkinci nav */
+.topnav {
+  background: #f6f5f2 !important;
+  border: 1px solid #e7e3db !important;
+  border-radius: 8px !important;
+  color: #16130d !important;
+}
+.topnav a { background: transparent !important; color: #6f6a60 !important; }
+.topnav a:hover, .topnav a.active { background: #e7e3db !important; color: #0a0a0a !important; }
+
+/* ── BAŞLIKLAR ────────────────────────────────────────────── */
+h1 {
+  color: #0a0a0a !important;
+  border-bottom: 2px solid #b4945a !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-weight: 500 !important;
+}
+h2 { color: #0a0a0a !important; border-bottom: 1px solid #e7e3db !important; font-family: Georgia, "Times New Roman", serif !important; font-weight: 500 !important; }
+h3, h4 { color: #16130d !important; }
+
+/* ── LİNKLER ──────────────────────────────────────────────── */
+a { color: #0b2545 !important; }
+a:hover { color: #0b2545 !important; text-decoration: underline !important; }
+h1 a, h2 a, h3 a, h4 a { color: inherit !important; }
+.headerlink { color: #b4945a !important; }
+
+/* ── KOD (satır içi açık, blok koyu navy) ─────────────────── */
+code {
+  background: #f1efe9 !important;
+  color: #0b2545 !important;
+  border: 1px solid #e7e3db !important;
+  border-radius: 4px !important;
+}
+pre { border-radius: 8px !important; }
+pre code { background: none !important; border: none !important; color: #e2e8f0 !important; }
+pre.mermaid {
+  background: #f6f5f2 !important;
+  border: 1px solid #e7e3db !important;
+  color: #16130d !important;
+}
+
+/* ── TABLO ────────────────────────────────────────────────── */
+table { border-color: #d6d0c4 !important; }
+th { background: #f6f5f2 !important; color: #16130d !important; border-color: #d6d0c4 !important; }
+td { border-color: #d6d0c4 !important; }
+
+/* ── DARK MODE'U KAPAT (tema her koşulda açık kalır) ──────── */
+@media (prefers-color-scheme: dark) {
+  body { background: #ffffff !important; color: #16130d !important; }
+  .sitenav { background: #ffffff !important; border-color: #e7e3db !important; }
+  .topnav { background: #f6f5f2 !important; border-color: #e7e3db !important; }
+  h1, h2 { color: #0a0a0a !important; }
+  code { background: #f1efe9 !important; color: #0b2545 !important; }
+  pre { background: #0f172a !important; border-color: #334155 !important; }
+  th, td { border-color: #d6d0c4 !important; }
+  th { background: #f6f5f2 !important; }
+  a { color: #0b2545 !important; }
+}

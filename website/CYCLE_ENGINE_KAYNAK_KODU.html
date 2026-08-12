@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🏛️ Cycle Engine — Tam Kaynak + Detaylı Analiz</title>
+<title>Cycle Engine — Tam Kaynak + Detaylı Analiz</title>
+  <link rel="stylesheet" href="theme.css">
 <style>
   :root { color-scheme: dark light; }
   html { scroll-behavior: smooth; }
@@ -65,22 +66,22 @@
 </style>
 </head>
 <body>
-<nav class="sitenav"><span class="brand">📚 Cycle Finance Docs</span><a href="index.html">🏠 Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">🏗️ Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html" class="active">🏛️ Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">🚀 Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">🧩 Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">🎯 Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">🛡️ Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">💾 Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">🔧 Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">🤖 AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">🗄️ Unused</a></nav>
+<nav class="sitenav"><span class="brand">Cycle Finance Docs</span><a href="index.html">Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html" class="active">Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">Unused</a></nav>
 <nav class="topnav">
   <strong>📑 Bölümler:</strong>
-  <a href="#dizin-agac">🌳 Dizin Ağacı</a>
-  <a href="#klasor-ve-dosya-sozlugu">📖 Klasör Sözlüğü</a>
-  <a href="#1-contracts-katman-0-sozlesmeler">📄 Kaynak Kod</a>
-  <a href="#contracts-veri-sozlesmeleri">🔬 Detaylı Analiz (mermaid)</a>
+  <a href="#dizin-agac">Dizin Ağacı</a>
+  <a href="#klasor-ve-dosya-sozlugu">Klasör Sözlüğü</a>
+  <a href="#1-contracts-katman-0-sozlesmeler">Kaynak Kod</a>
+  <a href="#contracts-veri-sozlesmeleri">Detaylı Analiz (mermaid)</a>
 </nav>
-<h1 id="cycle-engine-tam-kaynak-kodu-referans">🏛️ Cycle Engine — Tam Kaynak Kodu Referansı<a class="headerlink" href="#cycle-engine-tam-kaynak-kodu-referans" title="Permanent link">🔗</a></h1>
+<h1 id="cycle-engine-tam-kaynak-kodu-referans">🏛️ Cycle Engine — Tam Kaynak Kodu Referansı<a class="headerlink" href="#cycle-engine-tam-kaynak-kodu-referans" title="Permanent link"></a></h1>
 <blockquote>
 <p>Projenin yazılımsal çekirdeği (<code>cycle-engine/</code>). Bu doküman dizin ağacını,
 her dosyanın yolunu ve <strong>dosyanın tam kaynak kodunu</strong> içerir.
 Tarih: 2026-08-09</p>
 </blockquote>
 <hr />
-<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">🔗</a></h2>
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link"></a></h2>
 <ul>
 <li><a href="#dizin-agac">Dizin Ağacı</a></li>
 <li><a href="#katmanlar">Katmanlar</a></li>
@@ -92,7 +93,7 @@ Tarih: 2026-08-09</p>
 <li><a href="#5-splash-acls-ekran">5. splash (Açılış Ekranı)</a></li>
 </ul>
 <hr />
-<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link">🔗</a></h2>
+<h2 id="dizin-agac">🌳 Dizin Ağacı<a class="headerlink" href="#dizin-agac" title="Permanent link"></a></h2>
 <pre><code>cycle-engine/
 ├── contracts/                          # Katman 0 — Veri Sözleşmeleri
 │   ├── Cargo.toml
@@ -162,7 +163,7 @@ Tarih: 2026-08-09</p>
         └── lib.rs                      #   show_splash / show_splash_with
 </code></pre>
 <hr />
-<h2 id="katmanlar">🧱 Katmanlar<a class="headerlink" href="#katmanlar" title="Permanent link">🔗</a></h2>
+<h2 id="katmanlar">🧱 Katmanlar<a class="headerlink" href="#katmanlar" title="Permanent link"></a></h2>
 <table>
 <thead>
 <tr>
@@ -200,9 +201,9 @@ Tarih: 2026-08-09</p>
 </tbody>
 </table>
 <hr />
-<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">🔗</a></h2>
+<h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link"></a></h2>
 <p>Her klasörün ve dosyanın kısa anlamı. Ayrıntılı açıklamalar aşağıdaki bölümlerde ilgili dosyanın yanında verilmiştir.</p>
-<h3 id="contracts-veri-sozlesmeleri-katman-0"><code>contracts/</code> — Veri Sözleşmeleri (Katman 0)<a class="headerlink" href="#contracts-veri-sozlesmeleri-katman-0" title="Permanent link">🔗</a></h3>
+<h3 id="contracts-veri-sozlesmeleri-katman-0"><code>contracts/</code> — Veri Sözleşmeleri (Katman 0)<a class="headerlink" href="#contracts-veri-sozlesmeleri-katman-0" title="Permanent link"></a></h3>
 <table>
 <thead>
 <tr>
@@ -233,7 +234,7 @@ Tarih: 2026-08-09</p>
 </tr>
 </tbody>
 </table>
-<h3 id="transport-transport-ipc-katman-1"><code>transport/</code> — Transport / IPC (Katman 1)<a class="headerlink" href="#transport-transport-ipc-katman-1" title="Permanent link">🔗</a></h3>
+<h3 id="transport-transport-ipc-katman-1"><code>transport/</code> — Transport / IPC (Katman 1)<a class="headerlink" href="#transport-transport-ipc-katman-1" title="Permanent link"></a></h3>
 <table>
 <thead>
 <tr>
@@ -272,7 +273,7 @@ Tarih: 2026-08-09</p>
 </tr>
 </tbody>
 </table>
-<h3 id="core-cekirdek-motor-katman-2"><code>core/</code> — Çekirdek Motor (Katman 2)<a class="headerlink" href="#core-cekirdek-motor-katman-2" title="Permanent link">🔗</a></h3>
+<h3 id="core-cekirdek-motor-katman-2"><code>core/</code> — Çekirdek Motor (Katman 2)<a class="headerlink" href="#core-cekirdek-motor-katman-2" title="Permanent link"></a></h3>
 <p><strong>Klasörler:</strong></p>
 <table>
 <thead>
@@ -430,7 +431,7 @@ Tarih: 2026-08-09</p>
 </tr>
 </tbody>
 </table>
-<h3 id="adapter-ds-entegrasyonlar"><code>adapter/</code> — Dış Entegrasyonlar<a class="headerlink" href="#adapter-ds-entegrasyonlar" title="Permanent link">🔗</a></h3>
+<h3 id="adapter-ds-entegrasyonlar"><code>adapter/</code> — Dış Entegrasyonlar<a class="headerlink" href="#adapter-ds-entegrasyonlar" title="Permanent link"></a></h3>
 <table>
 <thead>
 <tr>
@@ -477,7 +478,7 @@ Tarih: 2026-08-09</p>
 </tr>
 </tbody>
 </table>
-<h3 id="splash-acls-ekran"><code>splash/</code> — Açılış Ekranı<a class="headerlink" href="#splash-acls-ekran" title="Permanent link">🔗</a></h3>
+<h3 id="splash-acls-ekran"><code>splash/</code> — Açılış Ekranı<a class="headerlink" href="#splash-acls-ekran" title="Permanent link"></a></h3>
 <table>
 <thead>
 <tr>
@@ -505,8 +506,8 @@ Tarih: 2026-08-09</p>
 </tbody>
 </table>
 <hr />
-<h2 id="1-contracts-katman-0-sozlesmeler">1. contracts (Katman 0 — Sözleşmeler)<a class="headerlink" href="#1-contracts-katman-0-sozlesmeler" title="Permanent link">🔗</a></h2>
-<h3 id="cycle-engine-contracts-cargo-toml"><code>cycle-engine/contracts/Cargo.toml</code><a class="headerlink" href="#cycle-engine-contracts-cargo-toml" title="Permanent link">🔗</a></h3>
+<h2 id="1-contracts-katman-0-sozlesmeler">1. contracts (Katman 0 — Sözleşmeler)<a class="headerlink" href="#1-contracts-katman-0-sozlesmeler" title="Permanent link"></a></h2>
+<h3 id="cycle-engine-contracts-cargo-toml"><code>cycle-engine/contracts/Cargo.toml</code><a class="headerlink" href="#cycle-engine-contracts-cargo-toml" title="Permanent link"></a></h3>
 <pre><code class="language-toml">[package]
 name = &quot;contracts&quot;
 version = &quot;0.1.0&quot;
@@ -518,7 +519,7 @@ rust_decimal = { workspace = true }
 [dev-dependencies]
 rust_decimal = { workspace = true }
 </code></pre>
-<h3 id="cycle-engine-contracts-src-lib-rs"><code>cycle-engine/contracts/src/lib.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-lib-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-contracts-src-lib-rs"><code>cycle-engine/contracts/src/lib.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-lib-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Sözleşme katmanı (Layer 0 — Contracts).
 //!
 //! Katmanlar arası sabit sözleşmeler burada yaşar:
@@ -529,7 +530,7 @@ rust_decimal = { workspace = true }
 pub mod events;
 pub mod wire;
 </code></pre>
-<h3 id="cycle-engine-contracts-src-events-rs"><code>cycle-engine/contracts/src/events.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-events-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-contracts-src-events-rs"><code>cycle-engine/contracts/src/events.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-events-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Market veri modeli — tüm katmanların ortak dili.
 //!
 //! `OwnedEvent` + `EventType`: veri alım hattının çıktısı, ring buffer'ın
@@ -764,7 +765,7 @@ impl OwnedEvent {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-contracts-src-wire-rs"><code>cycle-engine/contracts/src/wire.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-wire-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-contracts-src-wire-rs"><code>cycle-engine/contracts/src/wire.rs</code><a class="headerlink" href="#cycle-engine-contracts-src-wire-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Compact typed-binary market data frame codec.
 //!
 //! RAM hot path'teki ring buffer (`/dev/shm`) ham JSON yerine bu compact
@@ -1125,8 +1126,8 @@ pub fn decode(buf: &amp;[u8]) -&gt; Option&lt;OwnedEvent&gt; {
 }
 </code></pre>
 <hr />
-<h2 id="2-transport-katman-1-transport-ipc">2. transport (Katman 1 — Transport / IPC)<a class="headerlink" href="#2-transport-katman-1-transport-ipc" title="Permanent link">🔗</a></h2>
-<h3 id="cycle-engine-transport-cargo-toml"><code>cycle-engine/transport/Cargo.toml</code><a class="headerlink" href="#cycle-engine-transport-cargo-toml" title="Permanent link">🔗</a></h3>
+<h2 id="2-transport-katman-1-transport-ipc">2. transport (Katman 1 — Transport / IPC)<a class="headerlink" href="#2-transport-katman-1-transport-ipc" title="Permanent link"></a></h2>
+<h3 id="cycle-engine-transport-cargo-toml"><code>cycle-engine/transport/Cargo.toml</code><a class="headerlink" href="#cycle-engine-transport-cargo-toml" title="Permanent link"></a></h3>
 <pre><code class="language-toml">[package]
 name = &quot;transport&quot;
 version = &quot;0.1.0&quot;
@@ -1137,7 +1138,7 @@ libc = { workspace = true }
 memmap2 = { workspace = true }
 rust_decimal = { workspace = true }
 </code></pre>
-<h3 id="cycle-engine-transport-src-lib-rs"><code>cycle-engine/transport/src/lib.rs</code><a class="headerlink" href="#cycle-engine-transport-src-lib-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-transport-src-lib-rs"><code>cycle-engine/transport/src/lib.rs</code><a class="headerlink" href="#cycle-engine-transport-src-lib-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Katman 2 — Transport (IPC).
 //!
 //! Sıfır-kopya, paylaşımlı bellek (/dev/shm) ring buffer'ları. Bu katman
@@ -1159,7 +1160,7 @@ pub use order_ring::OrderRingBuffer;
 pub use calc_ring::CalcRingBuffer;
 pub use stream_ring::StreamRingBuffer;
 </code></pre>
-<h3 id="cycle-engine-transport-src-ringbuffer-rs"><code>cycle-engine/transport/src/ring_buffer.rs</code><a class="headerlink" href="#cycle-engine-transport-src-ringbuffer-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-transport-src-ringbuffer-rs"><code>cycle-engine/transport/src/ring_buffer.rs</code><a class="headerlink" href="#cycle-engine-transport-src-ringbuffer-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use std::sync::atomic::{AtomicU64, Ordering};
 use std::ptr;
 use std::ffi::CString;
@@ -1348,7 +1349,7 @@ impl GenerationalRingBuffer {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-transport-src-orderring-rs"><code>cycle-engine/transport/src/order_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-orderring-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-transport-src-orderring-rs"><code>cycle-engine/transport/src/order_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-orderring-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use std::sync::atomic::{AtomicU64, Ordering};
 use std::ptr;
 use std::ffi::CString;
@@ -1532,7 +1533,7 @@ impl OrderRingBuffer {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-transport-src-calcring-rs"><code>cycle-engine/transport/src/calc_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-calcring-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-transport-src-calcring-rs"><code>cycle-engine/transport/src/calc_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-calcring-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Büyük-slot paylaşımlı bellek ring buffer — indikatör/OHLCV sonuçları için.
 //!
 //! `GenerationalRingBuffer` (702B slot) indikatör serileri için çok küçüktür;
@@ -1704,7 +1705,7 @@ impl CalcRingBuffer {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-transport-src-streamring-rs"><code>cycle-engine/transport/src/stream_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-streamring-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-transport-src-streamring-rs"><code>cycle-engine/transport/src/stream_ring.rs</code><a class="headerlink" href="#cycle-engine-transport-src-streamring-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Büyük-slot paylaşımlı bellek ring buffer — canlı OHLCV mum akışı için.
 //!
 //! `GenerationalRingBuffer` (702B slot) tek bir mumu ve stream meta bilgisini
@@ -1885,8 +1886,8 @@ impl StreamRingBuffer {
 }
 </code></pre>
 <hr />
-<h2 id="3-core-katman-2-cekirdek-motor">3. core (Katman 2 — Çekirdek Motor)<a class="headerlink" href="#3-core-katman-2-cekirdek-motor" title="Permanent link">🔗</a></h2>
-<h3 id="cycle-engine-core-cargo-toml"><code>cycle-engine/core/Cargo.toml</code><a class="headerlink" href="#cycle-engine-core-cargo-toml" title="Permanent link">🔗</a></h3>
+<h2 id="3-core-katman-2-cekirdek-motor">3. core (Katman 2 — Çekirdek Motor)<a class="headerlink" href="#3-core-katman-2-cekirdek-motor" title="Permanent link"></a></h2>
+<h3 id="cycle-engine-core-cargo-toml"><code>cycle-engine/core/Cargo.toml</code><a class="headerlink" href="#cycle-engine-core-cargo-toml" title="Permanent link"></a></h3>
 <pre><code class="language-toml">[package]
 name = &quot;core&quot;
 version = &quot;0.1.0&quot;
@@ -1937,7 +1938,7 @@ proptest = { workspace = true }
 name = &quot;tick_benchmark&quot;
 harness = false
 </code></pre>
-<h3 id="cycle-engine-core-benches-tickbenchmark-rs"><code>cycle-engine/core/benches/tick_benchmark.rs</code><a class="headerlink" href="#cycle-engine-core-benches-tickbenchmark-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-benches-tickbenchmark-rs"><code>cycle-engine/core/benches/tick_benchmark.rs</code><a class="headerlink" href="#cycle-engine-core-benches-tickbenchmark-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rust_decimal::prelude::*;
 use contracts::events::OwnedEvent;
@@ -2003,7 +2004,7 @@ fn bench_wire_roundtrip(c: &amp;mut Criterion) {
 criterion_group!(benches, bench_tick_parsing, bench_wire_roundtrip);
 criterion_main!(benches);
 </code></pre>
-<h3 id="cycle-engine-core-src-main-rs"><code>cycle-engine/core/src/main.rs</code><a class="headerlink" href="#cycle-engine-core-src-main-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-main-rs"><code>cycle-engine/core/src/main.rs</code><a class="headerlink" href="#cycle-engine-core-src-main-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use proje_core::tick::EventParser;
 use proje_core::queue::LockFreeDispatcher;
 use std::thread;
@@ -2106,7 +2107,7 @@ async fn main() {
     println!(&quot;Lütfen geçerli bir RUN_MODE belirleyin (DATA, PAPER, STRATEGY, BACKTEST, CORRELATION)&quot;);
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-lib-rs"><code>cycle-engine/core/src/lib.rs</code><a class="headerlink" href="#cycle-engine-core-src-lib-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-lib-rs"><code>cycle-engine/core/src/lib.rs</code><a class="headerlink" href="#cycle-engine-core-src-lib-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod state;
 pub mod config;
 pub mod pii;
@@ -2123,7 +2124,7 @@ pub mod queue;
 
 pub mod bridge;
 </code></pre>
-<h3 id="cycle-engine-core-src-tick-rs"><code>cycle-engine/core/src/tick.rs</code><a class="headerlink" href="#cycle-engine-core-src-tick-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-tick-rs"><code>cycle-engine/core/src/tick.rs</code><a class="headerlink" href="#cycle-engine-core-src-tick-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">// core/src/tick.rs
 
 use rust_decimal::Decimal;
@@ -2212,7 +2213,7 @@ impl EventParser {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-validator-rs"><code>cycle-engine/core/src/validator.rs</code><a class="headerlink" href="#cycle-engine-core-src-validator-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-validator-rs"><code>cycle-engine/core/src/validator.rs</code><a class="headerlink" href="#cycle-engine-core-src-validator-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use contracts::events::{OwnedEvent, EventType};
 use rust_decimal::Decimal;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -2307,7 +2308,7 @@ impl DataValidator {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-queue-rs"><code>cycle-engine/core/src/queue.rs</code><a class="headerlink" href="#cycle-engine-core-src-queue-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-queue-rs"><code>cycle-engine/core/src/queue.rs</code><a class="headerlink" href="#cycle-engine-core-src-queue-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use flume::{Receiver, Sender};
 
 /// Bounded lock-free queue dispatcher for high-throughput messaging.
@@ -2336,7 +2337,7 @@ impl LockFreeDispatcher {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-db-rs"><code>cycle-engine/core/src/db.rs</code><a class="headerlink" href="#cycle-engine-core-src-db-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-db-rs"><code>cycle-engine/core/src/db.rs</code><a class="headerlink" href="#cycle-engine-core-src-db-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use rusqlite::{Connection, params};
 use flume::Receiver;
 use std::time::{Instant, Duration};
@@ -2540,10 +2541,10 @@ pub fn start_db_writer(rx: Receiver&lt;OwnedEvent&gt;) {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-config-rs"><code>cycle-engine/core/src/config.rs</code><a class="headerlink" href="#cycle-engine-core-src-config-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-config-rs"><code>cycle-engine/core/src/config.rs</code><a class="headerlink" href="#cycle-engine-core-src-config-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub use os_utils::config::*;
 </code></pre>
-<h3 id="cycle-engine-core-src-state-rs"><code>cycle-engine/core/src/state.rs</code><a class="headerlink" href="#cycle-engine-core-src-state-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-state-rs"><code>cycle-engine/core/src/state.rs</code><a class="headerlink" href="#cycle-engine-core-src-state-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use parking_lot::RwLock;
 use std::sync::Arc;
 
@@ -2576,7 +2577,7 @@ impl StateManager {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-pii-rs"><code>cycle-engine/core/src/pii.rs</code><a class="headerlink" href="#cycle-engine-core-src-pii-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-pii-rs"><code>cycle-engine/core/src/pii.rs</code><a class="headerlink" href="#cycle-engine-core-src-pii-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">/// Personally Identifiable Information (PII) Masking Utilities.
 /// Ensures compliance with GDPR/KVKK constraints (Right to Erasure, 3-year deletion).
 pub struct PIIMasker {
@@ -2605,12 +2606,12 @@ impl PIIMasker {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-bridge-rs"><code>cycle-engine/core/src/bridge.rs</code><a class="headerlink" href="#cycle-engine-core-src-bridge-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-bridge-rs"><code>cycle-engine/core/src/bridge.rs</code><a class="headerlink" href="#cycle-engine-core-src-bridge-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod detector_bridge;
 
 pub use detector_bridge::{DetectorBridge, OpportunityHit, SCOUT_RING_CAPACITY, SCOUT_RING_NAME, spawn_watcher};
 </code></pre>
-<h3 id="cycle-engine-core-src-bridge-detectorbridge-rs"><code>cycle-engine/core/src/bridge/detector_bridge.rs</code><a class="headerlink" href="#cycle-engine-core-src-bridge-detectorbridge-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-bridge-detectorbridge-rs"><code>cycle-engine/core/src/bridge/detector_bridge.rs</code><a class="headerlink" href="#cycle-engine-core-src-bridge-detectorbridge-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Detektör → strateji köprüsü.
 //!
 //! &quot;Scout&quot; ring buffer'i (`/cycle_finance_scout`) detektörler (mikroyapı analizi,
@@ -2756,12 +2757,12 @@ pub fn symbol_to_string(raw: &amp;[u8; 16]) -&gt; String {
     String::from_utf8_lossy(&amp;raw[..end]).to_string()
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-cli-mod-rs"><code>cycle-engine/core/src/cli/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-mod-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-cli-mod-rs"><code>cycle-engine/core/src/cli/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-mod-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod paper_cli;
 pub mod strategy_cli;
 pub mod correlation_cli;
 </code></pre>
-<h3 id="cycle-engine-core-src-cli-papercli-rs"><code>cycle-engine/core/src/cli/paper_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-papercli-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-cli-papercli-rs"><code>cycle-engine/core/src/cli/paper_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-papercli-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use rustyline::DefaultEditor;
 use rust_decimal::Decimal;
 use std::str::FromStr;
@@ -2881,7 +2882,7 @@ pub fn start_paper_cli() {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-cli-strategycli-rs"><code>cycle-engine/core/src/cli/strategy_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-strategycli-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-cli-strategycli-rs"><code>cycle-engine/core/src/cli/strategy_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-strategycli-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! STRATEGY terminali — BREAKOUT kırılım stratejisini çalıştırır.
 //!
 //! Strateji Rust'ta (`breakout-strategy` crate) çalışır: detect-ms'ten seviye/yapı
@@ -2980,7 +2981,7 @@ fn spawn_strategy() -&gt; Option&lt;StrategyChild&gt; {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-cli-correlationcli-rs"><code>cycle-engine/core/src/cli/correlation_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-correlationcli-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-cli-correlationcli-rs"><code>cycle-engine/core/src/cli/correlation_cli.rs</code><a class="headerlink" href="#cycle-engine-core-src-cli-correlationcli-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use std::collections::VecDeque;
 use chrono::{Local, TimeZone};
 use rust_decimal::Decimal;
@@ -3202,11 +3203,11 @@ pub fn start_correlation_cli() {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-engine-mod-rs"><code>cycle-engine/core/src/engine/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-mod-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-engine-mod-rs"><code>cycle-engine/core/src/engine/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-mod-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod orchestrator;
 pub mod backtester;
 </code></pre>
-<h3 id="cycle-engine-core-src-engine-orchestrator-rs"><code>cycle-engine/core/src/engine/orchestrator.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-orchestrator-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-engine-orchestrator-rs"><code>cycle-engine/core/src/engine/orchestrator.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-orchestrator-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use std::panic::{catch_unwind, AssertUnwindSafe};
 use transport::ring_buffer::GenerationalRingBuffer;
 use strategies_engine::trait_def::{Strategy, Signal};
@@ -3391,7 +3392,7 @@ fn gate_and_dispatch(
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-engine-backtester-rs"><code>cycle-engine/core/src/engine/backtester.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-backtester-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-engine-backtester-rs"><code>cycle-engine/core/src/engine/backtester.rs</code><a class="headerlink" href="#cycle-engine-core-src-engine-backtester-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use transport::ring_buffer::GenerationalRingBuffer;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -3447,11 +3448,11 @@ pub fn start_backtester(csv_path: &amp;str) {
     println!(&quot;Hız: {:.2} Tick / saniye&quot;, (count as f64) / elapsed.as_secs_f64());
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-hal-mod-rs"><code>cycle-engine/core/src/hal/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-mod-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-hal-mod-rs"><code>cycle-engine/core/src/hal/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-mod-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod cpu;
 pub mod memory;
 </code></pre>
-<h3 id="cycle-engine-core-src-hal-cpu-rs"><code>cycle-engine/core/src/hal/cpu.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-cpu-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-hal-cpu-rs"><code>cycle-engine/core/src/hal/cpu.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-cpu-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use core_affinity::CoreId;
 
 pub fn pin_to_core(core_id: usize) {
@@ -3471,7 +3472,7 @@ pub fn pin_to_core(core_id: usize) {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-hal-memory-rs"><code>cycle-engine/core/src/hal/memory.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-memory-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-hal-memory-rs"><code>cycle-engine/core/src/hal/memory.rs</code><a class="headerlink" href="#cycle-engine-core-src-hal-memory-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">// Mmap or HugePages abstraction
 // For the Titanium Core, we pre-allocate memory to avoid heap allocations in the hot path.
 
@@ -3496,10 +3497,10 @@ pub fn allocate_huge_buffer(size_bytes: usize) -&gt; Vec&lt;u8&gt; {
     buffer
 }
 </code></pre>
-<h3 id="cycle-engine-core-src-timer-mod-rs"><code>cycle-engine/core/src/timer/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-timer-mod-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-timer-mod-rs"><code>cycle-engine/core/src/timer/mod.rs</code><a class="headerlink" href="#cycle-engine-core-src-timer-mod-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod tsc;
 </code></pre>
-<h3 id="cycle-engine-core-src-timer-tsc-rs"><code>cycle-engine/core/src/timer/tsc.rs</code><a class="headerlink" href="#cycle-engine-core-src-timer-tsc-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-core-src-timer-tsc-rs"><code>cycle-engine/core/src/timer/tsc.rs</code><a class="headerlink" href="#cycle-engine-core-src-timer-tsc-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">#[cfg(target_arch = &quot;x86_64&quot;)]
 use core::arch::x86_64::_rdtsc;
 
@@ -3547,8 +3548,8 @@ impl TscTimer {
 }
 </code></pre>
 <hr />
-<h2 id="4-adapter-ds-entegrasyonlar">4. adapter (Dış Entegrasyonlar)<a class="headerlink" href="#4-adapter-ds-entegrasyonlar" title="Permanent link">🔗</a></h2>
-<h3 id="cycle-engine-adapter-cargo-toml"><code>cycle-engine/adapter/Cargo.toml</code><a class="headerlink" href="#cycle-engine-adapter-cargo-toml" title="Permanent link">🔗</a></h3>
+<h2 id="4-adapter-ds-entegrasyonlar">4. adapter (Dış Entegrasyonlar)<a class="headerlink" href="#4-adapter-ds-entegrasyonlar" title="Permanent link"></a></h2>
+<h3 id="cycle-engine-adapter-cargo-toml"><code>cycle-engine/adapter/Cargo.toml</code><a class="headerlink" href="#cycle-engine-adapter-cargo-toml" title="Permanent link"></a></h3>
 <pre><code class="language-toml">[package]
 name = &quot;adapter&quot;
 version = &quot;0.1.0&quot;
@@ -3568,7 +3569,7 @@ redis = { workspace = true }
 testcontainers = &quot;0.14&quot;
 wiremock = &quot;0.5&quot;
 </code></pre>
-<h3 id="cycle-engine-adapter-src-lib-rs"><code>cycle-engine/adapter/src/lib.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-lib-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-lib-rs"><code>cycle-engine/adapter/src/lib.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-lib-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">pub mod redis;
 pub mod clickhouse;
 pub mod ai;
@@ -3588,7 +3589,7 @@ pub fn init_adapter() {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-binance-rs"><code>cycle-engine/adapter/src/binance.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-binance-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-binance-rs"><code>cycle-engine/adapter/src/binance.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-binance-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use flume::Sender;
@@ -3726,7 +3727,7 @@ pub async fn start_binance_ws_client(tx: Sender&lt;Vec&lt;u8&gt;&gt;) {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-redis-rs"><code>cycle-engine/adapter/src/redis.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-redis-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-redis-rs"><code>cycle-engine/adapter/src/redis.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-redis-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use redis::Commands;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -3839,7 +3840,7 @@ impl Default for RedisAdapter {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-clickhouse-rs"><code>cycle-engine/adapter/src/clickhouse.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-clickhouse-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-clickhouse-rs"><code>cycle-engine/adapter/src/clickhouse.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-clickhouse-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">/// Adapter for ClickHouse Data Lake operations.
 pub struct ClickHouseAdapter {
     /// Uyumluluk denetimi (compliance audit) için silme kaydı: hash -&gt; kaç kez silindi.
@@ -3894,7 +3895,7 @@ impl ClickHouseAdapter {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-vault-rs"><code>cycle-engine/adapter/src/vault.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-vault-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-vault-rs"><code>cycle-engine/adapter/src/vault.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-vault-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Vault sağlık cevabı (sys/health).
@@ -3957,7 +3958,7 @@ impl VaultAdapter {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-ai-rs"><code>cycle-engine/adapter/src/ai.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-ai-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-ai-rs"><code>cycle-engine/adapter/src/ai.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-ai-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">/// AI Microservice Adapter integrating via Redis.
 pub struct AIAdapter;
 
@@ -3978,7 +3979,7 @@ impl AIAdapter {
     }
 }
 </code></pre>
-<h3 id="cycle-engine-adapter-src-telemetry-rs"><code>cycle-engine/adapter/src/telemetry.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-telemetry-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-adapter-src-telemetry-rs"><code>cycle-engine/adapter/src/telemetry.rs</code><a class="headerlink" href="#cycle-engine-adapter-src-telemetry-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">/// Telemetry and Observability (eBPF &amp; Jaeger integration)
 pub struct TelemetryAgent;
 
@@ -4005,8 +4006,8 @@ impl TelemetryAgent {
 }
 </code></pre>
 <hr />
-<h2 id="5-splash-acls-ekran">5. splash (Açılış Ekranı)<a class="headerlink" href="#5-splash-acls-ekran" title="Permanent link">🔗</a></h2>
-<h3 id="cycle-engine-splash-cargo-toml"><code>cycle-engine/splash/Cargo.toml</code><a class="headerlink" href="#cycle-engine-splash-cargo-toml" title="Permanent link">🔗</a></h3>
+<h2 id="5-splash-acls-ekran">5. splash (Açılış Ekranı)<a class="headerlink" href="#5-splash-acls-ekran" title="Permanent link"></a></h2>
+<h3 id="cycle-engine-splash-cargo-toml"><code>cycle-engine/splash/Cargo.toml</code><a class="headerlink" href="#cycle-engine-splash-cargo-toml" title="Permanent link"></a></h3>
 <pre><code class="language-toml">[package]
 name = &quot;cycle-splash&quot;
 version = &quot;0.1.0&quot;
@@ -4016,7 +4017,7 @@ edition = &quot;2021&quot;
 terminal_size = { workspace = true }
 figlet-rs = { workspace = true }
 </code></pre>
-<h3 id="cycle-engine-splash-src-main-rs"><code>cycle-engine/splash/src/main.rs</code><a class="headerlink" href="#cycle-engine-splash-src-main-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-splash-src-main-rs"><code>cycle-engine/splash/src/main.rs</code><a class="headerlink" href="#cycle-engine-splash-src-main-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Cycle Finance açılış ekranı — bağımsız binary.
 //!
 //! `cargo run -p cycle-splash` veya `target/release/cycle-splash` ile
@@ -4028,7 +4029,7 @@ fn main() {
     cycle_splash::show_splash();
 }
 </code></pre>
-<h3 id="cycle-engine-splash-src-lib-rs"><code>cycle-engine/splash/src/lib.rs</code><a class="headerlink" href="#cycle-engine-splash-src-lib-rs" title="Permanent link">🔗</a></h3>
+<h3 id="cycle-engine-splash-src-lib-rs"><code>cycle-engine/splash/src/lib.rs</code><a class="headerlink" href="#cycle-engine-splash-src-lib-rs" title="Permanent link"></a></h3>
 <pre><code class="language-rust">//! Cycle Finance açılış ekranı — FIGlet ASCII sanatı + yükleme çubuğu.
 //!
 //! &quot;CYCLE FINANCE&quot; yazısı matrix yeşili ile harf harf çizilir; altında bir
@@ -4151,14 +4152,14 @@ pub fn show_splash_with(metin: &amp;str, total_ms: u64) {
 <hr />
 <p><em>Doküman otomatik oluşturuldu — kaynak: <code>cycle-engine/</code> (48 dosya).</em></p>
 <section class="detay">
-<h1 id="cycle-engine-detayl-algoritma-analizi">🔬 Cycle Engine — Detaylı Algoritma Analizi<a class="headerlink" href="#cycle-engine-detayl-algoritma-analizi" title="Permanent link">🔗</a></h1>
+<h1 id="cycle-engine-detayl-algoritma-analizi">🔬 Cycle Engine — Detaylı Algoritma Analizi<a class="headerlink" href="#cycle-engine-detayl-algoritma-analizi" title="Permanent link"></a></h1>
 <blockquote>
 <p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve
 <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir.
 Tarih: 2026-08-09</p>
 </blockquote>
 <hr />
-<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">🔗</a></h2>
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link"></a></h2>
 <ul>
 <li><a href="#contracts-veri-sozlesmeleri">contracts — Veri Sözleşmeleri</a></li>
 <li><a href="#transport-ipc-ring-buffer-lar">transport — IPC Ring Buffer'lar</a></li>
@@ -4168,8 +4169,8 @@ Tarih: 2026-08-09</p>
 <li><a href="#genel-mimari-aks-uctan-uca">Genel Mimari Akış (Uçtan Uca)</a></li>
 </ul>
 <hr />
-<h2 id="contracts-veri-sozlesmeleri">contracts — Veri Sözleşmeleri<a class="headerlink" href="#contracts-veri-sozlesmeleri" title="Permanent link">🔗</a></h2>
-<h3 id="src-events-rs-ortak-veri-modeli"><code>src/events.rs</code> — Ortak Veri Modeli<a class="headerlink" href="#src-events-rs-ortak-veri-modeli" title="Permanent link">🔗</a></h3>
+<h2 id="contracts-veri-sozlesmeleri">contracts — Veri Sözleşmeleri<a class="headerlink" href="#contracts-veri-sozlesmeleri" title="Permanent link"></a></h2>
+<h3 id="src-events-rs-ortak-veri-modeli"><code>src/events.rs</code> — Ortak Veri Modeli<a class="headerlink" href="#src-events-rs-ortak-veri-modeli" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Sistemde akan her market olayı tek bir tip altında toplanır:
 <code>EventType</code> (8 varyant) ve onu sarmalayan <code>OwnedEvent</code> (sembol + payload). Bu dosya
 katmanlar arası "dil anlaşmasıdır". <code>#[repr(u8)]</code> ve <code>#[repr(C)]</code> ile bellek düzeni
@@ -4201,7 +4202,7 @@ Sembol <code>[u8; 16]</code> sabit boyutlu — heap ayırma yok (hot path için 
     J --&gt; K[&quot;wire::encode → ring buffer&quot;]
 </pre>
 <hr />
-<h3 id="src-wire-rs-compact-binary-codec"><code>src/wire.rs</code> — Compact Binary Codec<a class="headerlink" href="#src-wire-rs-compact-binary-codec" title="Permanent link">🔗</a></h3>
+<h3 id="src-wire-rs-compact-binary-codec"><code>src/wire.rs</code> — Compact Binary Codec<a class="headerlink" href="#src-wire-rs-compact-binary-codec" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>OwnedEvent</code>'i ring buffer'da ham JSON yerine saklanan compact binary
 frame'e çevirir. Format: <code>[tag:u8][symbol:16B][alanlar]</code>. Ondalıklar <code>(i64 mantissa + u8 scale)</code>
 olarak 9 bayt yer kaplar. Depth20 için tüm emirler tek bir scale'e rescale edilir (kayıpsız) —
@@ -4238,8 +4239,8 @@ olarak 9 bayt yer kaplar. Depth20 için tüm emirler tek bir scale'e rescale edi
     E7 --&gt; D1
 </pre>
 <hr />
-<h2 id="transport-ipc-ring-buffer-lar">transport — IPC Ring Buffer'lar<a class="headerlink" href="#transport-ipc-ring-buffer-lar" title="Permanent link">🔗</a></h2>
-<h3 id="src-ringbuffer-rs-generationalringbuffer-market-data"><code>src/ring_buffer.rs</code> — GenerationalRingBuffer (Market Data)<a class="headerlink" href="#src-ringbuffer-rs-generationalringbuffer-market-data" title="Permanent link">🔗</a></h3>
+<h2 id="transport-ipc-ring-buffer-lar">transport — IPC Ring Buffer'lar<a class="headerlink" href="#transport-ipc-ring-buffer-lar" title="Permanent link"></a></h2>
+<h3 id="src-ringbuffer-rs-generationalringbuffer-market-data"><code>src/ring_buffer.rs</code> — GenerationalRingBuffer (Market Data)<a class="headerlink" href="#src-ringbuffer-rs-generationalringbuffer-market-data" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> POSIX paylaşımlı bellek (<code>/dev/shm</code>) üzerinde tek üretici / çok tüketici
 dairesel kuyruk. Header (<code>magic</code>, <code>head</code>, <code>tail</code>, <code>capacity</code>) ve 768B'lik slot'lar (64B hizalı)
 mmap ile işlenir. <code>ftruncate</code> yalnızca ilk oluşturan proses yapar — farklı kapasiteyle açan proses
@@ -4287,7 +4288,7 @@ sırasında üretici slotu ezerse generational mismatch → <code>None</code>).<
     PUSH --&gt; READ
 </pre>
 <hr />
-<h3 id="src-orderring-rs-orderringbuffer-emir-kanal"><code>src/order_ring.rs</code> — OrderRingBuffer (Emir Kanalı)<a class="headerlink" href="#src-orderring-rs-orderringbuffer-emir-kanal" title="Permanent link">🔗</a></h3>
+<h3 id="src-orderring-rs-orderringbuffer-emir-kanal"><code>src/order_ring.rs</code> — OrderRingBuffer (Emir Kanalı)<a class="headerlink" href="#src-orderring-rs-orderringbuffer-emir-kanal" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Strateji → icra yönünde emir taşıyan ring. <code>OrderSlot</code> struct döşeli:
 <code>seq + symbol + side + order_type + quantity(Decimal) + price(Decimal)</code>. Basit seq eşleşmesi
 kullanır. İsim: <code>/cycle_finance_orders</code>.</p>
@@ -4303,7 +4304,7 @@ arasındaki deterministik kanaldır.</p>
     R --&gt; X[&quot;Execution engine emri alır&quot;]
 </pre>
 <hr />
-<h3 id="src-calcring-rs-calcringbuffer-indikator-sonuclar"><code>src/calc_ring.rs</code> — CalcRingBuffer (İndikatör Sonuçları)<a class="headerlink" href="#src-calcring-rs-calcringbuffer-indikator-sonuclar" title="Permanent link">🔗</a></h3>
+<h3 id="src-calcring-rs-calcringbuffer-indikator-sonuclar"><code>src/calc_ring.rs</code> — CalcRingBuffer (İndikatör Sonuçları)<a class="headerlink" href="#src-calcring-rs-calcringbuffer-indikator-sonuclar" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> 1MB slot'lu, büyük binary blokları (bir isteğin tüm OHLCV + indikatör çıktısı)
 tek slot'ta taşıyan ring. Torn-read koruması aynı: seq en son yazılır, çift kontrol okunur.
 Üretici: calc-ind servisi; tüketici: <code>calc_ind::client</code>. İsim: <code>/cycle_finance_calc</code>.</p>
@@ -4315,7 +4316,7 @@ tek slot'ta taşıyan ring. Torn-read koruması aynı: seq en son yazılır, çi
     CR --&gt; CC[&quot;calc_ind::client tüketici&quot;]
 </pre>
 <hr />
-<h3 id="src-streamring-rs-streamringbuffer-canl-mum-aks"><code>src/stream_ring.rs</code> — StreamRingBuffer (Canlı Mum Akışı)<a class="headerlink" href="#src-streamring-rs-streamringbuffer-canl-mum-aks" title="Permanent link">🔗</a></h3>
+<h3 id="src-streamring-rs-streamringbuffer-canl-mum-aks"><code>src/stream_ring.rs</code> — StreamRingBuffer (Canlı Mum Akışı)<a class="headerlink" href="#src-streamring-rs-streamringbuffer-canl-mum-aks" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Canlı OHLCV mumlarını 4KB slot'ta taşıyan ring. Slot düzeni:
 <code>[0..8) seq · [8..12) len · [12..) data</code> — veri <code>stream_ohlcv::codec</code> ile binary mumdur.
 Varsayılan kapasite 8192 slot (dairesel — eski mumlar üzerine yazılır).
@@ -4328,8 +4329,8 @@ akışını kesintisiz taşır. 8192 slot'luk dairesel yapı, tüketici geç kal
     SR --&gt; SC[&quot;stream_ohlcv::client tüketici&quot;]
 </pre>
 <hr />
-<h2 id="core-cekirdek-motor">core — Çekirdek Motor<a class="headerlink" href="#core-cekirdek-motor" title="Permanent link">🔗</a></h2>
-<h3 id="src-main-rs-giris-noktas-runmode-dagtcs"><code>src/main.rs</code> — Giriş Noktası / RUN_MODE Dağıtıcısı<a class="headerlink" href="#src-main-rs-giris-noktas-runmode-dagtcs" title="Permanent link">🔗</a></h3>
+<h2 id="core-cekirdek-motor">core — Çekirdek Motor<a class="headerlink" href="#core-cekirdek-motor" title="Permanent link"></a></h2>
+<h3 id="src-main-rs-giris-noktas-runmode-dagtcs"><code>src/main.rs</code> — Giriş Noktası / RUN_MODE Dağıtıcısı<a class="headerlink" href="#src-main-rs-giris-noktas-runmode-dagtcs" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>RUN_MODE</code> ortam değişkenine göre 5 moddan birini kurar. DATA modu asıl
 hattı çalıştırır: 160.000 slot'luk market ring'i, 1M'lik flume DB kanalı, RT-priority (99)
 thread'de parse → validate → wire → ring → DB döngüsü, 1sn'lik istatistik raporu (ticks/sn,
@@ -4362,7 +4363,7 @@ ayrılır — her tick'te allocator'a gidilmez.</p>
     D --&gt; W[&quot;start_binance_ws_client(tx)&quot;]
 </pre>
 <hr />
-<h3 id="src-tick-rs-eventparser-simdjson"><code>src/tick.rs</code> — EventParser (simdjson)<a class="headerlink" href="#src-tick-rs-eventparser-simdjson" title="Permanent link">🔗</a></h3>
+<h3 id="src-tick-rs-eventparser-simdjson"><code>src/tick.rs</code> — EventParser (simdjson)<a class="headerlink" href="#src-tick-rs-eventparser-simdjson" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Ham WS JSON'u <code>simd_json</code> (SIMD hızlandırmalı, sıfır-kopya) ile parse eder ve
 <code>stream</code> alanındaki son eke göre <code>OwnedEvent</code> üretir: <code>@trade</code>, <code>@depth</code> (spot <code>bids</code>/<code>asks</code> veya
 futures <code>b/a</code>), <code>@forceOrder</code> (tasfiye), <code>@markPrice</code>, <code>@bookTicker</code>. Tüm sayılar string'den
@@ -4389,7 +4390,7 @@ futures <code>b/a</code>), <code>@forceOrder</code> (tasfiye), <code>@markPrice<
     E --&gt;|&quot;bilinmeyen&quot;| NONE[&quot;None&quot;]
 </pre>
 <hr />
-<h3 id="src-validator-rs-datavalidator-circuit-breaker"><code>src/validator.rs</code> — DataValidator + Circuit Breaker<a class="headerlink" href="#src-validator-rs-datavalidator-circuit-breaker" title="Permanent link">🔗</a></h3>
+<h3 id="src-validator-rs-datavalidator-circuit-breaker"><code>src/validator.rs</code> — DataValidator + Circuit Breaker<a class="headerlink" href="#src-validator-rs-datavalidator-circuit-breaker" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Her event'i piyasa sağduyusuyla doğrular: fiyat/miktar &gt; 0, geçmiş veri
 (stale ≤ 200ms), gelecek zaman (NTP sapması &gt; 5sn → at), crossed book (bid ≥ ask). 1 saniyede
 100+ bozuk tick olursa <code>circuit_breaker</code> bayrağını kaldırır (HFT durur); sular durulunca otomatik
@@ -4425,7 +4426,7 @@ geri alır. Sayaç saniyede sıfırlanır.</p>
     C6 --&gt;|&quot;evet&quot;| TRUE
 </pre>
 <hr />
-<h3 id="src-queue-rs-lockfreedispatcher"><code>src/queue.rs</code> — LockFreeDispatcher<a class="headerlink" href="#src-queue-rs-lockfreedispatcher" title="Permanent link">🔗</a></h3>
+<h3 id="src-queue-rs-lockfreedispatcher"><code>src/queue.rs</code> — LockFreeDispatcher<a class="headerlink" href="#src-queue-rs-lockfreedispatcher" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>flume::bounded(262_144)</code> MPMC kuyruğu sarmalayan ince adaptör. Üretici
 (Binance WS) → tüketici (parse thread). Bounded olması kritik: kuyruk dolarsa <code>send_async</code> bekler
 → <strong>geri basınç</strong> (backpressure), RAM taşması önlenir.</p>
@@ -4438,7 +4439,7 @@ geri alır. Sayaç saniyede sıfırlanır.</p>
     Q --&gt; R[&quot;Parse thread (tüketici) rx.recv()&quot;]
 </pre>
 <hr />
-<h3 id="src-db-rs-sqlite-batch-yazc"><code>src/db.rs</code> — SQLite Batch Yazıcı<a class="headerlink" href="#src-db-rs-sqlite-batch-yazc" title="Permanent link">🔗</a></h3>
+<h3 id="src-db-rs-sqlite-batch-yazc"><code>src/db.rs</code> — SQLite Batch Yazıcı<a class="headerlink" href="#src-db-rs-sqlite-batch-yazc" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>OwnedEvent</code>'leri 8 tabloya (trades, orderbooks, liquidations, funding_rates,
 booktickers, open_interests, opportunities, symbol_metrics) yazan ayrı thread. PRAGMAs:
 <code>journal_mode=WAL</code>, <code>synchronous=NORMAL</code>, büyük cache. Yazma tek transaction içinde birikir,
@@ -4474,7 +4475,7 @@ sıkıştırılır (512B ön-ayrımlı String).</p>
     COMMIT --&gt; RX
 </pre>
 <hr />
-<h3 id="src-state-rs-statemanager"><code>src/state.rs</code> — StateManager<a class="headerlink" href="#src-state-rs-statemanager" title="Permanent link">🔗</a></h3>
+<h3 id="src-state-rs-statemanager"><code>src/state.rs</code> — StateManager<a class="headerlink" href="#src-state-rs-statemanager" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Bakiye/durumu WebSocket account-update event'leriyle güncelleyen event-driven
 durum yöneticisi. <code>parking_lot::RwLock</code> ile korunan <code>f64</code> bakiye; 5 dakikada bir REST full audit ile
 uzlaştırma (10sn'lik audit yasak — IP ban riski).</p>
@@ -4487,7 +4488,7 @@ uzlaştırma (10sn'lik audit yasak — IP ban riski).</p>
     R --&gt; RC[&quot;uzlaştır farkları&quot;]
 </pre>
 <hr />
-<h3 id="src-pii-rs-piimasker"><code>src/pii.rs</code> — PIIMasker<a class="headerlink" href="#src-pii-rs-piimasker" title="Permanent link">🔗</a></h3>
+<h3 id="src-pii-rs-piimasker"><code>src/pii.rs</code> — PIIMasker<a class="headerlink" href="#src-pii-rs-piimasker" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> KVKK/GDPR uyumu için kişisel veri maskeleme (salt + hash, mock SHA-3) ve
 3 yıldan eski logların günlük temizliği.</p>
 <p><strong>Neden kullandık:</strong> Yasal zorunluluk (Right to Erasure). Hâlâ mock — üretimde gerçek <code>sha3</code> ve
@@ -4499,7 +4500,7 @@ silme kayıt defteri bağlanacak. Maskelenmeden veri saklamak yasal risk; bu ara
     C --&gt; D[&quot;3 yıllık logları sil&quot;]
 </pre>
 <hr />
-<h3 id="src-config-rs-re-export"><code>src/config.rs</code> — Re-export<a class="headerlink" href="#src-config-rs-re-export" title="Permanent link">🔗</a></h3>
+<h3 id="src-config-rs-re-export"><code>src/config.rs</code> — Re-export<a class="headerlink" href="#src-config-rs-re-export" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Tek satır: <code>pub use os_utils::config::*;</code>. Konfigürasyon <code>os-utils</code>
 crate'inde merkezidir, buradan tüm core'a yayılır.</p>
 <p><strong>Neden kullandık:</strong> Tek yapılandırma kaynağı (single source of truth) — crate'ler arası ortak
@@ -4509,7 +4510,7 @@ ayarların parçalanmaması için.</p>
     RE --&gt; CORE[&quot;core katmanı&quot;]
 </pre>
 <hr />
-<h3 id="src-bridge-rs-src-bridge-detectorbridge-rs-detektor-koprusu"><code>src/bridge.rs</code> + <code>src/bridge/detector_bridge.rs</code> — Detektör Köprüsü<a class="headerlink" href="#src-bridge-rs-src-bridge-detectorbridge-rs-detektor-koprusu" title="Permanent link">🔗</a></h3>
+<h3 id="src-bridge-rs-src-bridge-detectorbridge-rs-detektor-koprusu"><code>src/bridge.rs</code> + <code>src/bridge/detector_bridge.rs</code> — Detektör Köprüsü<a class="headerlink" href="#src-bridge-rs-src-bridge-detectorbridge-rs-detektor-koprusu" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> "Scout" ring'i (<code>/cycle_finance_scout</code>, 20.000 slot) detektörler
 (mikroyapı, misalignment, candle-classifier) tarafından <code>Opportunity</code> frame'leriyle doldurulur.
 <code>DetectorBridge</code> bu ring'i <strong>tek tüketici</strong> olarak okur: <code>cursor</code>'dan <code>head</code>'e kadar
@@ -4534,7 +4535,7 @@ poll eden tokio task'i açar. Verdict eşiğine göre <code>is_actionable</code>
     SLEEP --&gt; POLL
 </pre>
 <hr />
-<h3 id="src-cli-papercli-rs-paper-trading-terminali"><code>src/cli/paper_cli.rs</code> — Paper Trading Terminali<a class="headerlink" href="#src-cli-papercli-rs-paper-trading-terminali" title="Permanent link">🔗</a></h3>
+<h3 id="src-cli-papercli-rs-paper-trading-terminali"><code>src/cli/paper_cli.rs</code> — Paper Trading Terminali<a class="headerlink" href="#src-cli-papercli-rs-paper-trading-terminali" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> rustyline tabanlı interaktif terminal: <code>status</code> (bakiye, PnL, pozisyonlar,
 commission), <code>set leverage &lt;sym&gt; &lt;val&gt;</code>, <code>set margin &lt;cross|isolated&gt;</code>, <code>exit</code>.
 <code>risk_engine::accounting::Portfolio</code> ile 10.000$ başlangıç, %20 max drawdown sanal portföy.
@@ -4554,7 +4555,7 @@ ayrı <code>paper-service</code> (:8080) REST API olarak da var — eski iskelet
     M1 --&gt; E
 </pre>
 <hr />
-<h3 id="src-cli-strategycli-rs-strateji-terminali"><code>src/cli/strategy_cli.rs</code> — Strateji Terminali<a class="headerlink" href="#src-cli-strategycli-rs-strateji-terminali" title="Permanent link">🔗</a></h3>
+<h3 id="src-cli-strategycli-rs-strateji-terminali"><code>src/cli/strategy_cli.rs</code> — Strateji Terminali<a class="headerlink" href="#src-cli-strategycli-rs-strateji-terminali" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>breakout-strategy</code> binary'sini alt proses olarak spawn eder; <code>status</code>
 (RUNNING/DURDU), <code>restart</code> (kill + yeniden spawn), <code>exit</code> komutları sunar.</p>
 <p><strong>Neden kullandık:</strong> Stratejiyi ayrı süreçte izole çalıştırıp terminalden kolayca yönetme (restart =
@@ -4570,7 +4571,7 @@ yeni proses, kirli durum taşınmaz). (Not: <code>cycle_tmux.sh</code> bunu zate
     X --&gt; E
 </pre>
 <hr />
-<h3 id="src-cli-correlationcli-rs-anomali-analiz-terminali"><code>src/cli/correlation_cli.rs</code> — Anomali Analiz Terminali<a class="headerlink" href="#src-cli-correlationcli-rs-anomali-analiz-terminali" title="Permanent link">🔗</a></h3>
+<h3 id="src-cli-correlationcli-rs-anomali-analiz-terminali"><code>src/cli/correlation_cli.rs</code> — Anomali Analiz Terminali<a class="headerlink" href="#src-cli-correlationcli-rs-anomali-analiz-terminali" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Market ring'inden yalnızca VELVETUSDT trade'lerini okuyup iki pencere
 (analiz <code>window_sec</code> + takip <code>track_sec</code>) üzerinde hacim/fiyat ilişkisini izler.
 <code>flat_threshold</code> 0.001, <code>breakout_threshold</code> 0.005. Üç anomali türü:
@@ -4607,7 +4608,7 @@ için veri hattı üzerinde yüzey analizi. (Not: İsmine rağmen istatistiksel 
     NX --&gt; R
 </pre>
 <hr />
-<h3 id="src-engine-orchestrator-rs-titaniumorchestrator"><code>src/engine/orchestrator.rs</code> — TitaniumOrchestrator<a class="headerlink" href="#src-engine-orchestrator-rs-titaniumorchestrator" title="Permanent link">🔗</a></h3>
+<h3 id="src-engine-orchestrator-rs-titaniumorchestrator"><code>src/engine/orchestrator.rs</code> — TitaniumOrchestrator<a class="headerlink" href="#src-engine-orchestrator-rs-titaniumorchestrator" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Canlı strateji motoru. Her strateji <code>ShardedStrategy</code> (strateji +
 <code>StrategyState</code> + sembol) olarak tutulur. <code>run_spin_loop</code>: ring'deki her yeni frame için her
 Active stratejiye <code>on_market_data(frame_id, &amp;slot)</code> çağırır; 1ms'de bir <code>on_timer</code>. Her iki çağrı
@@ -4643,7 +4644,7 @@ gateway'e (<code>crossbeam Sender&lt;Signal&gt;</code>) gönderilir, <code>Rejec
     PSN --&gt; SPIN
 </pre>
 <hr />
-<h3 id="src-engine-backtester-rs-backtest-motoru"><code>src/engine/backtester.rs</code> — Backtest Motoru<a class="headerlink" href="#src-engine-backtester-rs-backtest-motoru" title="Permanent link">🔗</a></h3>
+<h3 id="src-engine-backtester-rs-backtest-motoru"><code>src/engine/backtester.rs</code> — Backtest Motoru<a class="headerlink" href="#src-engine-backtester-rs-backtest-motoru" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> CSV okuyup (<code>symbol,price,quantity,timestamp</code>) her satırı canlı WS'nin
 ürettiği <code>@trade</code> JSON formatına çevirerek ring'e basar. 100.000 tick'te bir <code>yield_now</code> (ring
 taşmasın). Sonunda yüklenen tick sayısı, geçen süre, ticks/sn raporlar.</p>
@@ -4664,7 +4665,7 @@ beslemek — strateji kodu değişmeden geçmiş veriyle test edilir (ayırt edi
     B --&gt;|&quot;evet&quot;| REP[&quot;rapor: tick, süre, ticks/sn&quot;]
 </pre>
 <hr />
-<h3 id="src-hal-cpu-rs-cpu-pin"><code>src/hal/cpu.rs</code> — CPU Pin<a class="headerlink" href="#src-hal-cpu-rs-cpu-pin" title="Permanent link">🔗</a></h3>
+<h3 id="src-hal-cpu-rs-cpu-pin"><code>src/hal/cpu.rs</code> — CPU Pin<a class="headerlink" href="#src-hal-cpu-rs-cpu-pin" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>core_affinity::set_for_current</code> ile mevcut thread'i istenen çekirdeğe
 sabitler (geçerli çekirdek aralığı kontrol edilir).</p>
 <p><strong>Neden kullandık:</strong> RT thread'i sabit bir çekirdeğe bağlamak → cache sıcaklığı korunur, OS'nin
@@ -4678,7 +4679,7 @@ gecikme için standart.</p>
     S --&gt; OK[&quot;System PINNED&quot;]
 </pre>
 <hr />
-<h3 id="src-hal-memory-rs-pre-fault-bellek"><code>src/hal/memory.rs</code> — Pre-fault Bellek<a class="headerlink" href="#src-hal-memory-rs-pre-fault-bellek" title="Permanent link">🔗</a></h3>
+<h3 id="src-hal-memory-rs-pre-fault-bellek"><code>src/hal/memory.rs</code> — Pre-fault Bellek<a class="headerlink" href="#src-hal-memory-rs-pre-fault-bellek" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>vec![0; size]</code> ayırır, her 4KB sayfaya dokunarak (write) fiziksel belleği
 baştan sayfalatır, sonra sıfırlar. Gerçek <code>MAP_HUGETLB</code> (2MB sayfa) yorumu kodda not olarak durur.</p>
 <p><strong>Neden kullandık:</strong> İlk erişimde oluşan page fault hot path'te 1-2ms'lik aksaklık yaratır. Başta
@@ -4689,7 +4690,7 @@ baştan sayfalatır, sonra sıfırlar. Gerçek <code>MAP_HUGETLB</code> (2MB say
     Z --&gt; R[&quot;pre-faulted hazır buffer&quot;]
 </pre>
 <hr />
-<h3 id="src-timer-tsc-rs-tsctimer"><code>src/timer/tsc.rs</code> — TscTimer<a class="headerlink" href="#src-timer-tsc-rs-tsctimer" title="Permanent link">🔗</a></h3>
+<h3 id="src-timer-tsc-rs-tsctimer"><code>src/timer/tsc.rs</code> — TscTimer<a class="headerlink" href="#src-timer-tsc-rs-tsctimer" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> x86_64'te <code>_rdtsc</code> ile CPU döngü sayacından nanosaniye hesaplar (3GHz varsayılan
 kalibrasyon); ARM/Mac fallback olarak <code>SystemTime::as_nanos</code> kullanır.</p>
 <p><strong>Neden kullandık:</strong> <code>clock_gettime</code> sistem çağrısı ~20-50ns; RDTSC ~5-10ns ve syscall değil. 1ms'lik
@@ -4701,7 +4702,7 @@ orchestrator tick'lerinde ve gecikme ölçümlerinde daha kesin.</p>
     NS --&gt; N[&quot;nanosaniye&quot;]
 </pre>
 <hr />
-<h3 id="benches-tickbenchmark-rs-criterion-benchmark"><code>benches/tick_benchmark.rs</code> — Criterion Benchmark<a class="headerlink" href="#benches-tickbenchmark-rs-criterion-benchmark" title="Permanent link">🔗</a></h3>
+<h3 id="benches-tickbenchmark-rs-criterion-benchmark"><code>benches/tick_benchmark.rs</code> — Criterion Benchmark<a class="headerlink" href="#benches-tickbenchmark-rs-criterion-benchmark" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Hot path'in WCET ölçümleri: <code>tick_parse_wcet</code> (simdjson parse),
 <code>wire_encode_trade/decode_trade</code>, <code>wire_encode_depth20/decode_depth20</code>. <code>black_box</code> ile derleyici
 optimizasyonundan kaçınılır.</p>
@@ -4714,8 +4715,8 @@ optimizasyonundan kaçınılır.</p>
     E --&gt; R
 </pre>
 <hr />
-<h2 id="adapter-ds-entegrasyonlar">adapter — Dış Entegrasyonlar<a class="headerlink" href="#adapter-ds-entegrasyonlar" title="Permanent link">🔗</a></h2>
-<h3 id="src-binance-rs-binance-futures-ws-istemcisi"><code>src/binance.rs</code> — Binance Futures WS İstemcisi<a class="headerlink" href="#src-binance-rs-binance-futures-ws-istemcisi" title="Permanent link">🔗</a></h3>
+<h2 id="adapter-ds-entegrasyonlar">adapter — Dış Entegrasyonlar<a class="headerlink" href="#adapter-ds-entegrasyonlar" title="Permanent link"></a></h2>
+<h3 id="src-binance-rs-binance-futures-ws-istemcisi"><code>src/binance.rs</code> — Binance Futures WS İstemcisi<a class="headerlink" href="#src-binance-rs-binance-futures-ws-istemcisi" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Hedef semboller (<code>btcusdt, ethusdt, solusdt, velvetusdt</code>) için
 <code>@trade</code> + <code>@depth20@100ms</code> stream'lerini kurar. Tek WS bağlantısına en fazla 200 stream
 (Binance sınırı) — stream'ler 600ms arayla açılan chunk'lara bölünür (WAF/DDoS koruması:
@@ -4745,7 +4746,7 @@ Her metin mesajı bounded flume kuyruğuna <code>send_async</code> ile verilir.<
     DROP --&gt; CN
 </pre>
 <hr />
-<h3 id="src-redis-rs-redisadapter-idempotency-durum"><code>src/redis.rs</code> — RedisAdapter (İdempotency + Durum)<a class="headerlink" href="#src-redis-rs-redisadapter-idempotency-durum" title="Permanent link">🔗</a></h3>
+<h3 id="src-redis-rs-redisadapter-idempotency-durum"><code>src/redis.rs</code> — RedisAdapter (İdempotency + Durum)<a class="headerlink" href="#src-redis-rs-redisadapter-idempotency-durum" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>REDIS_URL</code>'den bağlanır (varsayılan <code>redis://127.0.0.1:6379</code>), sağlığı PING
 ile kontrol eder. Emir idempotency anahtarı üretir (<code>BOT_UUID_nanotimestamp</code>),
 <code>SET key 1 EX 3600 NX</code> atomik komutuyla yazar — aynı anahtarla ikinci yazma reddedilir (çift emir
@@ -4768,7 +4769,7 @@ idempotency anahtarı yazılamaz → işlem reddedilir (kayıp veya çoğaltılm
     R --&gt;|&quot;Err / Redis yok&quot;| FC[&quot;fail-closed → red&quot;]
 </pre>
 <hr />
-<h3 id="src-clickhouse-rs-clickhouseadapter-veri-golu"><code>src/clickhouse.rs</code> — ClickHouseAdapter (Veri Gölü)<a class="headerlink" href="#src-clickhouse-rs-clickhouseadapter-veri-golu" title="Permanent link">🔗</a></h3>
+<h3 id="src-clickhouse-rs-clickhouseadapter-veri-golu"><code>src/clickhouse.rs</code> — ClickHouseAdapter (Veri Gölü)<a class="headerlink" href="#src-clickhouse-rs-clickhouseadapter-veri-golu" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Veri gölü şeması üretir: <code>ticks</code> tablosu MergeTree, yıl/ay/gün partition
 (~20 yılda ~7300 partition), Zstandard sıkıştırma. GDPR "right to erasure" için <code>DELETE</code> mutasyonu
 + silme kayıt defteri (hash → kaç kez silindi). Merkle ağacı + EC-12/4 bütünlük kontrolü (mock).</p>
@@ -4780,7 +4781,7 @@ partition, sütun tabanlı sorgu hızı). Uyumluluk denetimi (silme kanıtı) ya
     IC[&quot;run_integrity_check&quot;] --&gt; MK[&quot;Merkle + EC-12/4 simülasyonu&quot;]
 </pre>
 <hr />
-<h3 id="src-vault-rs-vaultadapter-anahtar-yonetimi"><code>src/vault.rs</code> — VaultAdapter (Anahtar Yönetimi)<a class="headerlink" href="#src-vault-rs-vaultadapter-anahtar-yonetimi" title="Permanent link">🔗</a></h3>
+<h3 id="src-vault-rs-vaultadapter-anahtar-yonetimi"><code>src/vault.rs</code> — VaultAdapter (Anahtar Yönetimi)<a class="headerlink" href="#src-vault-rs-vaultadapter-anahtar-yonetimi" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>VAULT_ADDR</code>'den HashiCorp Vault'a bağlanır: <code>/v1/sys/health</code> ile sağlık
 (initialized/sealed/standby), <code>rotate_keys</code> ile çift anahtar rotasyonu (5 dk grace — eski+yeni anahtar
 geçerli), <code>generate_jwt</code> ile 1 saat TTL'li JWT (süresi bitmeden 10 dk önce yenilenmeli).
@@ -4794,7 +4795,7 @@ Grace period anahtar rotasyonu sırasında imza doğrulama hatalarını önler.<
     J[&quot;generate_jwt()&quot;] --&gt; J2[&quot;exp=now+3600s, refresh=exp-600s&quot;]
 </pre>
 <hr />
-<h3 id="src-ai-rs-aiadapter-ai-mikroservisi"><code>src/ai.rs</code> — AIAdapter (AI Mikroservisi)<a class="headerlink" href="#src-ai-rs-aiadapter-ai-mikroservisi" title="Permanent link">🔗</a></h3>
+<h3 id="src-ai-rs-aiadapter-ai-mikroservisi"><code>src/ai.rs</code> — AIAdapter (AI Mikroservisi)<a class="headerlink" href="#src-ai-rs-aiadapter-ai-mikroservisi" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Redis üzerinden Python Isolation Forest mikroservisinin anomali skorunu
 (<code>read_isolation_forest_anomaly_score</code>) ve LLM trend etiketini (<code>read_llm_trend_tag</code>) okur.
 Şu an mock: sabit 0.05 skor ve "NEUTRAL" etiket.</p>
@@ -4807,7 +4808,7 @@ katmanını ayrı mikroservis olarak ayırmak — AI yükü core'u boğmasın, R
     R2 --&gt; L[&quot;etiket (NEUTRAL mock)&quot;]
 </pre>
 <hr />
-<h3 id="src-telemetry-rs-telemetryagent-gozlemlenebilirlik"><code>src/telemetry.rs</code> — TelemetryAgent (Gözlemlenebilirlik)<a class="headerlink" href="#src-telemetry-rs-telemetryagent-gozlemlenebilirlik" title="Permanent link">🔗</a></h3>
+<h3 id="src-telemetry-rs-telemetryagent-gozlemlenebilirlik"><code>src/telemetry.rs</code> — TelemetryAgent (Gözlemlenebilirlik)<a class="headerlink" href="#src-telemetry-rs-telemetryagent-gozlemlenebilirlik" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> RTT takibi (<code>track_rtt</code>): RTT &gt; 1ms ise %100 Jaeger örnekleme tetikler,
 değilse %1. Chaos Mesh ile hata senaryoları enjekte eder (ağ bölünmesi, DNS, NTP drift) — mock.</p>
 <p><strong>Neden kullandık:</strong> HFT'de gecikme sapması (RTT spike) ve altyapı arızaları görünür olmalı.
@@ -4819,8 +4820,8 @@ Adaptif örnekleme maliyeti düşük tutarken anomali anında tam iz sağlar.</p
     X[&quot;trigger_chaos_mesh_scenario&quot;] --&gt; I[&quot;hata enjekte: NTP drift/ağ bölünmesi&quot;]
 </pre>
 <hr />
-<h2 id="splash-acls-ekran">splash — Açılış Ekranı<a class="headerlink" href="#splash-acls-ekran" title="Permanent link">🔗</a></h2>
-<h3 id="src-lib-rs-showsplash-showsplashwith"><code>src/lib.rs</code> — show_splash / show_splash_with<a class="headerlink" href="#src-lib-rs-showsplash-showsplashwith" title="Permanent link">🔗</a></h3>
+<h2 id="splash-acls-ekran">splash — Açılış Ekranı<a class="headerlink" href="#splash-acls-ekran" title="Permanent link"></a></h2>
+<h3 id="src-lib-rs-showsplash-showsplashwith"><code>src/lib.rs</code> — show_splash / show_splash_with<a class="headerlink" href="#src-lib-rs-showsplash-showsplashwith" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> "CYCLE FINANCE" yazısını FIGlet fontuyla matrix yeşilinde harf harf çizer;
 altında bir yükleme çubuğu tam 3 saniyede dolar (çubuk %100 olduğunda yazı da tam haline ulaşır).
 Ekran her karede temizlenir (<code>\x1B[2J</code>), yazı ve çubuk yatay/dikey ortalanır. Bitince Enter bekler,
@@ -4840,7 +4841,7 @@ sürecinde tek terminal kullanımı. İş mantığı yok; bağımsız binary olm
     ENTER --&gt; X[&quot;ekranı temizle + çıkış&quot;]
 </pre>
 <hr />
-<h3 id="src-main-rs-bagmsz-binary"><code>src/main.rs</code> — Bağımsız Binary<a class="headerlink" href="#src-main-rs-bagmsz-binary" title="Permanent link">🔗</a></h3>
+<h3 id="src-main-rs-bagmsz-binary"><code>src/main.rs</code> — Bağımsız Binary<a class="headerlink" href="#src-main-rs-bagmsz-binary" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> <code>cycle_splash::show_splash()</code> çağırıp çıkar. tmux başlatıcısı 4'lü ekran
 açılmadan önce bunu çalıştırır.</p>
 <p><strong>Neden kullandık:</strong> Splash'ı core'dan tamamen bağımsız tek dosyalık binary yapmak — build süresi
@@ -4850,7 +4851,7 @@ ve bağımlılık yok.</p>
     S --&gt; E[&quot;çıkış&quot;]
 </pre>
 <hr />
-<h2 id="genel-mimari-aks-uctan-uca">Genel Mimari Akış (Uçtan Uca)<a class="headerlink" href="#genel-mimari-aks-uctan-uca" title="Permanent link">🔗</a></h2>
+<h2 id="genel-mimari-aks-uctan-uca">Genel Mimari Akış (Uçtan Uca)<a class="headerlink" href="#genel-mimari-aks-uctan-uca" title="Permanent link"></a></h2>
 <p>Tüm katmanların tek resimde nasıl birbirine bağlandığı:</p>
 <pre class="mermaid">flowchart LR
     subgraph ADAPTER[&quot;adapter — Dış Dünya&quot;]
@@ -4932,5 +4933,6 @@ allocator/syscall olmadan çalışır. DB yazımı ayrı thread'de, hot path'i a
     }
   });
 </script>
+  <script src="i18n.js"></script>
 </body>
 </html>

@@ -297,6 +297,27 @@ async fn api_candles(
     }
 }
 
+/// Tüm izlenen sembollerin canlı (oluşan + kapanan) mumlarını döndürür.
+async fn api_candles_all(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<CandlesParams>,
+) -> Json<serde_json::Value> {
+    let limit = params.limit.unwrap_or(20).min(CACHE_MAX);
+    let symbols = state.symbols.read().await;
+    let mut out: Vec<serde_json::Value> = Vec::new();
+    for (sym, st) in symbols.iter() {
+        let candles: Vec<TradeCandle> = st.candles.iter().rev().take(limit).cloned().collect();
+        out.push(serde_json::json!({
+            "symbol": sym,
+            "current": st.current,
+            "count": candles.len(),
+            "candles": candles,
+        }));
+    }
+    out.sort_by_key(|v| v["symbol"].as_str().unwrap_or("").to_string());
+    Json(serde_json::json!({ "count": out.len(), "symbols": out }))
+}
+
 #[tokio::main]
 async fn main() {
     let _ = infra::util::single_instance("trade-ohlcv");
@@ -309,7 +330,8 @@ async fn main() {
     println!("  ⏱  TRADE-OHLCV — Trade Data → 1s OHLCV Mum Akışı");
     println!("  Kaynak: {TRADES_RING} (flow ring, RAM)");
     println!("  Ring  : {RING_NAME} (RAM, binary)");
-    println!("  API   : http://127.0.0.1:{port}/api/candles/{{symbol}}");
+    println!("  API   : http://127.0.0.1:{port}/api/candles/{{symbol}} (tek)");
+    println!("          http://127.0.0.1:{port}/api/candles (tüm semboller, canlı)");
     println!("══════════════════════════════════════════════════");
 
     let ring = Arc::new(StreamRingBuffer::with_name(RING_NAME, RING_CAPACITY));
@@ -327,6 +349,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/health", get(api_health))
         .route("/api/symbols", get(api_symbols))
+        .route("/api/candles", get(api_candles_all))
         .route("/api/candles/{symbol}", get(api_candles))
         .with_state(state);
 

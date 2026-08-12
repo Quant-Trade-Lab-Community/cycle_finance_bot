@@ -331,6 +331,42 @@ pub mod client {
         }
         out
     }
+
+    /// HTTP API'den bir sembolün canlı mumlarını (oluşan + kapanan) çeker.
+    ///
+    /// Yanıt: `{symbol, current, count, candles}` — `current` oluşan (kapalı değil)
+    /// mum, `candles` son kapanan 1s mumlar.
+    pub async fn fetch_candles(
+        addr: &str,
+        symbol: &str,
+        limit: usize,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let url = format!("{addr}/api/candles/{}?limit={limit}", symbol.to_uppercase());
+        let resp = reqwest::Client::new().get(&url).send().await?;
+        let v: serde_json::Value = resp.json().await?;
+        Ok(v)
+    }
+
+    /// Varsayılan adresle sembolün canlı mumlarını çeker.
+    pub async fn fetch_candles_default(
+        symbol: &str,
+        limit: usize,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        fetch_candles(super::DEFAULT_ADDR, symbol, limit).await
+    }
+
+    /// Tüm izlenen sembollerin canlı mumlarını çeker.
+    ///
+    /// Yanıt: `{count, symbols: [{symbol, current, count, candles}, ...]}`.
+    pub async fn fetch_all(
+        addr: &str,
+        limit: usize,
+    ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+        let url = format!("{addr}/api/candles?limit={limit}");
+        let resp = reqwest::Client::new().get(&url).send().await?;
+        let v: serde_json::Value = resp.json().await?;
+        Ok(v)
+    }
 }
 
 #[cfg(test)]
