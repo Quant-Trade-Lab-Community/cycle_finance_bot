@@ -1,10 +1,12 @@
-//! 🤖 telegram-bot — kırılım stratejisi sinyallerini ve alert-service uyarılarını Telegram'a iletir.
+//! 🤖 telegram-bot — kırılım stratejisi sinyallerini, alert-service uyarılarını ve
+//! canlı Binance hesap/pozisyon bilgisini Telegram'a iletir.
 //!
 //! `strategies-engine` her sinyal değişiminde `/tmp/strategy_signals.jsonl`'e bir JSONL satırı
 //! ekler; `alert-service` ise her tetiklenen uyarıyı `/tmp/alert_events.jsonl`'e yazar.
 //! Bu servis iki dosyayı da izler ve yeni satırları Telegram Bot API ile ilgili sohbete gönderir.
-//! Ayrıca her `DETECT_MS_PERIOD_SEC` (varsayılan 300 sn) aralığında detect-ms'ten MSMP raporu
-//! çekip gönderir.
+//! Ayrıca her `DETECT_MS_PERIOD_SEC` (varsayılan 300 sn) aralığında detect-ms'ten MSMP raporu,
+//! her `EXEC_PERIOD_SEC` (varsayılan 300 sn) aralığında executiond'den canlı Binance
+//! hesap (balance) ve pozisyon bilgisini çekip gönderir.
 //!
 //! Gereksinimler:
 //!   TELEGRAM_BOT_TOKEN  — @BotFather'dan alınır
@@ -18,6 +20,12 @@
 //!   DETECT_MS_INTERVAL  (opsiyonel) — varsayılan 1m
 //!   DETECT_MS_PERIOD_SEC (opsiyonel) — rapor aralığı (sn), varsayılan 300
 //!
+//! Periyodik executiond (canlı Binance) raporu:
+//!   EXEC_API_URL        (opsiyonel) — varsayılan http://127.0.0.1:3010
+//!   EXEC_ADMIN_USER     (opsiyonel) — varsayılan admin
+//!   EXEC_ADMIN_PASS     (opsiyonel) — varsayılan changeme123
+//!   EXEC_PERIOD_SEC     (opsiyonel) — rapor aralığı (sn), varsayılan 300
+//!
 //! cycle-engine dayanıklılık deseni: tek örnek koruması uygular.
 
 use std::io::{Read, Seek, SeekFrom};
@@ -26,6 +34,7 @@ use std::time::Duration;
 const SIGNALS_DEFAULT: &str = "/tmp/strategy_signals.jsonl";
 const ALERTS_DEFAULT: &str = "/tmp/alert_events.jsonl";
 const DETECT_MS_DEFAULT: &str = "http://127.0.0.1:3002";
+const EXEC_API_DEFAULT: &str = "http://127.0.0.1:3010";
 
 fn main() {
     let _ = infra::util::single_instance("telegram-bot");
@@ -49,14 +58,24 @@ fn main() {
         .and_then(|v| v.parse().ok())
         .unwrap_or(300);
 
+    let exec_url = std::env::var("EXEC_API_URL").unwrap_or_else(|_| EXEC_API_DEFAULT.to_string());
+    let exec_user = std::env::var("EXEC_ADMIN_USER").unwrap_or_else(|_| "admin".to_string());
+    let exec_pass = std::env::var("EXEC_ADMIN_PASS").unwrap_or_else(|_| "changeme123".to_string());
+    let exec_period: u64 = std::env::var("EXEC_PERIOD_SEC")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(300);
+
     println!("🤖 Telegram bot başlatıldı — sinyal akışı: {path} | uyarı akışı: {alert_path}");
     println!("📊 Periyodik detect-ms raporu: her {detect_period}sn → {detect_url} ({detect_symbol} {detect_interval})");
-    let _ = send(&token, &chat_id, "🤖 Cycle Finance sinyal botu çalışıyor — kırılım sinyallerini ve uyarıları bildirecek.");
+    println!("💰 Periyodik exec (canlı Binance) raporu: her {exec_period}sn → {exec_url}");
+    let _ = send(&token, &chat_id, "🤖 Cycle Finance sinyal botu çalışıyor — sinyalleri, uyarıları ve hesap bilgilerini bildirecek.");
 
     // Dosyaların mevcut sonundan başla (eski satırları yeniden gönderme).
     let mut last_offset = current_len(&path);
     let mut last_alert_offset = current_len(&alert_path);
     let mut last_detect = std::time::Instant::now();
+    let mut last_exec = std::time::Instant::now();
 
     loop {
         if let Some(new_lines) = read_new_lines(&path, &mut last_offset) {
@@ -80,6 +99,13 @@ fn main() {
             println!("📊 {text}");
             let _ = send(&token, &chat_id, &text);
             last_detect = std::time::Instant::now();
+        }
+
+        if last_exec.elapsed().as_secs() >= exec_period {
+            let text = fetch_exec_report(&exec_url, &exec_user, &exec_pass);
+            println!("💰 {text}");
+            let _ = send(&token, &chat_id, &text);
+            last_exec = std::time::Instant::now();
         }
 
         std::thread::sleep(Duration::from_millis(1000));
@@ -257,6 +283,94 @@ fn format_detect_ms(v: &serde_json::Value) -> String {
         out.push_str(&levels);
     }
     out
+}
+
+/// executiond'ye giriş yapar, access_token döndürür (başarısızsa None).
+fn exec_login(base: &str, user: &str, pass: &str) -> Option<String> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(format!("{base}/api/v1/auth/login"))
+        .json(&serde_json::json!({ "username": user, "password": pass }))
+        .send()
+        .ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    let v: serde_json::Value = resp.json().ok()?;
+    v["access_token"].as_str().map(|s| s.to_string())
+}
+
+/// JWT ile korumalı executiond endpoint'inden JSON döndürür.
+fn exec_get(base: &str, token: &str, path: &str) -> Option<serde_json::Value> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!("{base}{path}"))
+        .bearer_auth(token)
+        .send()
+        .ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    resp.json().ok()
+}
+
+/// executiond `/api/v1/account` yanıtından hesap (balance) raporu üretir.
+fn format_exec_account(v: &serde_json::Value) -> String {
+    let acc = &v["account"];
+    let wallet = fmt(&acc["total_wallet_balance"]);
+    let avail = fmt(&acc["available_balance"]);
+    let margin = fmt(&acc["total_margin_balance"]);
+    let upnl = fmt(&acc["total_unrealized_profit"]);
+    let withdraw = fmt(&acc["max_withdraw_amount"]);
+    let can_trade = acc["can_trade"].as_bool().unwrap_or(false);
+    format!(
+        "💰 BİNANCE HESAP (canlı)\nBakiye: {wallet} USDT\nSerbest: {avail}\nMarjin Bakiye: {margin}\nGerçekleşmemiş PnL: {upnl}\nÇekilebilir: {withdraw}\nTicaret: {}",
+        if can_trade { "AÇIK" } else { "KAPALI" }
+    )
+}
+
+/// executiond `/api/v1/positions` yanıtından (açık pozisyon) raporu üretir.
+fn format_exec_positions(v: &serde_json::Value) -> String {
+    let arr = match v.as_array() {
+        Some(a) => a,
+        None => return "📍 POZİSYONLAR\n(Açık pozisyon yok)".to_string(),
+    };
+    let open: Vec<_> = arr
+        .iter()
+        .filter(|p| as_f64(&p["position_amt"]) != 0.0)
+        .collect();
+    if open.is_empty() {
+        return "📍 POZİSYONLAR\n(Açık pozisyon yok)".to_string();
+    }
+    let mut out = format!("📍 AÇIK POZİSYONLAR ({})", open.len());
+    for p in open.iter().take(10) {
+        let sym = p["symbol"].as_str().unwrap_or("?");
+        let side = p["position_side"].as_str().unwrap_or("?");
+        let amt = fmt(&p["position_amt"]);
+        let entry = fmt(&p["entry_price"]);
+        let mark = fmt(&p["mark_price"]);
+        let pnl = fmt(&p["un_realized_profit"]);
+        let lev = fmt(&p["leverage"]);
+        out.push_str(&format!("\n{sym} {side} {amt} @ {entry} | Mark {mark} | PnL {pnl} | {lev}x"));
+    }
+    out
+}
+
+/// executiond'den canlı hesap + pozisyon raporunu çekip birleşik mesaj üretir.
+fn fetch_exec_report(base: &str, user: &str, pass: &str) -> String {
+    let Some(token) = exec_login(base, user, pass) else {
+        return "⚠️ executiond erişilemedi (login başarısız) — executiond çalışıyor mu?".to_string();
+    };
+    let mut parts = Vec::new();
+    match exec_get(base, &token, "/api/v1/account") {
+        Some(v) => parts.push(format_exec_account(&v)),
+        None => parts.push("⚠️ Hesap bilgisi alınamadı".to_string()),
+    }
+    match exec_get(base, &token, "/api/v1/positions") {
+        Some(v) => parts.push(format_exec_positions(&v)),
+        None => parts.push("⚠️ Pozisyon bilgisi alınamadı".to_string()),
+    }
+    parts.join("\n\n")
 }
 
 /// Telegram Bot API'ye mesaj gönderir.
