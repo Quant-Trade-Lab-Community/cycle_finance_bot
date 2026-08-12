@@ -2,12 +2,19 @@
 //!
 //! `strategies-engine` her sinyal değişiminde `/tmp/strategy_signals.jsonl`'e
 //! bir JSONL satırı ekler. Bu servis dosyayı izler ve her yeni sinyali
-//! Telegram Bot API ile ilgili sohbete gönderir.
+//! Telegram Bot API ile ilgili sohbete gönderir. Ayrıca her `DETECT_MS_PERIOD_SEC`
+//! (varsayılan 300 sn) aralığında detect-ms'ten MSMP raporu çekip gönderir.
 //!
 //! Gereksinimler:
 //!   TELEGRAM_BOT_TOKEN  — @BotFather'dan alınır
 //!   TELEGRAM_CHAT_ID    — sinyallerin gideceği sohbet/kanal ID'si
 //!   STRATEGY_SIGNALS_FILE (opsiyonel) — sinyal dosyası (varsayılan /tmp/strategy_signals.jsonl)
+//!
+//! Periyodik detect-ms raporu:
+//!   DETECT_MS_URL       (opsiyonel) — varsayılan http://127.0.0.1:3002
+//!   DETECT_MS_SYMBOL    (opsiyonel) — varsayılan VELVETUSDT
+//!   DETECT_MS_INTERVAL  (opsiyonel) — varsayılan 1m
+//!   DETECT_MS_PERIOD_SEC (opsiyonel) — rapor aralığı (sn), varsayılan 300
 //!
 //! cycle-engine dayanıklılık deseni: tek örnek koruması uygular.
 
@@ -15,6 +22,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 const SIGNALS_DEFAULT: &str = "/tmp/strategy_signals.jsonl";
+const DETECT_MS_DEFAULT: &str = "http://127.0.0.1:3002";
 
 fn main() {
     let _ = infra::util::single_instance("telegram-bot");
@@ -28,11 +36,21 @@ fn main() {
         std::process::exit(1);
     }
 
+    let detect_url = std::env::var("DETECT_MS_URL").unwrap_or_else(|_| DETECT_MS_DEFAULT.to_string());
+    let detect_symbol = std::env::var("DETECT_MS_SYMBOL").unwrap_or_else(|_| "VELVETUSDT".to_string());
+    let detect_interval = std::env::var("DETECT_MS_INTERVAL").unwrap_or_else(|_| "1m".to_string());
+    let detect_period: u64 = std::env::var("DETECT_MS_PERIOD_SEC")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(300);
+
     println!("🤖 Telegram bot başlatıldı — sinyal akışı: {path}");
+    println!("📊 Periyodik detect-ms raporu: her {detect_period}sn → {detect_url} ({detect_symbol} {detect_interval})");
     let _ = send(&token, &chat_id, "🤖 Cycle Finance sinyal botu çalışıyor — kırılım sinyallerini bildirecek.");
 
     // Dosyanın mevcut sonundan başla (eski sinyalleri yeniden gönderme).
     let mut last_offset = current_len(&path);
+    let mut last_detect = std::time::Instant::now();
 
     loop {
         if let Some(new_lines) = read_new_lines(&path, &mut last_offset) {
@@ -42,6 +60,14 @@ fn main() {
                 let _ = send(&token, &chat_id, &text);
             }
         }
+
+        if last_detect.elapsed().as_secs() >= detect_period {
+            let text = fetch_detect_ms(&detect_url, &detect_symbol, &detect_interval);
+            println!("📊 {text}");
+            let _ = send(&token, &chat_id, &text);
+            last_detect = std::time::Instant::now();
+        }
+
         std::thread::sleep(Duration::from_millis(1000));
     }
 }
@@ -83,6 +109,104 @@ fn format_signal(line: &str) -> String {
     format!(
         "🚀 BREAKOUT SİNYALİ — {sym}\n{arrow} ({dir})\nSeviye: {level}\nKalite: %{q:.1} | Sahte: %{f:.1} | Kesinlik: %{c:.1}\n⏰ {ts}"
     )
+}
+
+/// detect-ms API'sinden MSMP raporunu çeker ve Telegram mesajı formatında döndürür.
+fn fetch_detect_ms(url: &str, symbol: &str, interval: &str) -> String {
+    let api = format!("{url}/api/ms?symbol={symbol}&interval={interval}&limit=200");
+    let client = reqwest::blocking::Client::new();
+    let resp = match client.get(&api).send() {
+        Ok(r) => r,
+        Err(e) => return format!("⚠️ detect-ms erişilemedi: {e}"),
+    };
+    let mut v: serde_json::Value = match resp.json() {
+        Ok(v) => v,
+        Err(_) => return "⚠️ detect-ms yanıtı ayrıştırılamadı".to_string(),
+    };
+    if let Some(err) = v.get("error") {
+        return format!("⚠️ detect-ms: {err}");
+    }
+    // Yanıt sembol/interval içermez — mesaja yazmak için enjekte et.
+    v["symbol"] = serde_json::Value::String(symbol.to_uppercase());
+    v["interval"] = serde_json::Value::String(interval.to_string());
+    format_detect_ms(&v)
+}
+
+/// JSON değerini f64'e çevirir (rust_decimal string olarak serileşir).
+fn as_f64(v: &serde_json::Value) -> f64 {
+    v.as_f64()
+        .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+        .unwrap_or(0.0)
+}
+
+/// 8 ondalığa yuvarlayarak kayan nokta gürültüsünü temizler.
+fn fmt(v: &serde_json::Value) -> String {
+    let f = as_f64(v);
+    let r = (f * 1e8).round() / 1e8;
+    format!("{r}")
+}
+
+/// detect-ms `/api/ms` yanıtından okunabilir bir Telegram raporu üretir.
+fn format_detect_ms(v: &serde_json::Value) -> String {
+    let sym = v["symbol"].as_str().unwrap_or("?");
+    let interval = v["interval"].as_str().unwrap_or("?");
+    let price = fmt(&v["current_price"]);
+    let ats = as_f64(&v["ats"]);
+    let trend = v["trend_label"].as_str().unwrap_or("?");
+    let hurst = fmt(&v["hurst"]);
+    let rsq = fmt(&v["r_squared"]);
+    let conf = as_f64(&v["confluence_index"]);
+    let vwap = fmt(&v["vwap"]);
+    let poc = fmt(&v["poc"]);
+    let bsl = fmt(&v["bsl_ssl_ratio"]);
+    let atr = fmt(&v["atr"]);
+    let fvg = v["fvg_count"].as_u64().unwrap_or(0);
+    let absorber = v["active_absorber_count"].as_u64().unwrap_or(0);
+    let liq = v["liquidity_zones_count"].as_u64().unwrap_or(0);
+
+    let vac = v.get("vacuum_zone");
+    let vac_str = match vac {
+        Some(z) if !z.is_null() => format!(
+            "{} — {}..{} (skor {})",
+            z["label"].as_str().unwrap_or("?"),
+            fmt(&z["price_low"]),
+            fmt(&z["price_high"]),
+            fmt(&z["magnetic_score"]),
+        ),
+        _ => "yok".to_string(),
+    };
+
+    let levels = match v["levels"].as_array() {
+        Some(arr) => arr
+            .iter()
+            .take(5)
+            .map(|l| {
+                format!(
+                    "  • {} @ {} (savunma {})",
+                    l["level_type"].as_str().unwrap_or("?"),
+                    fmt(&l["price"]),
+                    l["defense_count"].as_u64().unwrap_or(0),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n"),
+        None => String::new(),
+    };
+
+    let mut out = format!(
+        "📊 DETECT-MS RAPORU — {sym} ({interval})\n\
+         Fiyat: {price}\n\
+         Trend: {trend} (ATS {ats:+.2}) · Confluence %{conf:.0}\n\
+         Hurst: {hurst} · R²: {rsq} · ATR: {atr}\n\
+         VWAP: {vwap} · POC: {poc} · BSL/SSL: {bsl}\n\
+         Vakum: {vac_str}\n\
+         FVG: {fvg} · Absorber: {absorber} · Likidite bölgesi: {liq}"
+    );
+    if !levels.is_empty() {
+        out.push_str("\nSeviyeler:\n");
+        out.push_str(&levels);
+    }
+    out
 }
 
 /// Telegram Bot API'ye mesaj gönderir.

@@ -2,7 +2,7 @@
 
 ## Giriş
 
-services-engine, 9 paket (8 servis + breakout-strategy) içerir. Her birinde kendi Cargo crate'li. `Cargo.toml` workspace üyesi.
+services-engine, 10 paket (9 servis + breakout-strategy) içerir. Her birinde kendi Cargo crate'li. `Cargo.toml` workspace üyesi.
 
 Başlatma:
 - `cargo run -p alert-service` (kök workspace)
@@ -13,6 +13,7 @@ Başlatma:
 - `cargo run -p paper-service`
 - `cargo run -p price-feed`
 - `cargo run -p stream-ohlcv`
+- `cargo run -p trade-ohlcv`
 - `cargo run -p breakout-strategy`
 
 ---
@@ -314,6 +315,40 @@ breakout-strategy:
 
 ---
 
+## Süreç 10: trade-ohlcv (Trade → 1s OHLCV)
+
+### Amaç
+Trade flow ring'ini (`/cycle_finance_trades`) okuyup sembol başına **1 saniyelik OHLCV** barları üretir. Kapanan barları `/cycle_finance_trade_ohlcv` ring'ine binary yayınlar, stdout'a canlı stream eder (tmux pencere 20) ve HTTP API ile sunar.
+
+### Giriş Noktaları
+
+| Dosya | Satır | Sorumlu |
+|:---|:---|:---|
+| `src/lib.rs` | 431 | TradeCandle, SecondAggregator, codec, client, testler |
+| `src/main.rs` | 336 | Daemon (ring okuyucu + aggregator + axum API) |
+| `examples/read_ring.rs` | 29 | Tüketici örneği (ring okuma) |
+
+### Veri Akışı
+
+```
+DATA terminali / flows (trade akışı)
+  └── /dev/shm/cycle_finance_trades (Trade event'leri)
+        └── trade-ohlcv kaynak thread (spin-loop, retry pencereli)
+             └── flume bounded (262_144)
+                  └── aggregator task → SecondAggregator → 1s bar
+                       ├── kapalı bar → codec::encode → /cycle_finance_trade_ohlcv (StreamRingBuffer)
+                       ├── stdout canlı stream: [HH:MM:SS] SYM 1s O=.. H=.. L=.. C=.. V=.. TB=.. n=..
+                       └── HTTP API: /api/health · /api/symbols · /api/candles/{symbol}
+```
+
+### Thread / Task Yapısı
+
+- std thread: trade flow ring okuyucu — cursor'dan head'e; slot yoksa 40×100µs retry penceresi, sonra overwrite kontrolü (ilave event kaçırma).
+- tokio task: aggregator — `SecondAggregator::on_trade` ile 1s dilimi takibi, kapalı mum → ring + stream + state (VecDeque cache, CACHE_MAX=500).
+- axum server (:3009, env `TRADE_OHLCV_PORT`): 3 route, `infra::util::single_instance("trade-ohlcv")`.
+
+---
+
 ## Thread / Task Yapısı (Giriş Noktaları)
 
 | Servis | Model | Detay |
@@ -326,11 +361,12 @@ breakout-strategy:
 | paper-service | tokio + std::thread | tokio task: event persistence loop (main.rs:63); std thread: bridge okuyucular (bridge.rs:29,89) |
 | price-feed | tokio + std::thread | tokio task: ws_pump (main.rs:315); std thread: ingest (main.rs:335); flume bounded 262_144 (main.rs:311) |
 | stream-ohlcv | tokio | Her stream bir task: start_stream → tokio::spawn(run_stream) (main.rs:340); stream durumu: tokio::sync::RwLock; ring write kilidi Mutex (main.rs:54) |
+| trade-ohlcv | tokio + std::thread | std thread: trade flow ring okuyucu (retry pencereli) → flume 262_144 → tokio aggregator task (SecondAggregator) → ring + stdout stream + axum (:3009) |
 | breakout-strategy | tokio + std::thread | main.rs:168 std thread ring okuyucu → mpsc::unbounded_channel (main.rs:276) → tokio actor döngüsü (main.rs:283); listener.rs:38 std thread price corr |
 
 ---
 
-## Satır Sayıları (toplam 7794)
+## Satır Sayıları (toplam 8531)
 
 | Servis | Toplam |
 |:---|:---|
@@ -342,13 +378,16 @@ breakout-strategy:
 | paper-service | 1476 |
 | price-feed | 366 |
 | stream-ohlcv | 858 |
+| trade-ohlcv | 767 (+29 örnek) |
 | breakout-strategy | 1508 |
-| **TOPLAM** | **7764** (+30 örnek = 7794) |
+| **TOPLAM** | **8531** (+59 örnek) |
 
 ---
 
 ## Sonuç
 
-services-engine, 9 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `/cycle_finance_pricefeed` ve `/cycle_finance_calc` ise ring buffer üretici/tüketici çiftidir.
+services-engine, 10 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `/cycle_finance_pricefeed` ve `/cycle_finance_calc` ise ring buffer üretici/tüketici çiftidir.
+
+`trade-ohlcv` (:3009), `/cycle_finance_trades` flow ring'inden trade verisini okuyup sembol başına 1s OHLCV barı üretir; kapanan barları `/cycle_finance_trade_ohlcv` ring'ine binary yayınlar ve stdout'a canlı stream eder.
 
 Breakout-strategy, 1508 satırda; alert-service, 746 satırda. Veri akışı ring buffer+HTTP+WS'lerle gerçekleştirilir.

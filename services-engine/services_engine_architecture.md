@@ -2,7 +2,7 @@
 
 ## Genel Bakış
 
-**services-engine**, Cycle Finance sisteminin **orta katmanını** (intermediate layer) oluşturur. 9 paket (8 servis + breakout-strategy):
+**services-engine**, Cycle Finance sisteminin **orta katmanını** (intermediate layer) oluşturur. 10 paket (9 servis + breakout-strategy):
 
 - `alert-service`: Sembol + fiyat koşulu (above/below/cross/touch) için sesli uyarı.
 - `calc-ind`: `POST /api/calc` ile indikatör hesaplama (SMA/EMA/MACD/RSI/BBANDS/VWAP/ATR...). Ring `get()`.
@@ -12,6 +12,7 @@
 - `paper-service`: Event-sourcing + actor tabanlı sanal (kağıt) motoru.
 - `price-feed`: Binance Futures WS'den fiyat çeker, ring'e yayar.
 - `stream-ohlcv`: Çoklu stream OHLCV mum akışı.
+- `trade-ohlcv`: Trade flow ring'inden trade verisini okuyup 1s OHLCV barları üretir, ring'e yayar + canlı stream.
 - `breakout-strategy`: Event-driven kırılım stratejisi (sinyal üretici, emir açmaz).
 
 **Yapı:** Her servis bir Cargo crate'dır; `src/bin/` folderunda her biride binary. `src/main.rs` (default bin).
@@ -32,6 +33,7 @@
 | **paper-service** | Event-sourcing + actor tabanlı sanal motoru | src/main.rs, bridge.rs, events.rs, sqlite_projection.rs |
 | **price-feed** | Binance Futures WS'den fiyat çeker, ring'e yayar | src/main.rs, pipeline.rs |
 | **stream-ohlcv** | Çoklu stream OHLCV mum akışı | src/lib.rs, main.rs, stream_ring.rs |
+| **trade-ohlcv** | Trade flow ring → 1s OHLCV bar; ring + HTTP API + canlı stdout stream | src/lib.rs, main.rs; examples/read_ring.rs |
 | **breakout-strategy** | Event-driven kırılım stratejisi | src/lib.rs, main.rs, metrics.rs, bin/listener.rs, bin/alerts.rs, bin/risk_analysis.rs |
 
 ---
@@ -46,6 +48,7 @@
 | `/cycle_finance_pricefeed` | 20_000 | price-feed main.rs:38,305 | alert-service source.rs:110; paper-service bridge.rs:30; breakout main.rs:169 |
 | `/cycle_finance_calc` | 64 | calc-ind main.rs:20-21,39 | calc_ind client lib.rs:97,128 (HTTP+ring read) |
 | `/cycle_finance_stream_ohlcv` | 8192 | stream-ohlcv main.rs:34,513 (STREAM_DEFAULT_CAPACITY, stream_ring.rs:28) | stream_ohlcv client lib.rs:14,233 |
+| `/cycle_finance_trade_ohlcv` | 8192 | trade-ohlcv main.rs (StreamRingBuffer), lib.rs RING_CAPACITY | trade_ohlcv client lib.rs |
 | `/cycle_finance_orders` | 10_000 | STRATEGY terminali / execution tarafı (order_ring.rs:53) | paper-service bridge.rs:90 |
 
 > **Note:** alert-service ayrıca `is_ring_alive()` ile price-feed ring'ini yoklar (source.rs:100-103).
@@ -77,6 +80,12 @@ Binance Futures (WS fstream)
 
 DATA terminali (cycle-engine)
   └── /cycle_finance_ring → alert-service (ring modu), breakout listener
+
+DATA terminali / flows (trade akışı)
+  └── /cycle_finance_trades ring (Trade event'leri)
+        └── trade-ohlcv (port 3009) → SecondAggregator → 1s OHLCV bar
+             ├── /cycle_finance_trade_ohlcv ring (binary mumlar) → trade_ohlcv client
+             └── stdout canlı stream (tmux pencere 20) + HTTP /api/candles/{symbol}
 
 STRATEGY terminali
   └── /cycle_finance_orders → paper-service bridge → PaperEngineActor
@@ -143,6 +152,12 @@ GenerationalRingBuffer::with_name("/cycle_finance_ring", 160_000, 1024)
 - `start_stream` → `tokio::spawn(run_stream)` (main.rs:340).
 - stream durumu: tokio::sync::RwLock, ring write kilidi: Mutex (main.rs:54).
 
+### trade-ohlcv (tokio + std::thread)
+
+- std thread: trade flow ring okuyucu (spin-loop, retry pencereli) → flume bounded 262_144 → aggregator task.
+- tokio task: aggregator (SecondAggregator) → kapalı 1s mum → ring yayını + stdout stream + state güncelleme.
+- axum server: /api/health, /api/symbols, /api/candles/{symbol}.
+
 ### breakout-strategy (tokio + std::thread)
 
 - `main.rs:168` std thread ring okuyucu → mpsc::unbounded_channel (main.rs:276) → tokio actor döngüsü (main.rs:283).
@@ -163,8 +178,9 @@ GenerationalRingBuffer::with_name("/cycle_finance_ring", 160_000, 1024)
 | paper-service | 1476 | api.rs 447, bin/paper_cli.rs 228, bridge.rs 144, events.rs 117, idempotency.rs 40, lib.rs 9, main.rs 153, metrics.rs 70, postgres_store.rs 98, sqlite_projection.rs 170 |
 | price-feed | 366 | main.rs 366 |
 | stream-ohlcv | 858 | lib.rs 321, main.rs 537 |
+| trade-ohlcv | 767 (+29 örnek) | lib.rs 431, main.rs 336, examples/read_ring.rs 29 |
 | breakout-strategy | 1508 | bin/alerts.rs 223, bin/listener.rs 282, bin/risk_analysis.rs 112, lib.rs 3, main.rs 308, metrics.rs 580 |
-| **TOPLAM** | **7764** (+30 örnek = 7794) | |
+| **TOPLAM** | **8531** (+59 örnek) | |
 
 ---
 
@@ -204,13 +220,16 @@ GenerationalRingBuffer::with_name("/cycle_finance_ring", 160_000, 1024)
 | ohlcv-engine | `cli`, `server` | `src/bin/cli.rs`, `src/bin/server.rs` |
 | paper-service | `paper-service` (default-run) + `paper-cli` | `src/main.rs` + `src/bin/paper_cli.rs` |
 | price-feed | `price-feed` | `src/main.rs` (default bin) |
-| stream-ohlcv | `stream-ohlcv` (lib: stream_ohlcv) | `src/main.rs` (default bin) |
+| stream-ohlcv | stream-ohlcv (lib: stream_ohlcv) | `src/main.rs` (default bin) |
+| trade-ohlcv | `trade-ohlcv` (lib: trade_ohlcv) | `src/main.rs` (default bin) |
 | breakout-strategy | `breakout-strategy` + `alerts` + `listener` + `risk_analysis` | `src/main.rs` (`[[bin]]`) + `src/bin/alerts.rs`, `src/bin/listener.rs`, `src/bin/risk_analysis.rs` |
 
 ---
 
 ## Sonuç
 
-services-engine, 9 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `calculate-ind`, `detect-ms`, `stream-ohlcv` ise `ohlcv-engine` (kütüphane) ile `calc-ind`, `stream-ohlcv` tarafından kullanılır.
+services-engine, 10 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `calculate-ind`, `detect-ms`, `stream-ohlcv` ise `ohlcv-engine` (kütüphane) ile `calc-ind`, `stream-ohlcv` tarafından kullanılır.
+
+`trade-ohlcv`, `/cycle_finance_trades` flow ring'ini okuyup sembol başına 1s OHLCV barı üretir; kapanan barları `/cycle_finance_trade_ohlcv` ring'ine binary yayınlar, stdout'a canlı stream eder ve HTTP API ile sunar.
 
 Breakout-strategy, 1508 satırda; alert-service, 746 satırda. Veri akışı ring buffer+HTTP+WS'lerle gerçekleştirilir.

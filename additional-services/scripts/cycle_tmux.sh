@@ -23,6 +23,7 @@
 #  Pencere 17 — 📉 FLOW-INDEX (index price akışı → TimescaleDB)
 #  Pencere 18 — 🛢️ DB-QUERY (TimescaleDB sorgu paneli)
 #  Pencere 19 — 🤖 TELEGRAM (sinyal bildirim botu)
+#  Pencere 20 — ⏱ TRADE-OHLCV (trade data → 1s OHLCV canlı stream :3009)
 #
 #  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
 #  (orkestrasyon merkezi altında) çalışır. Shell'den:
@@ -67,8 +68,8 @@ _proc_kill() {
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 # Akış süreçleri (her biri ayrı proses) + klasik servisler
 FLOW_PROCS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
-SERVICE_PROCS="paper-service alert-service strategies-engine"
-FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate"
+SERVICE_PROCS="paper-service alert-service strategies-engine trade-ohlcv"
+FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate /dev/shm/cycle_finance_trade_ohlcv"
 
 full_cleanup() {
   echo "🧹 Temizleniyor..."
@@ -129,7 +130,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p exec-console -p db-query -p telegram-bot 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p trade-ohlcv -p exec-console -p db-query -p telegram-bot 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -362,6 +363,18 @@ echo '━━━━━━━━━━━━━━━━━━━━━━━━�
 cd $ROOT && journalctl --user -u cycle-telegram.service -f
 " Enter
 
+# ── Pencere 20: TRADE-OHLCV (trade data → 1s OHLCV canlı stream) ──
+tmux new-window -t "$SESSION:20" -n "⏱ TRADE-OHLCV"
+tmux send-keys -t "$SESSION:20" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '⏱  TRADE-OHLCV  (Trade → 1s OHLCV :3009)'
+echo '    Kaynak: /dev/shm/cycle_finance_trades'
+echo '    Canlı:  her kapanan 1s mum sembol başına'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 3
+cd $ROOT && $BIN/trade-ohlcv
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" status-interval 1
@@ -375,7 +388,7 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]19#[fg=#00cc33]:TG #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]19#[fg=#00cc33]:TG #[fg=#00ff41]20#[fg=#00cc33]:OHLCV #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   110
 
 # Window sekme renkleri — matrix

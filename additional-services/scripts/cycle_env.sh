@@ -134,6 +134,14 @@ help-cycle() {
   echo -e "  ${_C}stream-ohlcv-streams${_N}  Aktif stream'leri listele"
   echo -e "  ${_C}stream-ohlcv-query SYM ITV START_MS${_N}   Stream aç + durum göster"
 
+  echo -e "\n${_Y}━━━  ⏱ TRADE-OHLCV  (Trade → 1s OHLCV :3009)  ━━━━━━━━━━━━━━━━${_N}"
+  echo -e "  ${_C}trade-ohlcv-start${_N}    Servisi başlat (kaynak: /dev/shm/cycle_finance_trades)"
+  echo -e "  ${_C}trade-ohlcv-stop${_N}     Servisi durdur"
+  echo -e "  ${_C}trade-ohlcv-status${_N}   Çalışıyor mu? CPU/RAM göster"
+  echo -e "  ${_C}trade-ohlcv-live${_N}     Canlı 1s OHLCV akışını izle (tmux pencere 20)"
+  echo -e "  ${_C}trade-ohlcv-symbols${_N}  Takip edilen sembolleri listele"
+  echo -e "  ${_C}trade-ohlcv-candles SYM [N]${_N}   Son N kapalı 1s mumu göster (örn. BTCUSDT 30)"
+
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 10)"
 
@@ -156,6 +164,7 @@ help-cycle() {
   echo -e "  ${_B}Ctrl+B → 9${_N}           🖥️ CONSOLE sekmesi"
   echo -e "  ${_B}Ctrl+B → 10-17${_N}       💹 Veri akışları (FLOWS)"
   echo -e "  ${_B}Ctrl+B → 18${_N}          🛢️ DB-QUERY (TimescaleDB sorgu paneli)"
+  echo -e "  ${_B}Ctrl+B → 20${_N}          ⏱ TRADE-OHLCV (canlı 1s OHLCV akışı)"
   echo -e "  ${_B}Fare tıklama/scroll${_N}  Pencere seç / scroll"
 
   echo -e "\n${_W}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
@@ -201,7 +210,8 @@ cycle-build-full() {
 # Pencere haritası: 0=SHELL 1=STRATEGY 2=DETECT-MS
 #                   3=CALC-IND 4=STREAM-OHLCV 5=PAPER
 #                   6=RISK 7=ALERT 8=Monitor 9=CONSOLE
-#                   10-17=FLOWS (8 veri akışı)
+#                   10-17=FLOWS (8 veri akışı) 18=DB-QUERY 19=TELEGRAM
+#                   20=TRADE-OHLCV
 _tmux_pane() {
   local name="$1"; shift
   local session="cycle"
@@ -226,6 +236,8 @@ _tmux_pane() {
     "🕐 FLOW-LAST")    pane="16" ;;
     "📉 FLOW-INDEX")   pane="17" ;;
     "🛢️DB-QUERY")     pane="18" ;;
+    "🤖TELEGRAM")     pane="19" ;;
+    "⏱TRADE-OHLCV")  pane="20" ;;
     *)
       # Tanınmayan → yeni pencere (ör. özel servisler)
       if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -1024,6 +1036,80 @@ stream-ohlcv-streams() {
   echo "📡 Aktif stream'ler: http://$STREAM_OHLCV_ADDR/api/streams"
   curl -s "http://$STREAM_OHLCV_ADDR/api/streams" \
     | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor."
+}
+
+# ============================================================
+#  TRADE-OHLCV  (trade-ohlcv — trade data → 1s OHLCV :3009)
+#  Kaynak: /dev/shm/cycle_finance_trades (flow ring)
+#  Yayın:  /dev/shm/cycle_finance_trade_ohlcv (binary mumlar)
+#  Canlı:  daemon her kapanan 1s mumu stdout'a stream eder (tmux pencere 20)
+# ============================================================
+TRADE_OHLCV_ADDR="${TRADE_OHLCV_ADDR:-127.0.0.1:3009}"
+
+trade-ohlcv-start() {
+  _start_guard
+  if pgrep -x trade-ohlcv &>/dev/null; then
+    echo "⚠️  trade-ohlcv zaten çalışıyor (pid: $(pgrep -x trade-ohlcv | head -1))"
+    return 1
+  fi
+  if [ ! -f "$CYCLE_ROOT/target/debug/trade-ohlcv" ]; then
+    echo "🔨 trade-ohlcv derleniyor..."
+    cd "$CYCLE_ROOT" && cargo build -p trade-ohlcv 2>&1 | tail -5
+  fi
+  echo "🚀 trade-ohlcv başlatılıyor → http://$TRADE_OHLCV_ADDR"
+  _tmux_pane "⏱TRADE-OHLCV" "cd $CYCLE_ROOT && ./target/debug/trade-ohlcv" Enter
+  sleep 1
+  if pgrep -x trade-ohlcv &>/dev/null; then
+    echo "✅ trade-ohlcv başladı [pid: $(pgrep -x trade-ohlcv | head -1)]"
+    echo "   Canlı 1s OHLCV akışı pencere 20'de. API: /api/candles/{symbol}"
+  else
+    echo "❌ trade-ohlcv başlatılamadı."
+  fi
+}
+
+trade-ohlcv-stop() {
+  _start_guard
+  if pgrep -x trade-ohlcv &>/dev/null; then
+    pkill -TERM -x trade-ohlcv && echo "✅ trade-ohlcv durduruldu"
+  else
+    echo "⚠️  trade-ohlcv zaten çalışmıyor"
+  fi
+}
+
+trade-ohlcv-status() {
+  local pid
+  pid=$(pgrep -x trade-ohlcv 2>/dev/null | head -1 || true)
+  if [ -n "$pid" ]; then
+    local cpu mem
+    cpu=$(ps -p "$pid" -o pcpu= 2>/dev/null | tr -d ' ')
+    mem=$(ps -p "$pid" -o rss= 2>/dev/null | awk '{printf "%.0fM", $1/1024}')
+    echo "✅ trade-ohlcv ÇALIŞIYOR  [pid:$pid  CPU:${cpu}%  RAM:${mem}]"
+    echo "   API: http://$TRADE_OHLCV_ADDR/api/health"
+  else
+    echo "✘  trade-ohlcv durdurulmuş"
+  fi
+}
+
+trade-ohlcv-live() {
+  if tmux has-session -t cycle 2>/dev/null; then
+    tmux select-window -t cycle:20
+  else
+    echo "ℹ️  cycle session'ı yok. Canlı akış: cd $CYCLE_ROOT && ./target/debug/trade-ohlcv"
+  fi
+}
+
+# Kullanım: trade-ohlcv-symbols
+trade-ohlcv-symbols() {
+  curl -s "http://$TRADE_OHLCV_ADDR/api/symbols" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. trade-ohlcv-start ile başlat."
+}
+
+# Kullanım: trade-ohlcv-candles [SYMBOL] [LIMIT]
+trade-ohlcv-candles() {
+  local sym="${1:-BTCUSDT}" lim="${2:-20}"
+  echo "⏱ Sorgu: $sym son $lim kapalı 1s mum → http://$TRADE_OHLCV_ADDR"
+  curl -s "http://$TRADE_OHLCV_ADDR/api/candles/${sym}?limit=${lim}" \
+    | python3 -m json.tool 2>/dev/null || echo "❌ Servis yanıt vermiyor. trade-ohlcv-start ile başlat."
 }
 
 # ============================================================

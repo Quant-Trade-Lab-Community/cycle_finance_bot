@@ -1,0 +1,18 @@
+[package]
+name = "trade-ohlcv"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "trade_ohlcv"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+chrono = { workspace = true }
+flume = { workspace = true }
+transport = { path = "../../cycle-engine/transport" }
+infra = { path = "../../cycle-engine/infra" }

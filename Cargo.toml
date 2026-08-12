@@ -16,6 +16,7 @@ members = [
     "services-engine/ohlcv-engine",
     "services-engine/calc-ind",
     "services-engine/stream-ohlcv",
+    "services-engine/trade-ohlcv",
     "services-engine/detect-ms",
     "services-engine/paper-service",
     "services-engine/alert-service",
