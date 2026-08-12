@@ -178,11 +178,36 @@ fn now_secs() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
 }
 
-/// Event'leri dinleyip ses üreten task'ı başlatır.
+fn now_ms() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
+}
+
+/// Tetiklenen uyarıyı JSONL olarak dosyaya ekler (telegram-bot izler).
+/// `ALERT_EVENTS_FILE` env'i ile değiştirilebilir (varsayılan /tmp/alert_events.jsonl).
+fn append_event_log(path: &str, ev: &AlertEvent) {
+    use std::io::Write;
+    let json = serde_json::json!({
+        "ts": now_ms(),
+        "symbol": ev.symbol,
+        "condition": ev.condition.as_str(),
+        "price": ev.price.to_string(),
+        "voice": ev.voice,
+    });
+    let mut line = json.to_string();
+    line.push('\n');
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+        let _ = f.write_all(line.as_bytes());
+    }
+}
+
+/// Event'leri dinleyip ses üreten task'ı başlatır; her uyarıyı JSONL log dosyasına da yazar.
 pub fn spawn_alert_sink(rx: flume::Receiver<AlertEvent>) {
+    let log_path =
+        std::env::var("ALERT_EVENTS_FILE").unwrap_or_else(|_| "/tmp/alert_events.jsonl".to_string());
     std::thread::spawn(move || {
         while let Ok(ev) = rx.recv() {
             audio::trigger(&ev.voice, &ev.symbol, ev.condition.as_str(), ev.price);
+            append_event_log(&log_path, &ev);
         }
     });
 }

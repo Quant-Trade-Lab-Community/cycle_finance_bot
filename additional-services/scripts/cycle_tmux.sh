@@ -68,12 +68,24 @@ _proc_kill() {
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 # Akış süreçleri (her biri ayrı proses) + klasik servisler
 FLOW_PROCS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
-SERVICE_PROCS="paper-service alert-service strategies-engine trade-ohlcv"
+SERVICE_PROCS="paper-service alert-service strategies-engine trade-ohlcv executiond risk-worker db-query exec-console"
 FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate /dev/shm/cycle_finance_trade_ohlcv"
+
+# systemd yönetimindeki tüm cycle servislerini durdurur (Restart=always
+# olduğundan pkill yetmez; önce unit'leri stop etmek gerekir).
+stop_systemd_services() {
+  if systemctl --user list-units 'cycle-*.service' --no-legend 2>/dev/null | grep -q .; then
+    echo "⏹️  systemd cycle servisleri durduruluyor..."
+    systemctl --user stop 'cycle-*.service' 2>/dev/null
+    sleep 1
+    echo "  ✔ systemd cycle servisleri durduruldu"
+  fi
+}
 
 full_cleanup() {
   echo "🧹 Temizleniyor..."
   tmux kill-session -t "$SESSION" 2>/dev/null && echo "  ✔ tmux session kapatıldı" || echo "  - tmux session yoktu"
+  stop_systemd_services
   for proc in $SERVICE_PROCS $FLOW_PROCS; do
     if _proc_alive "$proc"; then
       _proc_kill "$proc" TERM

@@ -1,14 +1,16 @@
-//! 🤖 telegram-bot — kırılım stratejisi sinyallerini Telegram'a bildirim olarak iletir.
+//! 🤖 telegram-bot — kırılım stratejisi sinyallerini ve alert-service uyarılarını Telegram'a iletir.
 //!
-//! `strategies-engine` her sinyal değişiminde `/tmp/strategy_signals.jsonl`'e
-//! bir JSONL satırı ekler. Bu servis dosyayı izler ve her yeni sinyali
-//! Telegram Bot API ile ilgili sohbete gönderir. Ayrıca her `DETECT_MS_PERIOD_SEC`
-//! (varsayılan 300 sn) aralığında detect-ms'ten MSMP raporu çekip gönderir.
+//! `strategies-engine` her sinyal değişiminde `/tmp/strategy_signals.jsonl`'e bir JSONL satırı
+//! ekler; `alert-service` ise her tetiklenen uyarıyı `/tmp/alert_events.jsonl`'e yazar.
+//! Bu servis iki dosyayı da izler ve yeni satırları Telegram Bot API ile ilgili sohbete gönderir.
+//! Ayrıca her `DETECT_MS_PERIOD_SEC` (varsayılan 300 sn) aralığında detect-ms'ten MSMP raporu
+//! çekip gönderir.
 //!
 //! Gereksinimler:
 //!   TELEGRAM_BOT_TOKEN  — @BotFather'dan alınır
 //!   TELEGRAM_CHAT_ID    — sinyallerin gideceği sohbet/kanal ID'si
 //!   STRATEGY_SIGNALS_FILE (opsiyonel) — sinyal dosyası (varsayılan /tmp/strategy_signals.jsonl)
+//!   ALERT_EVENTS_FILE    (opsiyonel) — uyarı dosyası (varsayılan /tmp/alert_events.jsonl)
 //!
 //! Periyodik detect-ms raporu:
 //!   DETECT_MS_URL       (opsiyonel) — varsayılan http://127.0.0.1:3002
@@ -22,6 +24,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 const SIGNALS_DEFAULT: &str = "/tmp/strategy_signals.jsonl";
+const ALERTS_DEFAULT: &str = "/tmp/alert_events.jsonl";
 const DETECT_MS_DEFAULT: &str = "http://127.0.0.1:3002";
 
 fn main() {
@@ -30,6 +33,8 @@ fn main() {
     let token = std::env::var("TELEGRAM_BOT_TOKEN").unwrap_or_default();
     let chat_id = std::env::var("TELEGRAM_CHAT_ID").unwrap_or_default();
     let path = std::env::var("STRATEGY_SIGNALS_FILE").unwrap_or_else(|_| SIGNALS_DEFAULT.to_string());
+    let alert_path =
+        std::env::var("ALERT_EVENTS_FILE").unwrap_or_else(|_| ALERTS_DEFAULT.to_string());
 
     if token.is_empty() || chat_id.is_empty() {
         eprintln!("❌ TELEGRAM_BOT_TOKEN ve TELEGRAM_CHAT_ID gerekli (.env'e ekle)");
@@ -44,12 +49,13 @@ fn main() {
         .and_then(|v| v.parse().ok())
         .unwrap_or(300);
 
-    println!("🤖 Telegram bot başlatıldı — sinyal akışı: {path}");
+    println!("🤖 Telegram bot başlatıldı — sinyal akışı: {path} | uyarı akışı: {alert_path}");
     println!("📊 Periyodik detect-ms raporu: her {detect_period}sn → {detect_url} ({detect_symbol} {detect_interval})");
-    let _ = send(&token, &chat_id, "🤖 Cycle Finance sinyal botu çalışıyor — kırılım sinyallerini bildirecek.");
+    let _ = send(&token, &chat_id, "🤖 Cycle Finance sinyal botu çalışıyor — kırılım sinyallerini ve uyarıları bildirecek.");
 
-    // Dosyanın mevcut sonundan başla (eski sinyalleri yeniden gönderme).
+    // Dosyaların mevcut sonundan başla (eski satırları yeniden gönderme).
     let mut last_offset = current_len(&path);
+    let mut last_alert_offset = current_len(&alert_path);
     let mut last_detect = std::time::Instant::now();
 
     loop {
@@ -57,6 +63,14 @@ fn main() {
             for line in new_lines {
                 let text = format_signal(&line);
                 println!("📨 {text}");
+                let _ = send(&token, &chat_id, &text);
+            }
+        }
+
+        if let Some(new_lines) = read_new_lines(&alert_path, &mut last_alert_offset) {
+            for line in new_lines {
+                let text = format_alert(&line);
+                println!("🔔 {text}");
                 let _ = send(&token, &chat_id, &text);
             }
         }
@@ -109,6 +123,42 @@ fn format_signal(line: &str) -> String {
     format!(
         "🚀 BREAKOUT SİNYALİ — {sym}\n{arrow} ({dir})\nSeviye: {level}\nKalite: %{q:.1} | Sahte: %{f:.1} | Kesinlik: %{c:.1}\n⏰ {ts}"
     )
+}
+
+/// alert-service uyarı JSON satırından okunabilir bir Telegram mesajı üretir.
+fn format_alert(line: &str) -> String {
+    let v: serde_json::Value = serde_json::from_str(line.trim())
+        .unwrap_or_else(|_| serde_json::json!({ "raw": line.trim() }));
+    let sym = v["symbol"].as_str().unwrap_or("?");
+    let cond = v["condition"].as_str().unwrap_or("?");
+    let price = v["price"].as_f64()
+        .or_else(|| v["price"].as_str().and_then(|s| s.parse().ok()))
+        .unwrap_or(0.0);
+    let voice = v["voice"].as_str().unwrap_or("").to_string();
+    let ts = fmt_time_ms(v["ts"].as_u64().unwrap_or(0));
+
+    let cond_label = match cond {
+        "above" => "ÜSTÜNE ÇIKTI ⬆️",
+        "below" => "ALTINA İNDİ ⬇️",
+        "cross" => "GEÇTİ ↔️",
+        "touch" => "DEĞDİ 👆",
+        other => other,
+    };
+
+    let mut out = format!("🔔 ALERT — {sym}\nFiyat {cond_label}: {price}\n⏰ {ts}");
+    if !voice.is_empty() {
+        out.push_str(&format!("\n🗣️ {voice}"));
+    }
+    out
+}
+
+/// Unix ms'yi (UTC) HH:MM:SS'ye çevirir (chrono bağımlılığı olmadan).
+fn fmt_time_ms(ms: u64) -> String {
+    let secs = ms / 1000;
+    let h = (secs / 3600) % 24;
+    let m = (secs / 60) % 60;
+    let s = secs % 60;
+    format!("{h:02}:{m:02}:{s:02}")
 }
 
 /// detect-ms API'sinden MSMP raporunu çeker ve Telegram mesajı formatında döndürür.
