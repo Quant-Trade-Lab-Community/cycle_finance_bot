@@ -6,16 +6,16 @@
 <title>Cycle Finance — Rust HFT Sistemi</title>
 <style>
   :root {
-    --bg: #ffffff;
-    --bg-soft: #f6f5f2;
-    --panel: #ffffff;
-    --border: #e7e3db;
-    --border-strong: #d6d0c4;
-    --text: #16130d;
-    --muted: #6f6a60;
-    --navy: #0b2545;
+    --bg: #070b14;
+    --bg-soft: #0b1220;
+    --panel: #0f172a;
+    --border: #1e293b;
+    --border-strong: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --navy: #3b82f6;
     --gold: #b4945a;
-    --ink: #0a0a0a;
+    --ink: #ffffff;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -32,7 +32,7 @@
   /* ── ÜST NAV ────────────────────────────────────────────── */
   .sitenav {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(255,255,255,0.94);
+    background: rgba(15, 23, 42, 0.94);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
   }
@@ -86,7 +86,7 @@
     font-size: 0.9rem; font-weight: 600; text-decoration: none;
     transition: all 0.15s ease;
   }
-  .btn.primary { background: var(--ink); color: #fff; }
+  .btn.primary { background: var(--ink); color: var(--bg); }
   .btn.primary:hover { background: var(--navy); }
   .btn.outline { border: 1px solid var(--border-strong); color: var(--ink); background: transparent; }
   .btn.outline:hover { border-color: var(--ink); }
@@ -397,13 +397,13 @@ flowchart TD
     theme: 'base',
     themeVariables: {
       fontFamily: 'system-ui, sans-serif',
-      primaryColor: '#ffffff',
-      primaryTextColor: '#16130d',
+      primaryColor: '#0f172a',
+      primaryTextColor: '#e2e8f0',
       primaryBorderColor: '#b4945a',
-      lineColor: '#8a857a',
-      secondaryColor: '#f6f5f2',
-      tertiaryColor: '#ffffff',
-      nodeBorder: '#d6d0c4'
+      lineColor: '#94a3b8',
+      secondaryColor: '#0b1220',
+      tertiaryColor: '#0f172a',
+      nodeBorder: '#1e293b'
     }
   });
   window.addEventListener('load', function () {
