@@ -3,6 +3,8 @@
 > **High-Frequency Trading / Market Structure Analysis Platform**
 > Rust monorepo · event-driven mimari · düşük gecikme hedefli
 
+![Sistem Önizlemesi](preview.gif)
+
 ---
 
 ## 📌 İçindekiler
