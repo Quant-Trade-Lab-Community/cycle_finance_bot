@@ -144,6 +144,10 @@ help-cycle() {
 
   echo -e "\n${_Y}━━━  📊 İZLEME  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}monitor-start${_N}        İzleme paneline geç (Ctrl+B → 10)"
+  echo -e "  ${_C}cycle-ip now${_N}         Güncel public IP'yi göster (Binance whitelist)"
+  echo -e "  ${_C}cycle-ip check${_N}       IP değişti mi? (kayıtlı ile karşılaştırır, uyarır)"
+  echo -e "  ${_C}cycle-ip record${_N}      Güncel IP'yi kaydet"
+  echo -e "  ${_C}cycle-ip watch [SN]${_N}  IP'yi sürekli izle (varsayılan 300s)"
 
   echo -e "\n${_Y}━━━  🗄️  VERİTABANI  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${_N}"
   echo -e "  ${_C}db-trades${_N}            Son 20 işlemi göster"
@@ -200,6 +204,12 @@ cycle-build() {
 }
 cycle-build-full() {
   cd "$CYCLE_ROOT" && cargo build -p paper-service --features full
+}
+
+# ── IP yardımcıları (Binance whitelist için public IP takibi) ──
+# cycle-ip now|record|check|state|watch [SN]  → cycle_ip.sh'e iletir
+cycle-ip() {
+  bash "$CYCLE_ROOT/additional-services/scripts/cycle_ip.sh" "$@"
 }
 
 # ============================================================
