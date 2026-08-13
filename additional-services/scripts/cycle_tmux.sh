@@ -24,6 +24,7 @@
 #  Pencere 18 — 🛢️ DB-QUERY (TimescaleDB sorgu paneli)
 #  Pencere 19 — 🤖 TELEGRAM (sinyal bildirim botu)
 #  Pencere 20 — ⏱ TRADE-OHLCV (trade data → 1s OHLCV canlı stream :3009)
+#  Pencere 21 — 💥 FORCE-ORDERS (canlı likidasyon izleyici :3012)
 #
 #  Stratejiler ayrı pencerede DEĞİL, STRATEGY konsolunun içinde
 #  (orkestrasyon merkezi altında) çalışır. Shell'den:
@@ -68,16 +69,28 @@ _proc_kill() {
 # ── Tam temizlik fonksiyonu ──────────────────────────────────
 # Akış süreçleri (her biri ayrı proses) + klasik servisler
 FLOW_PROCS="flow-trade flow-depth flow-liquidation flow-oi flow-funding flow-markprice flow-lastprice flow-indexprice"
-SERVICE_PROCS="paper-service alert-service strategies-engine trade-ohlcv executiond risk-worker db-query exec-console"
-FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate /dev/shm/cycle_finance_trade_ohlcv"
+SERVICE_PROCS="paper-service alert-service strategies-engine trade-ohlcv executiond risk-worker db-query exec-console force-orders"
+FLOW_RINGS="/dev/shm/cycle_finance_trades /dev/shm/cycle_finance_depth /dev/shm/cycle_finance_liquidations /dev/shm/cycle_finance_open_interest /dev/shm/cycle_finance_funding /dev/shm/cycle_finance_markprice /dev/shm/cycle_finance_lastprice /dev/shm/cycle_finance_indexprice /dev/shm/cycle_finance_api_gate /dev/shm/cycle_finance_trade_ohlcv /dev/shm/cycle_finance_force_orders"
 
 # systemd yönetimindeki tüm cycle servislerini durdurur (Restart=always
 # olduğundan pkill yetmez; önce unit'leri stop etmek gerekir).
 stop_systemd_services() {
+  # tmux detach ortamında DBUS değişkenleri eksik kalabilir; systemctl --user
+  # o zaman "Failed to connect to user scope bus" hatasıyla sessizce atlar ve
+  # servisler Restart=always yüzünden yeniden ayağa kalkar.
+  : "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+  export XDG_RUNTIME_DIR
+  if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -S "/run/user/$(id -u)/bus" ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+  fi
   if systemctl --user list-units 'cycle-*.service' --no-legend 2>/dev/null | grep -q .; then
     echo "⏹️  systemd cycle servisleri durduruluyor..."
-    systemctl --user stop 'cycle-*.service' 2>/dev/null
+    systemctl --user stop 'cycle-*.service'
     sleep 1
+    if systemctl --user list-units 'cycle-*.service' --no-legend 2>/dev/null | grep -q .; then
+      echo "  ⚠️  hâlâ aktif cycle servisleri var; force-stop deniyor..."
+      systemctl --user kill 'cycle-*.service' 2>/dev/null || true
+    fi
     echo "  ✔ systemd cycle servisleri durduruldu"
   fi
 }
@@ -142,7 +155,7 @@ fi
 if [ -f "$ROOT/Cargo.toml" ]; then
   echo "🔨 Derleniyor..."
   cd "$ROOT"
-  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p trade-ohlcv -p exec-console -p db-query -p telegram-bot 2>&1 | tail -5
+  cargo build $BUILD_ARGS -p engine -p flows -p paper-service -p alert-service -p strategies-engine -p detect-ms -p stream-ohlcv -p trade-ohlcv -p exec-console -p db-query -p telegram-bot -p force-orders 2>&1 | tail -5
 else
   echo "ℹ️  Kurulu paket — önceden derlenmiş binary'ler kullanılıyor ($BIN)"
 fi
@@ -387,6 +400,19 @@ sleep 3
 cd $ROOT && $BIN/trade-ohlcv
 " Enter
 
+# ── Pencere 21: FORCE-ORDERS (canlı likidasyon izleyici :3012) ──
+tmux new-window -t "$SESSION:21" -n "💥 FORCE-ORDERS"
+tmux send-keys -t "$SESSION:21" "
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '💥  FORCE-ORDERS  (Canlı Likidasyon :3012)'
+echo '    Kaynak: Binance Futures !forceOrder@arr'
+echo '    Ring:   /dev/shm/cycle_finance_force_orders'
+echo '    Filtre: FORCE_ORDERS_MIN_NOTIONAL (env)'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+sleep 2
+cd $ROOT && $BIN/force-orders
+" Enter
+
 # ── Görsel ayarlar (global) ──────────────────────────────────
 tmux set-option -t "$SESSION" mouse on
 tmux set-option -t "$SESSION" status-interval 1
@@ -400,7 +426,7 @@ tmux set-option -g set-clipboard on 2>/dev/null || true
 tmux set-option -t "$SESSION" status-style          "bg=#000000,fg=#00ff41"
 tmux set-option -t "$SESSION" status-left           "#[bg=#003300,fg=#00ff41,bold]  🏛️  Cycle Finance  #[bg=#000000,fg=#00ff41] "
 tmux set-option -t "$SESSION" status-left-length    30
-tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]19#[fg=#00cc33]:TG #[fg=#00ff41]20#[fg=#00cc33]:OHLCV #[fg=#00ff41]%H:%M:%S"
+tmux set-option -t "$SESSION" status-right          "#[fg=#00ff41]1#[fg=#00cc33]:STRAT #[fg=#00ff41]2#[fg=#00cc33]:DETECT #[fg=#00ff41]3#[fg=#00cc33]:CALC #[fg=#00ff41]5#[fg=#00cc33]:PAPER #[fg=#00ff41]9#[fg=#00cc33]:CONSOLE #[fg=#00ff41]10-17#[fg=#00cc33]:FLOWS #[fg=#00ff41]18#[fg=#00cc33]:DB #[fg=#00ff41]19#[fg=#00cc33]:TG #[fg=#00ff41]20#[fg=#00cc33]:OHLCV #[fg=#00ff41]21#[fg=#00cc33]:LIQ #[fg=#00ff41]%H:%M:%S"
 tmux set-option -t "$SESSION" status-right-length   110
 
 # Window sekme renkleri — matrix

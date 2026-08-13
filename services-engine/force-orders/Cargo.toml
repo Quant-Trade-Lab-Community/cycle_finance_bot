@@ -1,0 +1,20 @@
+[package]
+name = "force-orders"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "force_orders"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true }
+rust_decimal = { workspace = true }
+chrono = { workspace = true }
+transport = { path = "../../cycle-engine/transport" }
+infra = { path = "../../cycle-engine/infra" }
