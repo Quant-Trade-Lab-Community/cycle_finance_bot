@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Microstructure — Piyasa Mikroyapısı Dokümantasyonu</title>
+  <link rel="stylesheet" href="theme.css">
+<style>
+  :root { color-scheme: dark light; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6; margin: 0; padding: 2rem 1rem;
+    max-width: 1000px; margin-left: auto; margin-right: auto;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.45;
+  }
+  pre.mermaid { background: #f8fafc; border: 1px solid #e2e8f0; text-align: center; overflow-x: auto; }
+  @media (prefers-color-scheme: dark) { pre.mermaid { background: #0f172a; border-color: #334155; } }
+  code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  @media (prefers-color-scheme: dark) { code { background: #1e293b; color: #e2e8f0; } }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #334155; } }
+  th { background: #e2e8f0; }
+  @media (prefers-color-scheme: dark) { th { background: #1e293b; } }
+  h1 { border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3rem; }
+  h3 { margin-top: 1.75rem; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 a, h2 a, h3 a, h4 a { color: inherit; }
+  .headerlink { opacity: 0.35; margin-left: 0.3rem; font-size: 0.8em; }
+  .headerlink:hover { opacity: 1; }
+  .topnav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem;
+  }
+  @media (prefers-color-scheme: dark) { .topnav { background: #0f172a; border-color: #334155; } }
+  .topnav a { padding: 0.2rem 0.8rem; border-radius: 6px; background: #e2e8f0; color: inherit; }
+  @media (prefers-color-scheme: dark) { .topnav a { background: #1e293b; } }
+  .topnav a:hover { background: #2563eb; color: white; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 2rem 0; }
+  blockquote { margin: 1rem 0; padding: 0.6rem 1rem; border-left: 4px solid #2563eb; background: #f8fafc; }
+  @media (prefers-color-scheme: dark) { blockquote { background: #0b1220; } }
+  .kutu { border: 1px solid #2563eb; border-radius: 8px; padding: 0.9rem 1.1rem; margin: 1.2rem 0; background: #f8fafc; }
+  @media (prefers-color-scheme: dark) { .kutu { background: #0b1220; } }
+  .formul { text-align: center; font-size: 1.1rem; padding: 0.9rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin: 1rem 0; }
+  @media (prefers-color-scheme: dark) { .formul { background: #0b1220; border-color: #334155; } }
+
+  .sitenav {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+  }
+  .sitenav .brand { font-weight: 700; color: #fff; margin-right: 0.5rem; letter-spacing: 0.02em; }
+  .sitenav a {
+    padding: 0.25rem 0.7rem; border-radius: 6px; background: rgba(255,255,255,0.08);
+    color: #e2e8f0; text-decoration: none; white-space: nowrap;
+  }
+  .sitenav a:hover { background: #2563eb; color: #fff; text-decoration: none; }
+  .sitenav a.active { background: #2563eb; color: #fff; }
+</style>
+</head>
+<body>
+<nav class="sitenav"><span class="brand">Cycle Finance Docs</span><a href="index.html">Ana Sayfa</a><a href="PROJE_KOKU_KAYNAK_KODU.html">Kök</a><a href="CYCLE_ENGINE_KAYNAK_KODU.html">Cycle</a><a href="EXECUTION_ENGINE_KAYNAK_KODU.html">Execution</a><a href="SERVICES_ENGINE_KAYNAK_KODU.html">Services</a><a href="STRATEGIES_ENGINE_KAYNAK_KODU.html">Strategies</a><a href="RISK_ENGINE_KAYNAK_KODU.html">Risk</a><a href="DATA_ENGINE_KAYNAK_KODU.html">Data</a><a href="ADDITIONAL_SERVICES_KAYNAK_KODU.html">Ek Servis</a><a href="AI_ENGINE_KAYNAK_KODU.html">AI</a><a href="UNUSED_SERVICES_KAYNAK_KODU.html">Unused</a><a href="MARKET_MICROSTRUCTURE.html" class="active">Microstructure</a></nav>
+<nav class="topnav">
+  <strong>📑 Bölümler:</strong>
+  <a href="#tanim">Tanım</a>
+  <a href="#temel-kavramlar">Temel Kavramlar</a>
+  <a href="#katilimcilar">Katılımcılar</a>
+  <a href="#klasik-modeller">Klasik Modeller</a>
+  <a href="#market-making">Market Making</a>
+  <a href="#islem-maliyetleri">İşlem Maliyetleri</a>
+  <a href="#emir-defteri">Emir Defteri</a>
+  <a href="#fiyat-kesfi">Fiyat Keşfi</a>
+  <a href="#hft-ve-modern">HFT ve Modern</a>
+  <a href="#uygulama">Uygulama Alanları</a>
+</nav>
+
+<h1 id="market-microstructure">📊 Market Microstructure — Piyasa Mikroyapısı<a class="headerlink" href="#market-microstructure" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Piyasa Mikroyapısı</strong>, finansta varlıkların <em>belirli ticaret kuralları altında</em> takas edilme sürecini ve bu sürecin sonuçlarını inceleyen disiplindir. Temel soru: <strong>Fiyatlar nasıl oluşur?</strong> Makro teoriler fiyatın "gerçek değeri" yansıttığını varsayar; mikroyapı bu fiyatın <em>mekanizmasını</em>, katılımcılarını ve kurallarını inceler.</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler">📂 İçindekiler<a class="headerlink" href="#icindekiler" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#tanim">Tanım</a></li>
+<li><a href="#temel-kavramlar">Temel Kavramlar</a></li>
+<li><a href="#katilimcilar">Katılımcı Tipleri ve Asimetrik Bilgi</a></li>
+<li><a href="#klasik-modeller">Klasik Teorik Modeller</a></li>
+<li><a href="#market-making">Market Making ve Envanter Riski</a></li>
+<li><a href="#islem-maliyetleri">İşlem Maliyetleri Bileşenleri</a></li>
+<li><a href="#emir-defteri">Emir Tipleri ve Emir Defteri (LOB)</a></li>
+<li><a href="#fiyat-kesfi">Fiyat Keşfi (Price Discovery)</a></li>
+<li><a href="#hft-ve-modern">Yüksek Frekanslı Ticaret ve Modern Gelişmeler</a></li>
+<li><a href="#uygulama">Uygulama Alanları</a></li>
+</ul>
+<hr />
+<h2 id="tanim">🧠 Tanım<a class="headerlink" href="#tanim" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Mikroyapı literatürü (O'Hara, 1995) üç temel soru etrafında döner: (1) Fiyatlar bilgiyi nasıl ve ne hızla içerir? (2) Likidite nasıl sağlanır ve fiyatlandırılır? (3) Ticaret kuralları (lot büyüklüğü, tick boyutu, sürekli/açık artırma eşleşmesi) fiyat kalitesini nasıl etkiler? Bugün bu alan; emir defteri (LOB) verisi, yüksek frekanslı ticaret (HFT), fiyat etkisi modelleri ve makine öğrenmesiyle analiz edilir. Bu doküman, teorik temellerden modern uygulamalara kadar konuyu baştan sona detaylı anlatır.</p>
+
+<div class="kutu">
+<strong>Tek cümlelik öz:</strong> Mikroyapı, fiyatların <em>kimin, hangi kurallarla, hangi bilgiyle</em> işlem yaptığına göre nasıl oluştuğunun bilimidir.
+</div>
+<hr />
+<h2 id="temel-kavramlar">📐 Temel Kavramlar<a class="headerlink" href="#temel-kavramlar" title="Permanent link">&para;</a></h2>
+<table>
+<thead><tr><th>Kavram</th><th>Açıklama</th></tr></thead>
+<tbody>
+<tr><td><code>Bid-Ask Spread</code></td><td>Alış (bid) ve satış (ask) fiyatı arasındaki fark. Likidite sağlayıcının (market maker) kazancı ve likidite arayanın maliyetidir.</td></tr>
+<tr><td><code>Orta Nokta (Mid-price)</code></td><td>(Bid + Ask) / 2. Fiyat keşfinin referans noktası; birçok stratejide işlem fiyatı bu değerle karşılaştırılır.</td></tr>
+<tr><td><code>Piyasa Derinliği (Depth)</code></td><td>Belirli fiyat seviyelerinde emir defterindeki bekleyen hacim. Derinlik ne kadar yüksekse büyük emirler fiyatı o kadar az etkiler.</td></tr>
+<tr><td><code>Order Flow (Emir Akışı)</code></td><td>Piyasaya giren alım/satım emirlerinin akışı. Yönü ve büyüklüğü <strong>bilgi taşır</strong> — tüccarların niyetini yansıtır.</td></tr>
+<tr><td><code>Likidite</code></td><td>Bir varlığın fiyatı etkilenmeden işlem görebilme yeteneği. Dört boyutu: derinlik (depth), genişlik (spread), esneklik (resilience) ve dayanıklılık.</td></tr>
+<tr><td><code>Tick Boyutu</code></td><td>Fiyat adımının (minimum fiyat artışının) büyüklüğü. Tick ne kadar kaba ise spread o kadar geniş, fiyat keşfi o kadar yavaştır.</td></tr>
+<tr><td><code>Taker / Maker</code></td><td>Taker: piyasa emriyle defterden likidite çeker. Maker: limit emriyle deftere likidite koyar ve pasif kalır.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2 id="katilimcilar">👥 Katılımcı Tipleri ve Asimetrik Bilgi<a class="headerlink" href="#katilimcilar" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Piyasadaki herkes aynı bilgiye sahip değildir. Bu bilgi asimetrisi mikroyapının <em>kalbidir</em>; çünkü fiyat, bilgili ve bilgisiz katılımcılar arasındaki bu oyunun dengesidir.</p>
+<table>
+<thead><tr><th>Katılımcı</th><th>Davranış</th><th>Mikroyapısal Rolü</th></tr></thead>
+<tbody>
+<tr><td><strong>Bilgili (Informed) Trader</strong></td><td>Varlığın gerçek değeri hakkında özel bilgiye sahiptir (içeriden öğrenen, güçlü sinyali olan).</td><td>Alım-satımları fiyatı gerçek değere <em>çeker</em>; fiyat keşfinin taşıyıcısıdır.</td></tr>
+<tr><td><strong>Likidite Traderı</strong></td><td>Nakit ihtiyacı, riskten korunma, portföy yeniden dengeleme gibi bilgi dışı nedenlerle işlem yapar.</td><td>Market maker'ın kazanç kaynağıdır; spread'i öder.</td></tr>
+<tr><td><strong>Gürültü (Noise) Traderı</strong></td><td>Rastgele, bilgiye dayanmayan işlemler yapar.</td><td>Emir akışına gürültü ekler; bilgili trader'ın kimliğini gizlemeye yardımcı olur.</td></tr>
+<tr><td><strong>Market Maker</strong></td><td>Sürekli alış/satış kotasyonu verir, her iki taraftan fiyat teklif eder.</td><td>Likidite sağlayıcıdır; spread farkından kazanır, kötü seçim (adverse selection) riskine maruz kalır.</td></tr>
+</tbody>
+</table>
+<p><strong>Asimetrik Bilgi Problemi (Adverse Selection):</strong> Market maker bilgili trader'la işlem yaptığında kaybeder — çünkü karşısındaki fiyatın yanlış olduğunu bilerek işlem yapar. Bu kaybı <code>spread'i genişleterek</code> ve <code>bilgisiz traderlardan kazanarak</code> telafi eder. Yani spread yalnızca işlem maliyeti değil, aynı zamanda <em>bilgi maliyetinin bir fiyatıdır</em>.</p>
+<pre class="mermaid">flowchart TD
+    subgraph bilgili[&quot;Bilgili Trader&quot;]
+        a1[&quot;Özel bilgi: gerçek değer &gt; fiyat&quot;] --&gt; a2[&quot;Alım emri gönderir&quot;]
+    end
+    subgraph bilgisiz[&quot;Likidite / Gürültü Traderı&quot;]
+        b1[&quot;Bilgi yok, niyet nakit/risk&quot;] --&gt; b2[&quot;Rastgele alım/satım&quot;]
+    end
+    mm[&quot;Market Maker&quot;] --&gt;|&quot;spread farkından kazanç&quot;| bilgisiz
+    mm --&gt;|&quot;adverse selection kaybı&quot;| bilgili
+    bilgili --&gt;|&quot;fiyatı gerçek değere çeker&quot;| fk[&quot;Fiyat Keşfi&quot;]
+    bilgisiz --&gt; fk
+</pre>
+<hr />
+<h2 id="klasik-modeller">📐 Klasik Teorik Modeller<a class="headerlink" href="#klasik-modeller" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Mikroyapının dört temel yapı taşı modeli; hepsi bugün hâlâ veri analizi ve fiyat etkisi ölçümünde kullanılır.</p>
+
+<h3 id="kyle-1985">Kyle (1985) Modeli<a class="headerlink" href="#kyle-1985" title="Permanent link">&para;</a></h3>
+<p>Bilgili trader, emir büyüklüğünü ayarlayarak bilgisini gizler. Piyasa yapıcı emir akışına bakıp fiyatı doğrusal günceller. Fiyat değişimi emir akışının (order flow) bir fonksiyonudur:</p>
+<div class="formul">Δp = λ · q</div>
+<p>Buradaki <strong>λ (Kyle Lambda)</strong> — emir akışının fiyata duyarlılığı (fiyat etkisi) — literatürde hâlâ en yaygın kullanılan <em>likidite/fiyat etkisi</em> ölçütlerinden biridir. Büyük λ → likiditesiz piyasa (küçük emirler bile fiyatı oynatır).</p>
+
+<h3 id="glosten-milgrom-1985">Glosten-Milgrom (1985) Modeli<a class="headerlink" href="#glosten-milgrom-1985" title="Permanent link">&para;</a></h3>
+<p>Market maker, karşısındakinin bilgili/bilgisiz olduğunu ayırt edemez. Her işlem, karşı tarafın bilgili olma olasılığına göre fiyatı Bayesçi olarak günceller. Modelin çıkarımı: <strong>spread, adverse selection maliyetini yansıtır</strong>. Alım emri görüldükçe fiyat yukarı, satım emri görüldükçe aşağı revize edilir — her işlem fiyat keşfine katkı sağlar.</p>
+
+<h3 id="roll-1984">Roll (1984) Modeli<a class="headerlink" href="#roll-1984" title="Permanent link">&para;</a></h3>
+<p>Eğer fiyat yalnızca spread maliyetiyle (bilgi etkisi olmadan) hareket ediyorsa, ardışık işlem fiyatı değişimleri <strong>negatif otokorelasyon</strong> gösterir. Bu kovaryandan efektif spread tahmin edilebilir:</p>
+<div class="formul">Spread ≈ 2 · √(−Cov(Δpₜ, Δpₜ₊₁))</div>
+
+<h3 id="envanter-modelleri">Envanter (Inventory) Modelleri — Ho-Stoll (1981)<a class="headerlink" href="#envanter-modelleri" title="Permanent link">&para;</a></h3>
+<p>Market maker bir fiyattan yalnızca belirli bir stok tutmak ister. Stok istenen seviyeden saptığında kotasyonlarını <em>asimetrik</em> kaydırır: stok fazlaysa satış tarafını cazip hale getirir, eksikse alış tarafını. Yani spread, envanter riskinin bir fonksiyonudur.</p>
+<pre class="mermaid">flowchart LR
+    kyle[&quot;Kyle 1985 · Δp = λ·q&quot;]
+    gm[&quot;Glosten-Milgrom 1985 · Bayesçi fiyat güncellemesi&quot;]
+    roll[&quot;Roll 1984 · kovaryans bazlı spread tahmini&quot;]
+    ho[&quot;Ho-Stoll 1981 · envanter bazlı kotasyon kayması&quot;]
+    kyle --&gt; modern[&quot;Fiyat etkisi ölçümü (Kyle Lambda)&quot;]
+    gm --&gt; modern
+    roll --&gt; modern
+    ho --&gt; modern
+</pre>
+<hr />
+<h2 id="market-making">🏛️ Market Making ve Envanter Riski<a class="headerlink" href="#market-making" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Market maker sürekli iki taraflı kotasyon vererek likidite sağlar. Kazancı <em>spread × hacim</em>, kaybı ise iki risktir:</p>
+<ul>
+<li><strong>Adverse Selection:</strong> Bilgili trader karşısında her eşleşmede sistematik kayıp.</li>
+<li><strong>Envanter Riski:</strong> Stok fazla/az olduğunda fiyatın aleyhe hareket etme riski (Ho-Stoll modelinin konusu).</li>
+</ul>
+<p>Market maker'ın kar denklemi:</p>
+<div class="formul">Kâr ≈ (Yüksek Hacim × Küçük Spread) − Bilgi Kaybı − Envanter Riski</div>
+<p>Bu yüzden market maker'lar <em>yüksek işlem hacimli, düşük volatiliteli</em> piyasaları tercih eder; volatilite arttıkça spread genişler ve likidite azalır (piyasa derinliği buharlaşır).</p>
+<pre class="mermaid">flowchart TD
+    subgraph mm[&quot;Market Maker Döngüsü&quot;]
+        kot[&quot;İki taraflı kotasyon ver (bid/ask)&quot;]
+        es[&quot;Emir akışı ile karşılaş&quot;]
+        kayip[&quot;Adverse selection + envanter riski ölç&quot;]
+        yeni[&quot;Spread'i ve kotasyon dengesini güncelle&quot;]
+    end
+    kot --&gt; es --&gt; kayip --&gt; yeni --&gt; kot
+    kayip --&gt;|&quot;risk arttı → spread genişler&quot;| kot
+</pre>
+<hr />
+<h2 id="islem-maliyetleri">💸 İşlem Maliyetleri Bileşenleri<a class="headerlink" href="#islem-maliyetleri" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Kurumsal bir emrin toplam maliyeti üç bileşenin toplamıdır. Kurumsal emir icrası (execution) algoritmalarının görevi bu toplamı minimize etmektir.</p>
+<table>
+<thead><tr><th>Bileşen</th><th>Açıklama</th><th>Ölçüm</th></tr></thead>
+<tbody>
+<tr><td><strong>Sabit maliyet</strong></td><td>Komisyon, borsa ücretleri, vergi.</td><td>Doğrudan fatura edilir.</td></tr>
+<tr><td><strong>Anlık etki (transient)</strong></td><td>Kendi işleminizin fiyatı oynatması; zamanla kısmen geri döner.</td><td>Kısa pencere işlem sonrası fiyat dönüşü.</td></tr>
+<tr><td><strong>Kalıcı etki (permanent)</strong></td><td>İşleminizin taşıdığı bilgi nedeniyle fiyatın kalıcı yeni dengeye oturması.</td><td>Uzun pencere fiyat düzeyi kayması.</td></tr>
+<tr><td><strong>Fırsat maliyeti</strong></td><td>Emir bekletilirken fiyatın kaçması (uygulanamayan kısım).</td><td>Sinyal-temelli karşılaştırma.</td></tr>
+</tbody>
+</table>
+<p><strong>Standart ölçütler:</strong></p>
+<ul>
+<li><strong>Amihud (2002) likiditesizlik ölçüsü:</strong> <code>|R| / V</code> — mutlak getirinin işlem hacmine oranı; günlük bazda fiyat etkisinin vekili.</li>
+<li><strong>Kyle Lambda:</strong> emir akışına fiyat duyarlılığı (doğrusal regresyon katsayısı).</li>
+<li><strong>Efektif spread:</strong> işlem fiyatı ile mid-price arasındaki farkın iki katı — fiilen ödenen likidite maliyeti.</li>
+<li><strong>Almgren–Chriss optimal execution:</strong> emri parçalayarak anlık etki ile fırsat maliyeti arasında denge kuran optimizasyon çerçevesi.</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    emir[&quot;Büyük Emir&quot;] --&gt; parca[&quot;Parçalı İcra (TWAP/VWAP/Almgren-Chriss)&quot;]
+    parca --&gt; etki[&quot;Anlık fiyat etkisi &quot; + &quot;kalıcı etki&quot;]
+    etki --&gt; toplam[&quot;Toplam İcra Maliyeti&quot;]
+    firsat[&quot;Fırsat maliyeti (bekleme süresi)&quot;] --&gt; toplam
+    toplam --&gt; min[&quot;Optimizasyon: maliyet minimizasyonu&quot;]
+</pre>
+<hr />
+<h2 id="emir-defteri">📕 Emir Tipleri ve Emir Defteri (LOB)<a class="headerlink" href="#emir-defteri" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Limit Emir Defteri (Limit Order Book), farklı fiyat seviyelerinde bekleyen limit emirlerin listesidir. Tüm mikroyapı analizinin ham verisi budur.</p>
+<table>
+<thead><tr><th>Emir Tipi</th><th>Davranış</th><th>Mikroyapısal Etki</th></tr></thead>
+<tbody>
+<tr><td><code>Piyasa Emri (Market)</code></td><td>Anında en iyi kotasyondan işlem görür.</td><td>Defterden likidite <em>tüketir</em> (taker).</td></tr>
+<tr><td><code>Limit Emri (Limit)</code></td><td>Belirli bir fiyattan deftere beklemeye girer.</td><td>Likidite <em>sağlar</em> (maker), ayrıcalıklı ücret/kotasyon ödülü alabilir.</td></tr>
+<tr><td><code>Kes-iştir (Iceberg)</code></td><td>Görünür kısmı küçük, gerçek hacmi büyük.</td><td>Derinlik bilgisini gizler; fiyat etkisini azaltmak için.</td></tr>
+<tr><td><code>Stop / Stop-Limit</code></td><td>Fiyat tetiklenince aktifleşir.</td><td>Kırılım anlarında emir akışını hızlandırır.</td></tr>
+</tbody>
+</table>
+<p><strong>Defter mekaniği:</strong> Alış (bid) tarafı yukarıdan aşağıya, satış (ask) tarafı aşağıdan yukarıya; en iyi kotasyonlar merkezde. Yeni bilgi geldiğinde defter önce <em>ince</em> davranır (spread genişler, derinlik azalır), ardından fiyat keşfi gerçekleşir.</p>
+<pre class="mermaid">flowchart TD
+    subgraph lob[&quot;Limit Emir Defteri&quot;]
+        ask3[&quot;Ask 3 · yüksek&quot;]
+        ask2[&quot;Ask 2&quot;]
+        ask1[&quot;Ask 1 · en iyi satış&quot;]
+        mid[&quot;Mid-Price (Bid+Ask)/2&quot;]
+        bid1[&quot;Bid 1 · en iyi alış&quot;]
+        bid2[&quot;Bid 2&quot;]
+        bid3[&quot;Bid 3 · düşük&quot;]
+    end
+    ask1 --- mid --- bid1
+    taker[&quot;Piyasa Alım Emri&quot;] --&gt;|&quot;ask1'den hacim tüketir&quot;| ask1
+    maker[&quot;Limit Alım Emri&quot;] --&gt;|&quot;bid tarafına derinlik ekler&quot;| bid2
+</pre>
+<hr />
+<h2 id="fiyat-kesfi">🎯 Fiyat Keşfi (Price Discovery)<a class="headerlink" href="#fiyat-kesfi" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Fiyatın yeni bilgiyi içerme sürecidir. Mikroyapı bu süreci üç soruyla inceler:</p>
+<ul>
+<li><strong>Hangi varlık/işlem fiyatı önce günceller?</strong> Çok piyasalı ortamlarda (aynı hisse NYSE + London + Tokyo) lider/takipçi ayrımı <em>Hasbrouck (1995) bilgi payı</em> ile ölçülür.</li>
+<li><strong>Bilgi fiyata ne hızla işlenir?</strong> Glosten-Milgrom'un Bayesçi güncelleme hızıyla doğrudan ilgilidir.</li>
+<li><strong>Defter derinliği emir akışı bilgisini nasıl yansıtır?</strong> Derinlik fiyat keşfinin tamponudur.</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    bilgi[&quot;Yeni Bilgi&quot;] --&gt; akis[&quot;Emir Akışı&quot;]
+    akis --&gt; i[&quot;İşlem&quot;]
+    i --&gt; guncel[&quot;Fiyat Güncellemesi&quot;]
+    guncel --&gt; kesif[&quot;Yeni denge (gerçek değer)&quot;]
+    kesif --&gt;|&quot;hız &amp; katkı ölçümü: Hasbrouck bilgi payı&quot;| oy[&quot;Fiyat Keşfi Analizi&quot;]
+</pre>
+<hr />
+<h2 id="hft-ve-modern">⚡ Yüksek Frekanslı Ticaret ve Modern Gelişmeler<a class="headerlink" href="#hft-ve-modern" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Mikroyapı günümüzde HFT ve veri odaklı yöntemlerle evrilmiştir.</p>
+<table>
+<thead><tr><th>Kavram</th><th>Açıklama</th></tr></thead>
+<tbody>
+<tr><td><code>HFT / Latency Arbitrajı</code></td><td>Milisaniyeler içinde fiyat farklarını kovalar; colocation (borsaya yakın sunucu) ve donanım hızı stratejinin kendisidir.</td></tr>
+<tr><td><code>Toxicity (VPIN)</code></td><td>Volume-Synchronized Probability of Informed Trading — emir akışının ne kadar "bilgili" (zehirli) olduğunu tahmin eder; yüksek toksisite likidite çekilmesinin habercisidir.</td></tr>
+<tr><td><code>Karanlık Havuzlar (Dark Pools)</code></td><td>Düzenli borsa dışında anonim eşleşme; derinlik görünmez. Fiyat etkisini azaltır ama <em>fiyat keşfine katkıyı</em> da azaltabilir.</td></tr>
+<tr><td><code>Makine Öğrenmesi + LOB</code></td><td>LOB görüntüleri (limit fiyat/kademe matrisleri) veya emir olay akışları CNN/LSTM/Transformer ile işlenip kısa vadeli fiyat yönü ve likidite tahmin edilir.</td></tr>
+<tr><td><code>Yırtıcı Uygulamalar</code></td><td>Quote stuffing (emir seli), spoofing (sahte derinlik), layering — regülatörlerin hedefi.</td></tr>
+</tbody>
+</table>
+<pre class="mermaid">flowchart TD
+    subgraph modern[&quot;Modern Mikroyapı Veri Katmanı&quot;]
+        lobv[&quot;LOB kayıtları (fiyat + hacim x N kademe)&quot;]
+        trade[&quot;Trade / tick verisi&quot;]
+        ws[&quot;WebSocket fiyat + derinlik akışı&quot;]
+    end
+    lobv --&gt; ml[&quot;ML modelleri (CNN/LSTM/Transformer)&quot;]
+    trade --&gt; ml
+    ws --&gt; vpin[&quot;Toxicity ölçümü (VPIN)&quot;]
+    ml --&gt; tahmin[&quot;Kısa vadeli fiyat yönü + likidite tahmini&quot;]
+    vpin --&gt; tahmin
+</pre>
+<hr />
+<h2 id="uygulama">🛠️ Uygulama Alanları<a class="headerlink" href="#uygulama" title="Permanent link">&para;</a></h2>
+<p><strong>Detaylı açıklama:</strong> Mikroyapı bilgisi hem akademik hem endüstriyel olarak geniş bir alanda kullanılır.</p>
+<table>
+<thead><tr><th>Alan</th><th>Mikroyapısal Katkı</th></tr></thead>
+<tbody>
+<tr><td>Algoritmik / Kurumsal İcra</td><td>Büyük emri fiyat etkisini minimize ederek parçalama: TWAP, VWAP, Almgren-Chriss optimal execution.</td></tr>
+<tr><td>Borsa Tasarımı</td><td>Lot büyüklüğü, tick boyutu, sürekli vs. açık artırma eşleşme modelleri; fiyat kalitesi üzerindeki etkileri ölçülür.</td></tr>
+<tr><td>Regülasyon</td><td>MiFID II (EU), SEC tick pilot programı, HFT gözetimi, spoofing/quote stuffing önleme.</td></tr>
+<tr><td>Risk Yönetimi</td><td>Likidite riski ölçümü, likidite buharlaşma senaryoları, stres testlerinde fiyat etkisi tahmini.</td></tr>
+<tr><td>Bu Proje (Cycle Finance)</td><td>Binance futures <code>detect-ms</code> piyasa yapısı detektörü, emir defteri/derinlik verisi, pre-trade risk onayı ve icra motoru mikroyapıdan beslenir.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ozet">🧾 Özet Akış<a class="headerlink" href="#ozet" title="Permanent link">&para;</a></h2>
+<pre class="mermaid">flowchart LR
+    b[&quot;Bilgi / Emir Akışı&quot;] --&gt; mm[&quot;Market Maker / Defter&quot;]
+    mm --&gt; f[&quot;Fiyat Değişimi&quot;]
+    f --&gt; l[&quot;Likidite Maliyeti&quot;]
+    mm --&gt;|&quot;adverse selection · envanter&quot;| f
+    f --&gt;|&quot;fiyat keşfi&quot;| mm
+    l --&gt;|&quot;spread · fiyat etkisi&quot;| b
+</pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'system-ui, sans-serif',
+      primaryColor: '#0f172a',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#b4945a',
+      lineColor: '#94a3b8',
+      secondaryColor: '#0b1220',
+      tertiaryColor: '#0f172a',
+      nodeBorder: '#1e293b'
+    }
+  });
+  window.addEventListener('load', function () {
+    var ps = document.querySelectorAll('pre.mermaid');
+    if (ps.length && typeof mermaid === 'undefined') {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#fef3c7;border:1px solid #f59e0b;padding:0.75rem 1rem;border-radius:8px;font-weight:600">⚠️ mermaid.js yüklenemedi (İnternet bağlantısı gerekli). Diyagramlar görüntülenemiyor.</div>');
+    }
+  });
+</script>
+</body>
+</html>
