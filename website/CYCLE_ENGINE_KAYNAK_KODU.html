@@ -121,7 +121,6 @@ Tarih: 2026-08-09</p>
 │       ├── tick.rs                     #   simdjson EventParser
 │       ├── validator.rs                #   DataValidator (circuit breaker)
 │       ├── queue.rs                    #   LockFreeDispatcher (flume)
-│       ├── db.rs                       #   SQLite batch yazıcı (WAL)
 │       ├── config.rs                   #   os_utils::config re-export
 │       ├── state.rs                    #   StateManager (event-driven durum)
 │       ├── pii.rs                      #   PII maskeleme (KVKK/GDPR)
@@ -186,7 +185,7 @@ Tarih: 2026-08-09</p>
 <tr>
 <td><strong>2 — Çekirdek Motor</strong></td>
 <td><code>core</code></td>
-<td>simdjson parser, validator, orchestrator, SQLite, 5 CLI modu, HAL, TSC timer</td>
+<td>simdjson parser, validator, orchestrator, TimescaleDB, 5 CLI modu, HAL, TSC timer</td>
 </tr>
 <tr>
 <td><strong>3 — Açılış Ekranı</strong></td>
@@ -347,8 +346,6 @@ Tarih: 2026-08-09</p>
 <td><code>LockFreeDispatcher</code> — flume tabanlı bounded (262K) kuyruk; üretici dolunca geri basınç uygular.</td>
 </tr>
 <tr>
-<td><code>src/db.rs</code></td>
-<td><code>start_db_writer</code> — SQLite WAL mode; 10 tablo; 10K satır / 1sn batch commit (disk yazımını amorti eder).</td>
 </tr>
 <tr>
 <td><code>src/config.rs</code></td>
@@ -1209,7 +1206,7 @@ impl GenerationalRingBuffer {
     }
 
     /// Belirtilen POSIX shm nesnesi üzerinde ring buffer oluşturur/açar.
-    /// Farklı servisler farklı isim kullanabilir (örn. price-feed).
+    /// Farklı servisler farklı isim kullanabilir (örn.).
     pub fn with_name(shm_name: &amp;str, capacity: usize) -&gt; Self {
         let name = CString::new(shm_name).unwrap();
 
@@ -1916,7 +1913,7 @@ transport = { path = &quot;../transport&quot; }
 risk-engine = { path = &quot;../../risk-engine&quot; }
 strategies-engine = { path = &quot;../../strategies-engine&quot; }
 sha3 = { workspace = true }
-rusqlite = { workspace = true }
+sqlx = { workspace = true }
 dotenvy = { workspace = true }
 reqwest = { workspace = true }
 serde_json = { workspace = true }
@@ -2334,210 +2331,6 @@ impl LockFreeDispatcher {
     #[inline(always)]
     pub fn consumer(&amp;self) -&gt; Receiver&lt;Vec&lt;u8&gt;&gt; {
         self.rx.clone()
-    }
-}
-</code></pre>
-<h3 id="cycle-engine-core-src-db-rs"><code>cycle-engine/core/src/db.rs</code><a class="headerlink" href="#cycle-engine-core-src-db-rs" title="Permanent link"></a></h3>
-<pre><code class="language-rust">use rusqlite::{Connection, params};
-use flume::Receiver;
-use std::time::{Instant, Duration};
-use rust_decimal::prelude::*;
-use contracts::events::{OwnedEvent, EventType};
-
-pub fn start_db_writer(rx: Receiver&lt;OwnedEvent&gt;) {
-    std::fs::create_dir_all(&quot;data-engine/data&quot;).ok();
-    // Open or create SQLite DB
-    let mut conn = Connection::open(&quot;data-engine/data/market_data.db&quot;).expect(&quot;Failed to open SQLite database&quot;);
-
-    // Optimize SQLite for high throughput (WAL mode, synchronous=NORMAL)
-    conn.execute_batch(
-        &quot;PRAGMA journal_mode = WAL;
-         PRAGMA synchronous = NORMAL;
-         PRAGMA cache_size = -64000;&quot;
-    ).expect(&quot;Failed to set PRAGMAs&quot;);
-
-    // Create tables
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS trades (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            price REAL NOT NULL,
-            quantity REAL NOT NULL,
-            timestamp INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS orderbooks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            bids TEXT NOT NULL,
-            asks TEXT NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS liquidations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            side INTEGER NOT NULL,
-            price REAL NOT NULL,
-            quantity REAL NOT NULL,
-            timestamp INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS funding_rates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            mark_price REAL NOT NULL,
-            index_price REAL NOT NULL DEFAULT 0,
-            funding_rate REAL NOT NULL,
-            next_funding_time INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS booktickers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            best_bid_price REAL NOT NULL,
-            best_bid_qty REAL NOT NULL,
-            best_ask_price REAL NOT NULL,
-            best_ask_qty REAL NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS open_interests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            open_interest REAL NOT NULL,
-            timestamp INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS opportunities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            score REAL NOT NULL,
-            efficiency REAL NOT NULL,
-            price_bps_per_s REAL NOT NULL,
-            price_ticks_per_s REAL NOT NULL,
-            ob_changes_per_s REAL NOT NULL,
-            spread_bps REAL NOT NULL,
-            verdict INTEGER NOT NULL,
-            timestamp INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    conn.execute(
-        &quot;CREATE TABLE IF NOT EXISTS symbol_metrics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol TEXT NOT NULL,
-            score REAL NOT NULL,
-            efficiency REAL NOT NULL,
-            price_bps_per_s REAL NOT NULL,
-            price_ticks_per_s REAL NOT NULL,
-            ob_changes_per_s REAL NOT NULL,
-            spread_bps REAL NOT NULL,
-            timestamp INTEGER NOT NULL
-        )&quot;,
-        [],
-    ).unwrap();
-
-    let mut batch_count = 0;
-    let mut last_commit = Instant::now();
-    let batch_size_limit = 10_000;
-    let commit_interval = Duration::from_millis(1000);
-
-    let mut tx = conn.transaction().expect(&quot;Failed to begin transaction&quot;);
-
-    while let Ok(event) = rx.recv() {
-        let symbol_len = event.symbol.iter().position(|&amp;c| c == 0).unwrap_or(16);
-        let symbol_str = std::str::from_utf8(&amp;event.symbol[..symbol_len]).unwrap_or(&quot;UNKNOWN&quot;);
-
-        match &amp;event.payload {
-            EventType::Trade { price, quantity, timestamp, is_buyer_maker } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO trades (symbol, price, quantity, timestamp) VALUES (?1, ?2, ?3, ?4)&quot;,
-                    params![symbol_str, price.to_f64().unwrap_or(0.0), quantity.to_f64().unwrap_or(0.0), timestamp],
-                ).expect(&quot;Failed to insert trade&quot;);
-            },
-            EventType::Orderbook { bids, asks } =&gt; {
-                use std::fmt::Write;
-                let mut bids_str = String::with_capacity(512);
-                for (p, q) in bids.iter() {
-                    if *p == rust_decimal::Decimal::ZERO &amp;&amp; *q == rust_decimal::Decimal::ZERO { continue; }
-                    let _ = write!(&amp;mut bids_str, &quot;{},{}|&quot;, p, q);
-                }
-
-                let mut asks_str = String::with_capacity(512);
-                for (p, q) in asks.iter() {
-                    if *p == rust_decimal::Decimal::ZERO &amp;&amp; *q == rust_decimal::Decimal::ZERO { continue; }
-                    let _ = write!(&amp;mut asks_str, &quot;{},{}|&quot;, p, q);
-                }
-
-                tx.execute(
-                    &quot;INSERT INTO orderbooks (symbol, bids, asks) VALUES (?1, ?2, ?3)&quot;,
-                    params![symbol_str, bids_str, asks_str],
-                ).expect(&quot;Failed to insert orderbook&quot;);
-            },
-            EventType::Liquidation { side, price, quantity, timestamp } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO liquidations (symbol, side, price, quantity, timestamp) VALUES (?1, ?2, ?3, ?4, ?5)&quot;,
-                    params![symbol_str, side, price.to_f64().unwrap_or(0.0), quantity.to_f64().unwrap_or(0.0), timestamp],
-                ).expect(&quot;Failed to insert liquidation&quot;);
-            },
-            EventType::FundingRate { mark_price, index_price, funding_rate, next_funding_time } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO funding_rates (symbol, mark_price, index_price, funding_rate, next_funding_time) VALUES (?1, ?2, ?3, ?4, ?5)&quot;,
-                    params![symbol_str, mark_price.to_f64().unwrap_or(0.0), index_price.to_f64().unwrap_or(0.0), funding_rate.to_f64().unwrap_or(0.0), next_funding_time],
-                ).expect(&quot;Failed to insert funding rate&quot;);
-            },
-            EventType::BookTicker { best_bid_price, best_bid_qty, best_ask_price, best_ask_qty } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO booktickers (symbol, best_bid_price, best_bid_qty, best_ask_price, best_ask_qty) VALUES (?1, ?2, ?3, ?4, ?5)&quot;,
-                    params![symbol_str, best_bid_price.to_f64().unwrap_or(0.0), best_bid_qty.to_f64().unwrap_or(0.0), best_ask_price.to_f64().unwrap_or(0.0), best_ask_qty.to_f64().unwrap_or(0.0)],
-                ).expect(&quot;Failed to insert bookticker&quot;);
-            },
-            EventType::OpenInterest { open_interest, timestamp } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO open_interests (symbol, open_interest, timestamp) VALUES (?1, ?2, ?3)&quot;,
-                    params![symbol_str, open_interest.to_f64().unwrap_or(0.0), timestamp],
-                ).expect(&quot;Failed to insert open interest&quot;);
-            }
-            EventType::Opportunity { score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps, verdict } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO opportunities (symbol, score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps, verdict, timestamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, strftime('%s','now'))&quot;,
-                    params![symbol_str, score.to_f64().unwrap_or(0.0), efficiency.to_f64().unwrap_or(0.0), price_bps_per_s.to_f64().unwrap_or(0.0), price_ticks_per_s.to_f64().unwrap_or(0.0), ob_changes_per_s.to_f64().unwrap_or(0.0), spread_bps.to_f64().unwrap_or(0.0), verdict],
-                ).expect(&quot;Failed to insert opportunity&quot;);
-            }
-            EventType::SymbolMetrics { score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps } =&gt; {
-                tx.execute(
-                    &quot;INSERT INTO symbol_metrics (symbol, score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps, timestamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, strftime('%s','now'))&quot;,
-                    params![symbol_str, score.to_f64().unwrap_or(0.0), efficiency.to_f64().unwrap_or(0.0), price_bps_per_s.to_f64().unwrap_or(0.0), price_ticks_per_s.to_f64().unwrap_or(0.0), ob_changes_per_s.to_f64().unwrap_or(0.0), spread_bps.to_f64().unwrap_or(0.0)],
-                ).expect(&quot;Failed to insert symbol metrics&quot;);
-            }
-        }
-
-        batch_count += 1;
-
-        if batch_count &gt;= batch_size_limit || last_commit.elapsed() &gt;= commit_interval {
-            tx.commit().expect(&quot;Failed to commit transaction&quot;);
-            tx = conn.transaction().expect(&quot;Failed to begin transaction&quot;);
-            batch_count = 0;
-            last_commit = Instant::now();
-        }
     }
 }
 </code></pre>
@@ -4439,42 +4232,6 @@ geri alır. Sayaç saniyede sıfırlanır.</p>
     Q --&gt; R[&quot;Parse thread (tüketici) rx.recv()&quot;]
 </pre>
 <hr />
-<h3 id="src-db-rs-sqlite-batch-yazc"><code>src/db.rs</code> — SQLite Batch Yazıcı<a class="headerlink" href="#src-db-rs-sqlite-batch-yazc" title="Permanent link"></a></h3>
-<p><strong>Detaylı açıklama:</strong> <code>OwnedEvent</code>'leri 8 tabloya (trades, orderbooks, liquidations, funding_rates,
-booktickers, open_interests, opportunities, symbol_metrics) yazan ayrı thread. PRAGMAs:
-<code>journal_mode=WAL</code>, <code>synchronous=NORMAL</code>, büyük cache. Yazma tek transaction içinde birikir,
-<strong>10.000 satırda veya 1 saniyede</strong> commit edilir. Orderbook'lar <code>"fiyat,miktar|..."</code> string'e
-sıkıştırılır (512B ön-ayrımlı String).</p>
-<p><strong>Neden kullandık:</strong>
-- <strong>Ayrı thread + batch:</strong> Disk I/O'su hot path'i (RT thread) bloklamaz; tek transaction binlerce
-  INSERT'i 1 fsync ile amorti eder.
-- <strong>WAL + NORMAL:</strong> Okuma/yazma eşzamanlı, hız/dayanıklılık dengesi (her tick'te fsync değil).
-- <strong>Ön-ayrımlı String (<code>with_capacity</code>):</strong> Orderbook serileştirmede allocator'ı azaltır.
-- <strong>SQLite neden?</strong> Sıfır altyapı, tek dosya; ClickHouse'a akmadan önce yeterli dayanıklılık.</p>
-<pre class="mermaid">flowchart TD
-    RX[&quot;rx.recv() → OwnedEvent&quot;] --&gt; SYM[&quot;sembol [u8;16] → String&quot;]
-    SYM --&gt; MT{&quot;payload türü?&quot;}
-    MT --&gt;|&quot;Trade&quot;| I1[&quot;INSERT trades&quot;]
-    MT --&gt;|&quot;Orderbook&quot;| I2[&quot;bids/asks sıkıştır → INSERT orderbooks&quot;]
-    MT --&gt;|&quot;Liquidation&quot;| I3[&quot;INSERT liquidations&quot;]
-    MT --&gt;|&quot;Funding&quot;| I4[&quot;INSERT funding_rates&quot;]
-    MT --&gt;|&quot;BookTicker&quot;| I5[&quot;INSERT booktickers&quot;]
-    MT --&gt;|&quot;OI&quot;| I6[&quot;INSERT open_interests&quot;]
-    MT --&gt;|&quot;Opportunity&quot;| I7[&quot;INSERT opportunities&quot;]
-    MT --&gt;|&quot;SymbolMetrics&quot;| I8[&quot;INSERT symbol_metrics&quot;]
-    I1 --&gt; C{&quot;batch ≥10K veya 1sn?&quot;}
-    I2 --&gt; C
-    I3 --&gt; C
-    I4 --&gt; C
-    I5 --&gt; C
-    I6 --&gt; C
-    I7 --&gt; C
-    I8 --&gt; C
-    C --&gt;|&quot;hayır&quot;| RX
-    C --&gt;|&quot;evet&quot;| COMMIT[&quot;tx.commit() → yeni tx&quot;]
-    COMMIT --&gt; RX
-</pre>
-<hr />
 <h3 id="src-state-rs-statemanager"><code>src/state.rs</code> — StateManager<a class="headerlink" href="#src-state-rs-statemanager" title="Permanent link"></a></h3>
 <p><strong>Detaylı açıklama:</strong> Bakiye/durumu WebSocket account-update event'leriyle güncelleyen event-driven
 durum yöneticisi. <code>parking_lot::RwLock</code> ile korunan <code>f64</code> bakiye; 5 dakikada bir REST full audit ile
@@ -4773,7 +4530,7 @@ idempotency anahtarı yazılamaz → işlem reddedilir (kayıp veya çoğaltılm
 <p><strong>Detaylı açıklama:</strong> Veri gölü şeması üretir: <code>ticks</code> tablosu MergeTree, yıl/ay/gün partition
 (~20 yılda ~7300 partition), Zstandard sıkıştırma. GDPR "right to erasure" için <code>DELETE</code> mutasyonu
 + silme kayıt defteri (hash → kaç kez silindi). Merkle ağacı + EC-12/4 bütünlük kontrolü (mock).</p>
-<p><strong>Neden kullandık:</strong> SQLite geçici; kalıcı analitik veri gölü için ClickHouse (sıkıştırma,
+<p><strong>Neden kullandık:</strong> TimescaleDB geçici; kalıcı analitik veri gölü için ClickHouse (sıkıştırma,
 partition, sütun tabanlı sorgu hızı). Uyumluluk denetimi (silme kanıtı) yasal zorunluluk.</p>
 <pre class="mermaid">flowchart LR
     SC[&quot;create_tick_table_schema&quot;] --&gt; P[&quot;MergeTree + yıl/ay/gün partition + ZSTD&quot;]
@@ -4862,7 +4619,6 @@ ve bağımlılık yok.</p>
         PARS[&quot;tick.rs&lt;br&gt;EventParser (simdjson)&quot;]
         VAL[&quot;validator.rs&lt;br&gt;DataValidator&quot;]
         WIRE1[&quot;wire::encode&quot;]
-        DBW[&quot;db.rs&lt;br&gt;SQLite batch yazıcı&quot;]
         ORCH[&quot;orchestrator.rs&lt;br&gt;TitaniumOrchestrator&quot;]
     end
     subgraph TRANSPORT[&quot;transport — IPC&quot;]
@@ -4894,7 +4650,7 @@ orchestrator spin-loop → risk kapısı → gateway. Bu yolun tamamı <strong>t
 allocator/syscall olmadan çalışır. DB yazımı ayrı thread'de, hot path'i asla bloke etmez.</p>
 <p><strong>Neden bu 5 katman?</strong>
 - <strong>contracts:</strong> Herkesin anlaştığı veri dili — katmanlar birbirinden bağımsız değişebilir.
-- <strong>transport:</strong> Süreçler arası sıfır-kopya iletişim — core ile servisler (price-feed, detect-ms,
+- <strong>transport:</strong> Süreçler arası sıfır-kopya iletişim — core ile servisler (, detect-ms,
   execution) aynı bellekten beslenir.
 - <strong>core:</strong> Veriyi alır, temizler, dağıtır, stratejiyi yönetir — sistemin beyni.
 - <strong>adapter:</strong> Dış dünya (borsa, Redis, ClickHouse, Vault, AI, telemetri) — hepsi değiştirilebilir

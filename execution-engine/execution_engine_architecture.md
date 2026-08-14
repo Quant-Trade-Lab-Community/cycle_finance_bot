@@ -6,7 +6,7 @@
 
 - Tanım: `src/lib.rs:1` — "Binance USDT-M Futures için kurumsal emir yürütme katmanı"
 - Tek binary: `executiond` (`src/bin/executiond.rs`), CLI: `exec-cli` (`src/bin/exec-cli.rs`)
-- **RUN_MODE** yok — `EXEC_MODE=LIVE|PAPER` kullanılır. `executiond` yalnızca LIVE kabul eder.
+- **EXEC_MODE=LIVE** kullanılır (`config.rs:68-70`); yalnızca LIVE mod vardır.
 - `EXEC_DRY_RUN=true` varsayılan (güvenlik önlemi; canlı emir borsa geçmez) (`executiond.rs:20-22`)
 
 ---
@@ -18,7 +18,7 @@
 | **Client & HTTP** | `execution-engine/src/client/mod.rs`, `client/http.rs` | Binance REST yüzeyi, HTTP bağlantısı, retry, throttle |
 | **İmzala** | `execution-engine/src/signer.rs` | HMAC-SHA256 imza (`signer.rs:24-31`); HMAC-SHA256 + hex |
 | **Emir Domain** | `execution-engine/src/order.rs` | Order side/type/quantity/time-in-force, status, BinanceOrderResponse |
-| **Sign & Gateway** | `execution-engine/src/signer.rs`, `gateway.rs` | HMAC-SHA256 imza, EngineHandle (actor komut köprüsü), LivePaperGateway |
+| **Sign & Gateway** | `execution-engine/src/signer.rs`, `gateway.rs` | HMAC-SHA256 imza, EngineHandle (actor komut köprüsü), LiveGateway |
 | **Executor** | `execution-engine/src/executor/` | emir gönderimi (REST API), batch ≤5, iptal, idempotency, retry |
 | **Snapshot & Monitor** | `execution-engine/src/state/projector.rs`, `execution-engine/src/state/snapshot.rs` | AccountSnapshot (Arc<RwLock>), order snapshot, bid/ask sync |
 | **Risk** | `execution-engine/src/risk/` | limit sistemi, kill switch, rate limit, circuit breaker |
@@ -80,14 +80,13 @@ user request (REST/WS)
 
 | Binary | Dosya | Giriş Noktasi |
 |:---|:---|:---|
-| `executiond` | `src/bin/executiond.rs` | `executiond.rs:25-66` — CLI argümanları: `--host`, `--port`, `--no-dry-run`, `EXEC_MODE=PAPER` |
+| `executiond` | `src/bin/executiond.rs` | `executiond.rs:25-66` — CLI argümanları: `--host`, `--port`, `--no-dry-run` |
 | `exec-cli` | `src/bin/exec-cli.rs` | `exec-cli.rs:15-86` — REST API uçları |
 
 ### RUN_MODE
 
 - `execution-engine` içinde **yok**
-- `EXEC_MODE=LIVE|PAPER` kullanılır (`config.rs:70-73`)
-- `executiond` yalnızca LIVE kabul eder (`lib.rs:65-69`)
+- `EXEC_MODE=LIVE` kullanılır (`config.rs:68-70`); `TradingMode` yalnızca `Live` içerir
 
 ### Komutlar
 
@@ -158,7 +157,6 @@ user request (REST/WS)
 | `serde`, `serde_json` | (de)serialization | `order.rs`, `types` |
 | `dotenvy` | `.env` yükleme | `executiond.rs:27` |
 | `flume 0.11` | Eski API köprüsü | `lib.rs:135` |
-| `rusqlite 0.31` (bundled) | *(legacy paper için)* | `Cargo.toml:72` |
 | `rust_decimal 1.34` | Parasal aritmetik | `order.rs` |
 | `parking_lot 0.12` | `RwLock`/`Mutex` | `lib.rs:77` |
 | `reqwest 0.11` (rustls) | REST istemci | `http.rs:21` |
@@ -194,11 +192,10 @@ user request (REST/WS)
 | `src/risk/*.rs` | 86 |
 | `src/state/*.rs` | 35 |
 | `src/types/*.rs` | 55 |
-| `src/paper/*.rs` | 1.547 (legacy) |
 | `src/bin/executiond.rs` | 66 |
 | `src/bin/exec-cli.rs` | 86 |
 | `src/bin/executiond.rs` | 5 |
-| **Toplam (src + tests)** | **8.303** |
+| **Toplam (src + tests)** | **6.756** |
 | `Cargo.toml` | 46 |
 
 ---
@@ -216,4 +213,4 @@ user request (REST/WS)
 
 ## Sonuç
 
-execution-engine, Binance USDT-M Futures için kurumsal emir yürütme. Tokio + axum basitleştirilmiş, HMAC-SHA256 imza, idempotency, rate limit, circuit breaker, kill switch ile güvenlik katmanı. `EXEC_DRY_RUN=true` varsayılan (güvenlik önlemi). `EXEC_MODE=LIVE|PAPER` komutyla ayarlanır.
+execution-engine, Binance USDT-M Futures için kurumsal emir yürütme. Tokio + axum basitleştirilmiş, HMAC-SHA256 imza, idempotency, rate limit, circuit breaker, kill switch ile güvenlik katmanı. `EXEC_DRY_RUN=true` varsayılan (güvenlik önlemi). `EXEC_MODE=LIVE` komutla ayarlanır.

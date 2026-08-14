@@ -28,17 +28,12 @@ data-engine/
 
 ## 📖 Klasör ve Dosya Sözlüğü
 
-> `data-engine/` — **Genel amaç:** Soğuk veri katmanı. `cold-storage` geçmiş kapanış verisini kalıcı dosyalarda tutar, `cold-starter` soğuk başlangıçta indikatörleri (EMA) hazırlar ve mmap tamponunu paper modda replay edip canlı moda geçer.
+> `data-engine/` — **Genel amaç:** Soğuk veri katmanı. `cold-storage` geçmiş kapanış verisini kalıcı dosyalarda tutar, `cold-starter` soğuk başlangıçta TimescaleDB `trades`'ten indikatörleri (200 EMA) hesaplayıp canlı moda geçer.
 | Klasör / Dosya | Anlamı |
 |---|---|
 | `data-engine/` | HFT motorunun kalıcı veri saklama ve soğuk başlatma katmanı |
-| `data-engine/data/` | Çalışma zamanı üretilen kalıcı veriler (SQLite db + WAL + mmap snap dosyası) |
-| `data-engine/data/market_data.db` | Market verilerinin saklandığı SQLite veritabanı |
-| `data-engine/data/market_data.db-wal` | market_data.db'nin SQLite WAL (write-ahead log) dosyası |
-| `data-engine/data/market_data.db-shm` | market_data.db WAL modunun paylaşımlı bellek indeksi |
-| `data-engine/data/paper_live.db` | Kağıt (paper) işlem loglarının tutulduğu SQLite veritabanı |
-| `data-engine/data/paper_live.db-wal` | paper_live.db'nin WAL dosyası |
-| `data-engine/data/paper_live.db-shm` | paper_live.db WAL paylaşımlı bellek indeksi |
+| `data-engine/data/` | Çalışma zamanı üretilen kalıcı veriler (mmap snap dosyası) — market verileri artık TimescaleDB'de |
+| TimescaleDB `market_data` | Market verilerinin saklandığı zaman serisi veritabanı (PostgreSQL uzantısı, hypertable'lar) |
 | `data-engine/data/paper_wal/` | DiskBuffer (mmap) tamponunun kalıcı dizini |
 | `data-engine/data/paper_wal/conf` | Tampon konfigürasyon bilgisi |
 | `data-engine/data/paper_wal/snap.0000000000000060` | 60. mmap anlık görüntüsü (snapshot) — sıra numaralı segment |
@@ -48,7 +43,7 @@ data-engine/
 | `data-engine/cold-starter/` | Sistem kurtarma/başlatma rutinlerini barındıran ikili crate |
 | `data-engine/cold-starter/Cargo.toml` | cold-starter manifesti; bağımlılıksız, workspace üyesi |
 | `data-engine/cold-starter/src/main.rs` | Çalıştırılabilir giriş; catchup rutinlerini sırayla çağırır |
-| `data-engine/cold-starter/src/catchup.rs` | `CatchupRoutines` — soğuk başlatma adımları (EMA yükleme, paper replay, live geçiş) |
+| `data-engine/cold-starter/src/catchup.rs` | `CatchupRoutines` — soğuk başlatma adımları (TimescaleDB'den 200 EMA, live geçiş) |
 
 ---
 
@@ -60,40 +55,40 @@ data-engine/
 
 ### `cold-starter/src/catchup.rs`
 
-**Detaylı açıklama:** `CatchupRoutines` struct'ı, motorun soğuk (cold) başlatma sırasında çalıştırdığı üç fazlı kurtarma akışını temsil eder. 1) `fetch_200_ema`: İndikatörlerin doğru başlangıç durumuna sahip olması için 200 dönemlik EMA geçmişini ClickHouse veri gölünden (data lake) çeker — şu an mock bir değer (50000.0) döndürür. 2) `replay_buffer_in_paper_mode`: memory-mapped disk tamponundaki (cold-storage::DiskBuffer) kuyruğu gerçek emir göndermeden, zaman ölçekleyerek (time-scaling) paper modda geri oynatır; bu, canlı fiyat akışı gelmeden önce tamponda bekleyen verinin tüketilmesini sağlar. 3) `transition_to_live`: Tampon tüketildikten sonra temizlenir ve motor canlı moda geçer. Bu haliyle rutinler iskelet (stub) seviyesindedir; gerçek logic ileride eklenmek üzere yer tutucu olarak durur.
+**Detaylı açıklama:** `CatchupRoutines` struct'ı, motorun soğuk (cold) başlatma sırasında çalıştırdığı kurtarma akışını temsil eder. 1) `fetch_200_ema`: İndikatörlerin doğru başlangıç durumuna sahip olması için 200 dönemlik EMA'yı TimescaleDB `trades` hypertable'ındaki son 200 trade fiyatından hesaplar (`sqlx`, `TIMESCALEDB_URL`). 2) `transition_to_live`: Canlı moda geçiş adımıdır.
 
 **Neden kullandık:**
 - Gecelik duruş sonrası indikatörlerin (EMA) doğru hesaplanabilmesi için geçmiş veriye hızlı erişim gerekir.
-- Paper modda replay, canlı moda geçmeden önce tamponu güvenle boşaltır (gerçek emir riski yoktur).
-- Üç fazlı yapı başlatmayı deterministik ve test edilebilir kılar.
+- TimescaleDB hypertable'ları yüksek yazma hacminde kararlı kalır ve SQL ile geçmiş trade verisine hızlı sorgu imkânı tanır.
+- İki fazlı yapı başlatmayı deterministik ve test edilebilir kılar.
 
 ```mermaid
 flowchart TD
-    A["motor başlar<br>soğuk başlatma"] --> B["fetch_200_ema<br>ClickHouse'tan geçmiş baseline çek"]
-    B --> C["replay_buffer_in_paper_mode<br>mmap tamponu paper modda geri oynat"]
-    C --> D{"tampon tükendi mi?"}
-    D -->|"hayır"| C
-    D -->|"evet"| E["transition_to_live<br>tamponu temizle"]
-    E --> F["canlı modda çalış"]
+    A["motor başlar<br>soğuk başlatma"] --> B["fetch_200_ema<br>TimescaleDB trades'ten son 200 fiyat"]
+    B --> C["EMA hesapla"]
+    C --> D["transition_to_live<br>buffer temizle"]
+    D --> E["canlı modda çalış"]
 ```
 
 ---
 
 ### `cold-starter/src/main.rs`
 
-**Detaylı açıklama:** İkili (binary) giriş noktasıdır. `catchup` modülünü `pub mod` ile içe alır, `CatchupRoutines` örneğini oluşturur ve üç kurtarma adımını (EMA yükleme → paper replay → canlı geçiş) sırasıyla çağırır. Görevi orkestrasyondur; mantık `catchup.rs` içindedir.
+**Detaylı açıklama:** İkili (binary) giriş noktasıdır. `catchup` modülünü `pub mod` ile içe alır, `CatchupRoutines` örneğini oluşturur ve `#[tokio::main]` altında `fetch_200_ema` çağrısının sonucuna göre ya EMA değerini yazdırır ya da hata ile çıkar; ardından `transition_to_live`'ı çağırır. Görevi orkestrasyondur; mantık `catchup.rs` içindedir.
 
 **Neden kullandık:**
 - Soğuk başlatma akışının tek bir çalıştırılabilirde denenebilmesi için ayrı bir binary gerekir.
-- `main`'in rutinleri sırayla çağırması faz sırasını garanti eder.
+- `main`'in rutinleri sırayla çağırması faz sırasını garanti eder; async çalışma TimescaleDB'ye bloke etmeden bağlanmayı sağlar.
 
 ```mermaid
 flowchart TD
     A["main"] --> B["CatchupRoutines oluştur"]
-    B --> C["fetch_200_ema"]
-    C --> D["replay_buffer_in_paper_mode"]
-    D --> E["transition_to_live"]
-    E --> F["başlatma tamam"]
+    B --> C["fetch_200_ema (async)"]
+    C --> D{"Ok mu?"}
+    D -->|"hayır"| E["hata yazdır + çık"]
+    D -->|"evet"| F["200 EMA yazdır"]
+    F --> G["transition_to_live"]
+    G --> H["başlatma tamam"]
 ```
 
 ---
@@ -155,25 +150,23 @@ flowchart TD
 
 ### `data-engine/data/`
 
-**Detaylı açıklama:** Çalışma zamanı üretilen kalıcı verilerin toplandığı dizindir. Üç grup veri barındırır: (1) `market_data.db` (+ `-wal`/`-shm`) — market verileri için SQLite, WAL modunda; (2) `paper_live.db` (+ `-wal`/`-shm`) — paper işlem logları için SQLite; (3) `paper_wal/` — DiskBuffer mmap tamponunun kalıcı segmentleri (`conf` + `snap.0000000000000060` gibi sıra numaralı anlık görüntüler). Veriler binary (db) olduğundan bu dizin analizde yalnızca sözlük düzeyinde ele alınır.
+**Detaylı açıklama:** Çalışma zamanı üretilen kalıcı veriler `data-engine/data/` altında toplanır: `paper_wal/` — DiskBuffer mmap tamponunun kalıcı segmentleri (`conf` + `snap.0000000000000060` gibi sıra numaralı anlık görüntüler). Market verileri ise TimescaleDB'de hypertable'lara yazılır (`cycle-engine/persistence`), SQLite kullanılmaz.
 
 **Neden kullandık:**
-- SQLite WAL modu, okuma/yazma çakışmalarını azaltıp yüksek yazma hacminde kararlı kalır.
+- TimescaleDB (PostgreSQL), okuma/yazma çakışmalarını azaltıp yüksek yazma hacminde kararlı kalır.
 - mmap snapshot segmentleri (sıra numaralı) veri kaybı olmadan kurtarma/replay imkânı tanır.
 - Kalıcı dosyalar, process ölümlerinden sonra state'i yeniden kurmayı sağlar.
 
 ```mermaid
 flowchart TD
-    A["data-engine/data"] --> B["market_data.db + wal/shm<br>SQLite WAL"]
-    A --> C["paper_live.db + wal/shm<br>SQLite WAL"]
-    A --> D["paper_wal + conf + snap<br>mmap segmentleri"]
-    B --> E["soğuk başlatma için geçmiş veri"]
-    D --> F["catchup replay girdisi"]
+    A["TimescaleDB market_data hypertable'ları"] --> B["soğuk başlatma için geçmiş veri (200 EMA)"]
+    A --> D["canlı akış (persistence batch yazıcı)"]
+    D --> A
 ```
 
 ---
 
-**Özet:** 14 dosya/klasör sözlükte listelendi; kritik dosyalar dahil 7 mermaid diyagramı üretildi (catchup.rs ve cold-storage lib.rs dahil tüm dosyalar için akış şeması eklendi). Motorun amacı: soğuk başlatmada geçmiş veriyi (ClickHouse/EMA) yükleyip mmap tamponunu paper modda replay ederek güvenle canlı moda geçmek.
+**Özet:** 14 dosya/klasör sözlükte listelendi; kritik dosyalar dahil 7 mermaid diyagramı üretildi (catchup.rs ve cold-storage lib.rs dahil tüm dosyalar için akış şeması eklendi). Motorun amacı: soğuk başlatmada geçmiş veriyi (TimescaleDB/EMA) yükleyip canlı moda güvenle geçmek.
 
 ---
 
@@ -188,30 +181,60 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
 ```
 
 ### `data-engine/cold-starter/src/catchup.rs`
 
 ```rust
+//! Cold Starter routines for system recovery and initialization.
+
+use sqlx::postgres::PgPoolOptions;
+
 /// Cold Starter routines for system recovery and initialization.
 pub struct CatchupRoutines;
 
+const EMA_PERIOD: usize = 200;
+
+fn db_url() -> String {
+    std::env::var("TIMESCALEDB_URL")
+        .unwrap_or_else(|_| "postgres://cycle:cycle@localhost:5432/market_data".into())
+}
+
 impl CatchupRoutines {
-    /// 1. Fetch 200 EMA from ClickHouse to initialize the indicators.
-    pub fn fetch_200_ema(&self) -> f64 {
-        println!("ColdStarter: Fetching 200 EMA historical baseline from ClickHouse Data Lake...");
-        // Mock EMA value
-        50000.0
+    /// 1. TimescaleDB `trades` hypertable'ındaki son trade fiyatlarından 200 EMA'yı hesaplar.
+    pub async fn fetch_200_ema(&self) -> Result<f64, String> {
+        let pool = PgPoolOptions::new()
+            .max_connections(2)
+            .connect(&db_url())
+            .await
+            .map_err(|e| format!("TimescaleDB bağlantı hatası: {e}"))?;
+
+        let mut prices: Vec<f64> = sqlx::query_scalar(
+            "SELECT price FROM trades ORDER BY timestamp DESC LIMIT $1",
+        )
+        .bind(EMA_PERIOD as i64)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| format!("Sorgu hatası: {e}"))?;
+
+        if prices.is_empty() {
+            return Err("TimescaleDB'de trade verisi yok".into());
+        }
+
+        prices.reverse();
+        let multiplier = 2.0 / (EMA_PERIOD as f64 + 1.0);
+        let mut ema = prices[0];
+        for &price in &prices[1..] {
+            ema = price * multiplier + ema * (1.0 - multiplier);
+        }
+
+        println!("ColdStarter: 200 EMA hesaplandı = {ema:.4} ({} trade)", prices.len());
+        Ok(ema)
     }
 
-    /// 2. Replay the memory-mapped disk buffer in Paper Mode.
-    /// This runs the engine without sending real orders (Catch-up phase).
-    pub fn replay_buffer_in_paper_mode(&self) {
-        println!("ColdStarter: Replaying mmap buffer in Paper Mode with time-scaling...");
-        // This simulates reading from cold-storage::DiskBuffer and pushing to the lock-free queue
-    }
-
-    /// 3. Clear buffer and transition to live mode.
+    /// 2. Buffer'ı temizleyip canlı moda geçer.
     pub fn transition_to_live(&self) {
         println!("ColdStarter: Buffer cleared. Transitioning to LIVE mode.");
     }
@@ -223,11 +246,17 @@ impl CatchupRoutines {
 ```rust
 pub mod catchup;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Cold Starter initialized");
     let routines = catchup::CatchupRoutines;
-    routines.fetch_200_ema();
-    routines.replay_buffer_in_paper_mode();
+    match routines.fetch_200_ema().await {
+        Ok(ema) => println!("200 EMA: {ema:.4}"),
+        Err(e) => {
+            eprintln!("ColdStarter: 200 EMA alınamadı: {e}");
+            std::process::exit(1);
+        }
+    }
     routines.transition_to_live();
 }
 ```

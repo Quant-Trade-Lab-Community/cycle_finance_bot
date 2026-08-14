@@ -2,7 +2,7 @@
 
 ## Giriş
 
-services-engine, 10 paket (9 servis + breakout-strategy) içerir. Her birinde kendi Cargo crate'li. `Cargo.toml` workspace üyesi.
+services-engine, 9 paket (8 servis + breakout-strategy) içerir. Her birinde kendi Cargo crate'li. `Cargo.toml` workspace üyesi.
 
 Başlatma:
 - `cargo run -p alert-service` (kök workspace)
@@ -10,8 +10,7 @@ Başlatma:
 - `cargo run -p detect-ms`
 - `cargo run -p exec-console`
 - `cargo run -p ohlcv-engine` (cli: `cli`, server: `server`)
-- `cargo run -p paper-service`
-- `cargo run -p price-feed`
+- `cargo run -p`
 - `cargo run -p stream-ohlcv`
 - `cargo run -p trade-ohlcv`
 - `cargo run -p breakout-strategy`
@@ -21,14 +20,14 @@ Başlatma:
 ## Süreç 1: alert-service (Sesli Uyarı)
 
 ### Amaç
-Sembol + fiyat koşulu (above/below/cross/touch) için sesli uyarı üretir. Veriyi 3 kaynaktan alır: DATA ring'i, price-feed ring'i veya doğrudan Binance WS.
+Sembol + fiyat koşulu (above/below/cross/touch) için sesli uyarı üretir. Veriyi 3 kaynaktan alır: DATA ring'i, ring'i veya doğrudan Binance WS.
 
 ### Giriş Noktaları
 
 | Dosya | Satır | Sorumlu |
 |:---|:---|:---|
 | `src/main.rs` | 160 | Ana döngü (tokio task) — Binance WS reconnect döngüsü |
-| `src/source.rs` | 158 | Ring okuyucular (price-feed ring'inden, DATA ring'inden) |
+| `src/source.rs` | 158 | Ring okuyucular (ring'inden, DATA ring'inden) |
 | `src/engine.rs` | 189 | Sesi sink (alertService) |
 | `src/config.rs` | 99 | Config yükleme |
 | `src/lib.rs` | 4 | Modül tanımı |
@@ -37,7 +36,7 @@ Sembol + fiyat koşulu (above/below/cross/touch) için sesli uyarı üretir. Ver
 
 ```
 Binance Futures (WS):
-  └── price-feed (port 3004) → /cycle_finance_pricefeed ring
+  └── (port 3004) → /cycle_finance_pricefeed ring
 
 alert-service:
   ├── listen: /dev/shm/cycle_finance_ring (DATA terminali)
@@ -48,7 +47,7 @@ alert-service:
 
 ### Altyapı
 
-- Ring okuyucu: source.rs:14 (DATA ring), source.rs:108 (price-feed ring).
+- Ring okuyucu: source.rs:14 (DATA ring), source.rs:108 (ring).
 - Ses sink: engine.rs:183 (ses çıkışı).
 - Çevrimli stdin: main.rs:93 (CLI girişi).
 
@@ -190,36 +189,7 @@ axum (server.rs:31)
 
 ---
 
-## Süreç 6: paper-service (Event-Sourcing Motoru)
-
-### Amaç
-Event-sourcing + actor tabanlı sanal (kağıt) motoru. Execution-engine'den komutları işler; DomainEvent'ler Sled WAL → (ops. Postgres) → SQLite projection'a akar. REST API :8080, JWT+argon2 auth. price-feed ring'inden mark fiyat, order ring'inden emir alır.
-
-### Giriş Noktaları
-
-| Dosya | Satır | Sorumlu |
-|:---|:---|:---|
-| `src/main.rs` | 153 | Ana döngü (tokio) |
-| `src/bridge.rs` | 144 | price-feed ve order ring bağlantısı |
-| `src/events.rs` | 117 | Event source (Sled WAL) |
-| `src/sqlite_projection.rs` | 170 | SQLite projection |
-| `src/api.rs` | 447 | REST API router (JWT, auth) |
-| `src/lib.rs` | 9 | Modül tanımı |
-
-### Veri Akışı
-
-```
-paper-service:
-  ├── event persistence loop (main.rs:63): Sled+PG+SQLite
-  ├── actor loop (main.rs:110)
-  ├── REST API (main.rs:140): JWT login/refresh, emir/pozisyon/control
-  ├── bridge okuyucular (bridge.rs:29: price-feed, bridge.rs:89: order ring)
-  └── Sled WAL → Postgres → SQLite projection
-```
-
----
-
-## Süreç 7: price-feed (Veri Dağıtım)
+## Süreç 7: (Veri Dağıtım)
 
 ### Amaç
 Binance Futures WS'den (trade/bookTicker) fiyat çeker; ring'e yayar.
@@ -234,20 +204,20 @@ Binance Futures WS'den (trade/bookTicker) fiyat çeker; ring'e yayar.
 ### Veri Akışı
 
 ```
-price-feed (port 3004):
+(port 3004):
   ├── Binance Futures WS: trade/bookTicker
   │   └── user_data stream → ws_pump (main.rs:315)
   ├── premiumIndex poll (main.rs:323)
   └── JSON yazıcı (main.rs:341)
 
 Ring: /cycle_finance_pricefeed (20_000 slot)
-  └── price-feed → all consumers (alert-service, paper-service, breakout-strategy)
+  └── → all consumers (alert-service, breakout-strategy)
 ```
 
 ### Thread/Task Yapısı
 
 ```
-price-feed (tokio + std::thread):
+(tokio + std::thread):
   ├── tokio task: ws_pump (main.rs:315)
   ├── tokio task: premiumIndex poll (main.rs:323)
   └── std thread: ingest (parser+ring+state) (main.rs:335)
@@ -259,7 +229,7 @@ price-feed (tokio + std::thread):
 ## Süreç 8: stream-ohlcv (Çoklu Stream OHLCV)
 
 ### Amaç
-Sembol + başlangıç zamanı + interval ile canlı OHLCV mum akışı üretir. Geçmişi ohlcv-engine'den çeker, canlı fiyatı price-feed :3004'ten poll eder, kapanan mumları /cycle_finance_stream_ohlcv ring'ine yayınlar.
+Sembol + başlangıç zamanı + interval ile canlı OHLCV mum akışı üretir. Geçmişi ohlcv-engine'den çeker, canlı fiyatı :3004'ten poll eder, kapanan mumları /cycle_finance_stream_ohlcv ring'ine yayınlar.
 
 ### Giriş Noktaları
 
@@ -285,7 +255,7 @@ stream-ohlcv (port 3008):
 ## Süreç 9: breakout-strategy (Event-Driven Kırılım)
 
 ### Amaç
-Event-driven kırılım stratejisi (sinyal üretici, emir açmaz). price-feed ring'inden tick okur, bekleme aralığında detect-ms analizini çağırır, direnç/destek kırılımında BUY/SELL sinyali üretir.
+Event-driven kırılım stratejisi (sinyal üretici, emir açmaz). ring'inden tick okur, bekleme aralığında detect-ms analizini çağırır, direnç/destek kırılımında BUY/SELL sinyali üretir.
 
 ### Giriş Noktaları
 
@@ -303,10 +273,10 @@ Event-driven kırılım stratejisi (sinyal üretici, emir açmaz). price-feed ri
 ```
 breakout-strategy:
   ├── main.rs (308): Event-Driven Kırılım
-  │   ├── price-feed ring: /cycle_finance_pricefeed
+  │   ├── ring: /cycle_finance_pricefeed
   │   ├── detect-ms API: GET /api/ms?symbol=VELVETUSDT
   │   ├── fiyat ring: /cycle_finance_pricefeed
-  │   ├── evaluate: detect-ms + price-feed → sinyal üretir
+  │   ├── evaluate: detect-ms + → sinyal üretir
   │   └── emir açmaz (sinyal üretici — emir açmaz)
   ├── listener.rs:38: price corr thread (200ms)
   ├── alerts.rs:223: alerts.toml CLI
@@ -358,15 +328,14 @@ DATA terminali / flows (trade akışı)
 | detect-ms | tek axum server (async) | Handler'da 3 sıralı Binance fetch (main.rs:85-96); ek thread yok |
 | exec-console | tek thread, blocking | reqwest blocking + rustyline REPL; thread spawn yok |
 | ohlcv-engine | cli: tek async; server: axum | Ek thread yok |
-| paper-service | tokio + std::thread | tokio task: event persistence loop (main.rs:63); std thread: bridge okuyucular (bridge.rs:29,89) |
-| price-feed | tokio + std::thread | tokio task: ws_pump (main.rs:315); std thread: ingest (main.rs:335); flume bounded 262_144 (main.rs:311) |
+| | tokio + std::thread | tokio task: ws_pump (main.rs:315); std thread: ingest (main.rs:335); flume bounded 262_144 (main.rs:311) |
 | stream-ohlcv | tokio | Her stream bir task: start_stream → tokio::spawn(run_stream) (main.rs:340); stream durumu: tokio::sync::RwLock; ring write kilidi Mutex (main.rs:54) |
 | trade-ohlcv | tokio + std::thread | std thread: trade flow ring okuyucu (retry pencereli) → flume 262_144 → tokio aggregator task (SecondAggregator) → ring + stdout stream + axum (:3009) |
 | breakout-strategy | tokio + std::thread | main.rs:168 std thread ring okuyucu → mpsc::unbounded_channel (main.rs:276) → tokio actor döngüsü (main.rs:283); listener.rs:38 std thread price corr |
 
 ---
 
-## Satır Sayıları (toplam 8531)
+## Satır Sayıları (toplam 7055)
 
 | Servis | Toplam |
 |:---|:---|
@@ -375,18 +344,17 @@ DATA terminali / flows (trade akışı)
 | detect-ms | 1534 |
 | exec-console | 664 |
 | ohlcv-engine | 215 |
-| paper-service | 1476 |
-| price-feed | 366 |
+| | 366 |
 | stream-ohlcv | 858 |
 | trade-ohlcv | 767 (+29 örnek) |
 | breakout-strategy | 1508 |
-| **TOPLAM** | **8531** (+59 örnek) |
+| **TOPLAM** | **7055** (+59 örnek) |
 
 ---
 
 ## Sonuç
 
-services-engine, 10 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `/cycle_finance_pricefeed` ve `/cycle_finance_calc` ise ring buffer üretici/tüketici çiftidir.
+services-engine, 9 paket ve 30+ binary'i içerir. Her birinde kendi thread modeli ve altyapısı vardır. Ring buffer (POSIX shm) ile veri paylaşımı: `/cycle_finance_ring` en çok bağlanır; `/cycle_finance_pricefeed` ve `/cycle_finance_calc` ise ring buffer üretici/tüketici çiftidir.
 
 `trade-ohlcv` (:3009), `/cycle_finance_trades` flow ring'inden trade verisini okuyup sembol başına 1s OHLCV barı üretir; kapanan barları `/cycle_finance_trade_ohlcv` ring'ine binary yayınlar ve stdout'a canlı stream eder.
 

@@ -1,10 +1,10 @@
 flowchart TD
     subgraph Strateji["Strateji Katmanı"]
-        SIG[breakout-strategy / detect-ms] -->|flume / dev/shm OrderRing| GW
+        SIG[strategies-engine / detect-ms] -->|flume / dev/shm OrderRing| GW
         HTTP["REST API (axum :3010)"] --> GW
     end
 
-    GW[Gateway trait<br/>LiveGateway / PaperGateway] -->|EngineHandle::submit_order| ACT
+    GW[Gateway trait<br/>LiveGateway] -->|EngineHandle::submit_order| ACT
 
     subgraph Execution["Execution Engine"]
         ACT["ExecutionActor<br/>(tek-yazıcı komut döngüsü)"] -->|imzalı REST| C[BinanceClient]

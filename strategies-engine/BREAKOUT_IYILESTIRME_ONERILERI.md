@@ -134,10 +134,10 @@ Tüm ağırlıklar hard-coded:
 - `C` ağırlıkları: 0.40 / 0.40 / 0.20
 - Kırılım eşiği: 0.25σ
 
-`data-engine/data/market_data.db`'de geçmiş veri mevcut. **Objektif bir ölçü olmadan** algoritmayı "iyileştirmek" mümkün değil.
+`TimescaleDB market_data DB`'de geçmiş veri mevcut. **Objektif bir ölçü olmadan** algoritmayı "iyileştirmek" mümkün değil.
 
 **Öneri:**
-1. `market_data.db` üzerinden walk-forward backtest harness'ı kur.
+1. `TimescaleDB market_data DB` üzerinden walk-forward backtest harness'ı kur.
 2. Metrikler: kazanma oranı, ortalama kâr/kayıp, maksimum düşüş, sahte sinyal oranı.
 3. Ağırlık ve eşikleri grid/random search ile optimize et.
 4. Out-of-sample (görülmemiş dilim) doğrulaması zorunlu.

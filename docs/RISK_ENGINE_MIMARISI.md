@@ -103,7 +103,7 @@ sayacı → eşik aşılınca otomatik kill switch.
    → mark fiyatlar + pozisyonlar + nakit → unrealized PnL / drawdown / likidasyon.
 
 **Bilinen sınır (fail-closed):** Canlıda yeni sembole mark bilgisi olmadan
-market emri `StaleMark` ile reddedilir. Çözüm: price-feed daemon mark fiyatlarını
+market emri `StaleMark` ile reddedilir. Çözüm: daemon mark fiyatlarını
 `RiskChecks::push_mark` ile besler (worker `/tmp/price_feed.json`'dan zaten okur).
 
 ## 7. Risk-Worker Çevrimi (cold path)

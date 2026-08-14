@@ -1,14 +1,17 @@
-//! Risk analizi (Rust) — market_data.db'deki trades tablosunu SQL ile özetler.
+//! Risk analizi (Rust) — TimescaleDB'deki trades tablosunu SQL ile özetler.
 //!
 //! --watch  : sabit ekranda her N sn'de yenilenir (tmux RISK paneli için).
 //!           clear YAPILMAZ; imleç başa alınıp üzerine yazılır (titreşimsiz).
 //! WATCH_SEC: yenileme süresi (varsayılan 5 sn).
+//!
+//! Bağlantı: `TIMESCALEDB_URL` (varsayılan postgres://cycle:cycle@localhost:5432/market_data)
 
-use rusqlite::Connection;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::Row;
 use std::time::Duration;
 
 #[derive(Debug)]
-struct Row {
+struct SymbolRow {
     symbol: String,
     count: i64,
     volume: f64,
@@ -16,9 +19,14 @@ struct Row {
     max: f64,
 }
 
-fn render() {
-    let conn = match Connection::open("data-engine/data/market_data.db") {
-        Ok(c) => c,
+fn db_url() -> String {
+    std::env::var("TIMESCALEDB_URL")
+        .unwrap_or_else(|_| "postgres://cycle:cycle@localhost:5432/market_data".into())
+}
+
+async fn render() {
+    let pool = match PgPoolOptions::new().max_connections(2).connect(&db_url()).await {
+        Ok(p) => p,
         Err(e) => {
             eprintln!("❌ Veritabanı açılamadı: {e}");
             return;
@@ -32,29 +40,28 @@ fn render() {
                MAX(price) as max_p
         FROM trades
         GROUP BY symbol
-        HAVING cnt > 50
+        HAVING COUNT(*) > 50
         ORDER BY volume DESC
     ";
 
-    let mut stmt = match conn.prepare(query) {
-        Ok(s) => s,
+    let rows: Vec<SymbolRow> = match sqlx::query(query)
+        .fetch_all(&pool)
+        .await
+    {
+        Ok(rows) => rows
+            .iter()
+            .map(|r| SymbolRow {
+                symbol: r.get("symbol"),
+                count: r.get("cnt"),
+                volume: r.get("volume"),
+                min: r.get("min_p"),
+                max: r.get("max_p"),
+            })
+            .collect(),
         Err(_) => {
             println!("Yeterli veri bulunamadı.");
             return;
         }
-    };
-
-    let rows: Vec<Row> = match stmt.query_map([], |r| {
-        Ok(Row {
-            symbol: r.get(0)?,
-            count: r.get(1)?,
-            volume: r.get(2)?,
-            min: r.get(3)?,
-            max: r.get(4)?,
-        })
-    }) {
-        Ok(iter) => iter.filter_map(|x| x.ok()).collect(),
-        Err(_) => vec![],
     };
 
     if rows.is_empty() {
@@ -62,7 +69,7 @@ fn render() {
         return;
     }
 
-    let rows: Vec<(Row, f64)> = rows
+    let rows: Vec<(SymbolRow, f64)> = rows
         .into_iter()
         .map(|r| {
             let vol = if r.min > 0.0 { ((r.max - r.min) / r.min) * 100.0 } else { 0.0 };
@@ -79,7 +86,7 @@ fn render() {
         );
     }
 
-    let mut sorted: Vec<&(Row, f64)> = rows.iter().collect();
+    let mut sorted: Vec<&(SymbolRow, f64)> = rows.iter().collect();
     sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     println!("\n=== ⚠️ EN YÜKSEK RİSK / VOLATİLİTE İÇEREN 10 PARİTE ===");
@@ -89,7 +96,8 @@ fn render() {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let watch = std::env::args().any(|a| a == "--watch");
     let watch_sec: u64 = std::env::var("WATCH_SEC")
         .ok()
@@ -97,16 +105,16 @@ fn main() {
         .unwrap_or(5);
 
     if !watch {
-        render();
+        render().await;
         return;
     }
 
     // Sabit ekran: ilk render tam boyutla çizilir; sonrakiler imleç başa alınır.
     print!("\x1b[2J\x1b[H"); // başta bir kez temizle
-    render();
+    render().await;
     loop {
-        std::thread::sleep(Duration::from_secs(watch_sec));
+        tokio::time::sleep(Duration::from_secs(watch_sec)).await;
         print!("\x1b[H"); // imleç en üste
-        render();
+        render().await;
     }
 }

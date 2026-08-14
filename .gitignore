@@ -22,7 +22,6 @@ Cargo.lock
 *.db-wal
 .env
 
-# Paper service runtime artifacts
+# Data engine runtime artifacts
 data-engine/data/
-paper-*.db
 __pycache__/

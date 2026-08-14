@@ -794,12 +794,16 @@ monitor-start() {
 #  VERİTABANI
 # ============================================================
 db-trades() {
-  sqlite3 "$CYCLE_ROOT/data-engine/data/market_data.db" \
-    "SELECT id,symbol,side,entry_price,exit_price,pnl FROM trades ORDER BY id DESC LIMIT 20;" \
+  local url="${TIMESCALEDB_URL:-postgres://cycle:cycle@localhost:5432/market_data}"
+  psql "$url" -c \
+    "SELECT symbol, price, quantity, timestamp FROM trades ORDER BY timestamp DESC LIMIT 20;" \
     2>/dev/null || echo "DB boş veya bulunamadı."
 }
 db-size() {
-  du -sh "$CYCLE_ROOT/data-engine/data/market_data.db" 2>/dev/null
+  local url="${TIMESCALEDB_URL:-postgres://cycle:cycle@localhost:5432/market_data}"
+  psql "$url" -c \
+    "SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size;" \
+    2>/dev/null || echo "DB bağlanılamadı."
 }
 
 # ============================================================

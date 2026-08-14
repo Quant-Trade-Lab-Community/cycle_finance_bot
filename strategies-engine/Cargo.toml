@@ -32,4 +32,4 @@ transport = { path = "../cycle-engine/transport" }
 rust_decimal = { workspace = true }
 libc = { workspace = true }
 ohlcv-engine = { path = "../services-engine/ohlcv-engine" }
-rusqlite = { workspace = true }
+sqlx = { workspace = true }

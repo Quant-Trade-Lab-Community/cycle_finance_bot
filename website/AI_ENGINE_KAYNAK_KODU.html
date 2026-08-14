@@ -116,7 +116,7 @@
 | <code>src/main.rs</code> | Daemon girişi; HTTP status API (127.0.0.1:3110) ve sembol bazlı ana karar döngüsü (<code>run_cycle</code>). |
 | <code>src/lib.rs</code> | Ortak veri tipleri: <code>Action</code>, <code>PriceSnapshot</code>, <code>MarketContext</code>, <code>SignalOutput</code>, <code>RiskOutput</code>, <code>SentimentOutput</code>, <code>FinalDecision</code>. |
 | <code>src/config.rs</code> | <code>ai.toml</code> yükleme ve varsayılanlar; providers, schedule, execution, risk, context bölümleri. |
-| <code>src/context.rs</code> | <code>ContextBuilder</code> — price-feed, calc-ind, detect-ms, paper hesabı ve haber kaynağından <code>MarketContext</code> üretir. |
+| <code>src/context.rs</code> | <code>ContextBuilder</code> —, calc-ind, detect-ms, paper hesabı ve haber kaynağından <code>MarketContext</code> üretir. |
 | <code>src/gates.rs</code> | <code>RiskGate</code> — RiskEngine politikası + agent veto + deterministik boyut sınırı; onaylanan kararı executor'a iletir. |
 | <code>src/agents/mod.rs</code> | Ajan arayüzü (<code>Agent</code> trait), <code>AgentRole</code>, <code>AgentOutput</code> tipleri ve ortak ayrıştırma yardımcıları. |
 | <code>src/agents/signal.rs</code> | Strateji/sinyal ajanı — LLM'den BUY/SELL/HOLD yönü, güven ve miktar üretir. |
@@ -210,7 +210,7 @@
     I --&gt; J[&quot;env'den API anahtarları&quot;]
 </pre>
 <h3 id="src-context-rs"><code>src/context.rs</code><a class="headerlink" href="#src-context-rs" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> <code>ContextBuilder</code>, sembol başına <code>MarketContext</code> üretir. Fiyatı price-feed :3004 <code>GET /api/lastprice/{symbol}</code>'den; indikatörleri calc-ind :3007'den (rsi, macd, bbands, vwap, atr her biri ayrı async task; ring sonucu 64MB stack'li ayrı thread ile okunur); piyasa yapısını detect-ms :3002'den alır. Hesap durumunu paper :8080'e JWT ile login olup balance/positions uçlarından çeker; opsiyonel <code>news_feed_url</code>'den haber başlıklarını toplar. Fiyat ve yapı paralel (<code>tokio::join!</code>) getirilir; hata durumlarında boş/varsayılan snapshot döner (asla panik).
+<p><strong>Detaylı açıklama:</strong> <code>ContextBuilder</code>, sembol başına <code>MarketContext</code> üretir. Fiyatı :3004 <code>GET /api/lastprice/{symbol}</code>'den; indikatörleri calc-ind :3007'den (rsi, macd, bbands, vwap, atr her biri ayrı async task; ring sonucu 64MB stack'li ayrı thread ile okunur); piyasa yapısını detect-ms :3002'den alır. Hesap durumunu paper :8080'e JWT ile login olup balance/positions uçlarından çeker; opsiyonel <code>news_feed_url</code>'den haber başlıklarını toplar. Fiyat ve yapı paralel (<code>tokio::join!</code>) getirilir; hata durumlarında boş/varsayılan snapshot döner (asla panik).
 <strong>Neden kullandık:</strong>
 - Mevcut ring + REST altyapısını tek bağlam paketine birleştirir (ajanlara tek JSON satırı).
 - <code>tokio::join!</code> ve paralel spawn ile gecikme minimize edilir (HFT bağlamı).
@@ -742,7 +742,7 @@ anomaly_veto = true
 //! birleşik `MarketContext` üretir.
 //!
 //! Kaynaklar:
-//!   - fiyat    : price-feed :3004  `GET /api/lastprice/{symbol}`
+//!   - fiyat    : :3004  `GET /api/lastprice/{symbol}`
 //!   - indik.   : calc-ind   :3007  `POST /api/calc` + `/cycle_finance_calc` ring okuma
 //!   - yapı     : detect-ms  :3002  `GET /api/ms?symbol=&amp;interval=&amp;limit=`
 //!   - hesap    : paper      :8080  (JWT) `GET /api/v1/account/{balance,positions}`
@@ -1223,7 +1223,7 @@ impl Action {
     }
 }
 
-/// Anlık fiyat anlık görüntüsü (price-feed kaynağı).
+/// Anlık fiyat anlık görüntüsü (kaynağı).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PriceSnapshot {
     pub symbol: String,
@@ -1558,7 +1558,7 @@ async fn run_cycle(
         let ctx = context_builder.build(symbol, &amp;cfg.schedule.symbols).await;
 
         if !ctx.is_healthy() {
-            println!(&quot;⚠️  {symbol}: fiyat kaynağı sağlıksız — atlandı (price-feed çalışıyor mu?)&quot;);
+            println!(&quot;⚠️  {symbol}: fiyat kaynağı sağlıksız — atlandı (çalışıyor mu?)&quot;);
             continue;
         }
 

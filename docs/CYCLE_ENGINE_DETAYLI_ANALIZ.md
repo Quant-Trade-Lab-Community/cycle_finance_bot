@@ -350,7 +350,7 @@ flowchart LR
 
 ---
 
-### `src/db.rs` — SQLite Batch Yazıcı
+### `src/db.rs` — TimescaleDB Batch Yazıcı
 
 **Detaylı açıklama:** `OwnedEvent`'leri 8 tabloya (trades, orderbooks, liquidations, funding_rates,
 booktickers, open_interests, opportunities, symbol_metrics) yazan ayrı thread. PRAGMAs:
@@ -363,7 +363,7 @@ sıkıştırılır (512B ön-ayrımlı String).
   INSERT'i 1 fsync ile amorti eder.
 - **WAL + NORMAL:** Okuma/yazma eşzamanlı, hız/dayanıklılık dengesi (her tick'te fsync değil).
 - **Ön-ayrımlı String (`with_capacity`):** Orderbook serileştirmede allocator'ı azaltır.
-- **SQLite neden?** Sıfır altyapı, tek dosya; ClickHouse'a akmadan önce yeterli dayanıklılık.
+- **TimescaleDB neden?** Sıfır altyapı, tek dosya; ClickHouse'a akmadan önce yeterli dayanıklılık.
 
 ```mermaid
 flowchart TD
@@ -784,7 +784,7 @@ flowchart TD
 (~20 yılda ~7300 partition), Zstandard sıkıştırma. GDPR "right to erasure" için `DELETE` mutasyonu
 + silme kayıt defteri (hash → kaç kez silindi). Merkle ağacı + EC-12/4 bütünlük kontrolü (mock).
 
-**Neden kullandık:** SQLite geçici; kalıcı analitik veri gölü için ClickHouse (sıkıştırma,
+**Neden kullandık:** TimescaleDB geçici; kalıcı analitik veri gölü için ClickHouse (sıkıştırma,
 partition, sütun tabanlı sorgu hızı). Uyumluluk denetimi (silme kanıtı) yasal zorunluluk.
 
 ```mermaid
@@ -911,7 +911,7 @@ flowchart LR
         PARS["tick.rs<br>EventParser (simdjson)"]
         VAL["validator.rs<br>DataValidator"]
         WIRE1["wire::encode"]
-        DBW["db.rs<br>SQLite batch yazıcı"]
+        DBW["db.rs<br>TimescaleDB batch yazıcı"]
         ORCH["orchestrator.rs<br>TitaniumOrchestrator"]
     end
     subgraph TRANSPORT["transport — IPC"]
@@ -945,7 +945,7 @@ allocator/syscall olmadan çalışır. DB yazımı ayrı thread'de, hot path'i a
 
 **Neden bu 5 katman?**
 - **contracts:** Herkesin anlaştığı veri dili — katmanlar birbirinden bağımsız değişebilir.
-- **transport:** Süreçler arası sıfır-kopya iletişim — core ile servisler (price-feed, detect-ms,
+- **transport:** Süreçler arası sıfır-kopya iletişim — core ile servisler (, detect-ms,
   execution) aynı bellekten beslenir.
 - **core:** Veriyi alır, temizler, dağıtır, stratejiyi yönetir — sistemin beyni.
 - **adapter:** Dış dünya (borsa, Redis, ClickHouse, Vault, AI, telemetri) — hepsi değiştirilebilir

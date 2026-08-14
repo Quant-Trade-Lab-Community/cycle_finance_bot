@@ -61,10 +61,10 @@ jobs:
         kubectl apply -f additional-services/k8s/chaos_network_partition.yaml
         # Orkestratör ve WAL servislerinin partition boyunca ayakta kalması:
         sleep 30
-        kubectl wait --for=condition=Ready pod -l app=paper-service --timeout=60s
+        kubectl wait --for=condition=Ready pod -l app=executiond --timeout=60s
         # Kaos senaryosunu temizle, ardından iletişimin geri geldiğini doğrula
         kubectl delete -f additional-services/k8s/chaos_network_partition.yaml --wait=false
-        kubectl rollout status deployment/paper-service --timeout=60s
+        kubectl rollout status deployment/executiond --timeout=60s
 
   # MANİFESTO
   # "Bu testleri geçmeyen sistem, 20 yıl değil 20 saniye dayanır. Artık kod yazmak kadar, 

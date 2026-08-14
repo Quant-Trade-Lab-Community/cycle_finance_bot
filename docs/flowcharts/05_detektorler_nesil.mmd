@@ -3,36 +3,21 @@ flowchart LR
         OC["ohlcv-engine :: BinanceClient<br/>fetch_klines(symbol, interval, limit)"]
     end
 
-    subgraph N1["1. Nesil — axum iskeleti (copy-paste şablon)"]
-        SR["detect-sr → STDOUT metin<br/>swing · k-means · vol-profile · KDE"]
-        TR["detect-trend :3001<br/>10 algoritma · ~6 placeholder"]
+    subgraph DET["Analiz Servisleri"]
         MS["detect-ms :3002<br/>SMC 7 katman<br/>session · pivot · trend · levels<br/>liquidity · FVG · narrative"]
-        LQ["detect-liquidity :3003<br/>EQH/EQL · FVG · Sweep (O·n²)"]
-        PT["detect-pattern :3004<br/>14 mum formasyonu"]
+        CALC["calc-ind :3003<br/>indikatör hesap servisi"]
     end
 
-    subgraph N2["2. Nesil — lib + bin"]
-        WY["detect-wyckoff :3005<br/>Wyckoff faz makinesi + volume profile"]
-    end
-
-    subgraph N3["3. Nesil — veri merkezi entegrasyonu"]
-        TB["detect-trb :3006<br/>Navier-Stokes / CFD çözücü"]
-    end
-
-    OC --> SR
-    OC --> TR
-    OC --> MS
-    OC --> LQ
-    OC --> PT
-    OC --> WY
-
-    subgraph SRC2["Veri kaynağı: SQLite + shm ring"]
+    subgraph DBS["Veri kaynağı: TimescaleDB + shm ring"]
         R2["GenerationalRingBuffer 160k"]
-        D2["market_data.db"]
+        DB["market_data hypertable'ları<br/>(trades · OHLCV)"]
     end
 
-    R2 --> TB
-    D2 --> TB
+    OC --> MS
+    OC --> CALC
+
+    R2 --> MS
+    DB --> MS
 
     NOT["Not: bu servislerin çıktısı<br/>şu an execution'a BAĞLI DEĞİL<br/>(yalnız HTTP JSON)"]
-    NOT -.-> TB
+    NOT -.-> MS

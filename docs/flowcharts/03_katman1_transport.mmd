@@ -1,8 +1,8 @@
 sequenceDiagram
     autonumber
-    participant U as Üretici (core / price-feed / scout)
+    participant U as Üretici (core / daemon)
     participant R as GenerationalRingBuffer<br/>(/dev/shm · 160k slot)
-    participant T as Tüketici (paper / alert / velvetusdt / trb)
+    participant T as Tüketici (alert / strategies-engine)
 
     Note over R: Slot = [seq: u64 | len: u16 | data: [u8; 702]] → 768 B aligned
     U->>R: head = seq al
@@ -25,5 +25,4 @@ sequenceDiagram
     rect rgb(240, 248, 255)
         Note over U, T: OrderRingBuffer (STRATEGY→EXECUTION)
         Note over U, T: magic 0xD3F0000000000002 · sipariş slot
-        Note over U, T: STRATEGY: OrderRing.<br/>paper-service bridge → ActorCommand
     end

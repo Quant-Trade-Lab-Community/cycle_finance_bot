@@ -4,22 +4,21 @@
 
 `cold-starter` binary (soğuk başlatma rutini), `cold-storage` library (mmap disk tamponu). Her ikisi de workspace üyesidir. `cargo run -p cold-starter` ile çalıştırılır. `cold-storage` sadece bir lib crate'dir (binary değil).
 
-**Önemli not:** data-engine şu an iskelet aşamasında. Gerçek I/O (SQLite, sled) `data/` klasöründeki DB'lere bağlıdır.
+**Önemli not:** Gerçek zaman serisi I/O TimescaleDB'ye (`cycle-engine/persistence`) yazılır; cold-starter TimescaleDB'den okur.
 
 ---
 
 ## Süreç 1: Cold Starter (Soğuk Başlatma)
 
-`cold-starter/src/main.rs:3-9` — 3 fazlı kurtarma:
+`cold-starter/src/main.rs` — 2 fazlı kurtarma:
 
 | Adım | Fonksiyon | Kod |
 |:---|:---|:---|
-| 1 | `CatchupRoutines` örneği oluşturulur (`main.rs:5`) | 2. |
-| 2 | `fetch_200_ema()` — 200 EMA geçmişini ClickHouse Data Lake'ten çekme (mock: 50000.0) | 3. |
-| 3 | `replay_buffer_in_paper_mode()` — mmap buffer'ı paper modda replay (mock) | 4. |
-| 4 | `transition_to_live()` — buffer temizle, canlı moda geç (mock) | 5. |
+| 1 | `CatchupRoutines` örneği oluşturulur (`main.rs`) | 2. |
+| 2 | `fetch_200_ema()` — son 200 trade fiyatı TimescaleDB `trades` hypertable'ından çekilir, 200 EMA hesaplanır | 3. |
+| 3 | `transition_to_live()` — buffer temizle, canlı moda geç | 4. |
 
-> ⚠️ Tüm adımlar iskelet seviyesindedir; gerçek I/O yapılmaz. `catchup.rs:9` ve `catchup.rs:15`'teki `// Mock` yorumları bunu doğrular.
+> Bağlantı `TIMESCALEDB_URL` (varsayılan `postgres://cycle:cycle@localhost:5432/market_data`) üzerinden `sqlx` ile kurulur.
 
 ---
 
@@ -38,21 +37,20 @@ write_slice(offset, data) → bounds kontrolü (offset + data.len() <= mmap.len(
 
 ## Süreç 3: Veri Akışı
 
-### Kritik tespit: `data-engine` içindeki crate'lerin hiçbiri DB okumaz/yazmaz.
+TimescaleDB erişimi şu şekilde sağlanır:
 
-DB'lere erişim **dışarıdaki crate'lerden** yapılır:
-
-1. **`cycle-engine/persistence/src/db.rs`** — `start_db_writer` (thread spawn + `flume::bounded(1_000_000)` kanalı), 8 tablo (trades, orderbooks, liquidations, funding_rates, booktickers, open_interests, opportunities, symbol_metrics)
-2. **`services-engine/strategies/breakout-strategy/src/bin/risk_analysis.rs`** — `trades` tablosunu SQL ile özetler
-3. **`unused_services/detect-trb/src/main.rs`** — varsayılan db yolu
+1. **`cycle-engine/persistence/src/timescaledb.rs`** — `start_tsdb_writer` (thread spawn + `flume::bounded` kanalı), hypertable'lar (trades, orderbooks, liquidations, funding_rates, markprices, indexprices, lastprices, open_interests)
+2. **`strategies-engine/src/bin/risk_analysis.rs`** — TimescaleDB `trades` tablosunu SQL ile özetler
+3. **`data-engine/cold-starter/src/catchup.rs`** — TimescaleDB `trades`'ten 200 EMA hesaplar
 
 ---
 
 ## Thread / Task Yapısı
 
-**cold-starter ve cold-storage içinde hiç yok.**
-- `main.rs` tek thread, senkron, async yok, `#[tokio::main]` yok, `thread::spawn` yok
-- `DiskBuffer` `MmapMut` tutar; thread-safe değil (Send/Sync derive edilmemiş)
+**cold-starter ve cold-storage içinde yok.**
+
+- `cold-storage/src/lib.rs` `MmapMut` tutar; thread-safe değil (Send/Sync derive edilmemiş)
+- `cold-starter` `#[tokio::main]` async giriş kullanır (sqlx bağlantısı için)
 
 ---
 
@@ -60,7 +58,9 @@ DB'lere erişim **dışarıdaki crate'lerden** yapılır:
 
 | Bağımlılık | Kaynak | Kullanım |
 |:---|:---|:---|
-| `memmap2 = { workspace = true }` | kök workspace'te (Cargo.toml:55) | cold-storage/Cargo.toml:7 |
+| `memmap2 = { workspace = true }` | kök workspace'te | cold-storage/Cargo.toml |
+| `sqlx = { workspace = true }` | kök workspace'te (postgres, runtime-tokio) | cold-starter/Cargo.toml — TimescaleDB sorguları |
+| `tokio = { workspace = true }` | kök workspace'te | cold-starter async giriş |
 | `cargo` | N/A | build |
 
 ---
@@ -69,10 +69,10 @@ DB'lere erişim **dışarıdaki crate'lerden** yapılır:
 
 | Dosya | Satır |
 |:---|:---|
-| `cold-starter/src/main.rs` | 9 |
-| `cold-starter/src/catchup.rs` | 23 |
-| `cold-starter/Cargo.toml` | 5 |
-| **cold-starter toplam** | **37** |
+| `cold-starter/src/main.rs` | 18 |
+| `cold-starter/src/catchup.rs` | 42 |
+| `cold-starter/Cargo.toml` | 8 |
+| **cold-starter toplam** | **68** |
 | `cold-storage/src/lib.rs` | 35 |
 | `cold-storage/Cargo.toml` | 6 |
 | **cold-storage toplam** | **41** |
@@ -81,4 +81,4 @@ DB'lere erişim **dışarıdaki crate'lerden** yapılır:
 
 ## Sonuç
 
-data-engine şu anda iskelet aşamasında; cold-starter (mock) ve cold-storage (mmap) bu yapıyı sunar. Gerçek veri akışı `cycle-engine/persistence/src/db.rs` (SQLite WAL) ve `services-engine/strategies/breakout-strategy/src/bin/risk_analysis.rs` tarafından sağlanır.
+data-engine; cold-starter (TimescaleDB'den 200 EMA) ve cold-storage (mmap) yapılarını sunar. Gerçek zaman serisi kalıcılığı `cycle-engine/persistence/src/timescaledb.rs` (TimescaleDB) tarafından sağlanır.

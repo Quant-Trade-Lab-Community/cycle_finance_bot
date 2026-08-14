@@ -121,7 +121,7 @@
 <p>Her dosyanın <strong>detaylı açıklaması</strong>, <strong>algoritmik akış diyagramı</strong> (mermaid) ve <strong>"neden kullandık"</strong> gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09</p>
 </blockquote>
 <h3 id="cargo-toml"><code>Cargo.toml</code><a class="headerlink" href="#cargo-toml" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> Workspace, 21 crate üyesini katmanlı bir monorepo altında toplar: cycle-engine (5: contracts, transport, core, adapter, splash), data-engine (2: cold-storage, cold-starter), execution-engine (1), risk-engine (1), strategies-engine (2), services-engine (8), ai-engine (1) ve additional-services/os-utils (1). <code>resolver = "2"</code> ile modern özellik çözümü kullanılır; <code>tests/</code> ve <code>unused_services/</code> <code>exclude</code> listesiyle workspace'ten çıkarılmıştır (derlenmez). <code>[workspace.dependencies]</code> bölümü ~45 ortak bağımlılığı (tokio, axum, rust_decimal, ndarray, ferro_ta_core, rusqlite, rtrb, redis, sled vb.) <strong>tek sürümle</strong> ilan eder; üyeler path'li kendi crates'leri ve <code>workspace = true</code> bağımlılıkları kullandığından sürüm kayması yaşanmaz. Sürüm kilidi <code>Cargo.lock</code> ile tutulur; <code>cargo build --workspace</code> / <code>cargo test --workspace</code> tek komutla tüm çatıyı işler.</p>
+<p><strong>Detaylı açıklama:</strong> Workspace, 21 crate üyesini katmanlı bir monorepo altında toplar: cycle-engine (5: contracts, transport, core, adapter, splash), data-engine (2: cold-storage, cold-starter), execution-engine (1), risk-engine (1), strategies-engine (2), services-engine (8), ai-engine (1) ve additional-services/os-utils (1). <code>resolver = "2"</code> ile modern özellik çözümü kullanılır; <code>tests/</code> ve <code>unused_services/</code> <code>exclude</code> listesiyle workspace'ten çıkarılmıştır (derlenmez). <code>[workspace.dependencies]</code> bölümü ~45 ortak bağımlılığı (tokio, axum, rust_decimal, ndarray, ferro_ta_core, sqlx, rtrb, redis, sled vb.) <strong>tek sürümle</strong> ilan eder; üyeler path'li kendi crates'leri ve <code>workspace = true</code> bağımlılıkları kullandığından sürüm kayması yaşanmaz. Sürüm kilidi <code>Cargo.lock</code> ile tutulur; <code>cargo build --workspace</code> / <code>cargo test --workspace</code> tek komutla tüm çatıyı işler.</p>
 <p><strong>Neden kullandık:</strong>
 - Tek sürüm kaynağı: 21 crate aynı bağımlılık sürümlerini kullanır, crate içi drift olmaz.
 - Katmanlı monorepo: çekirdek kütüphaneler (cycle-engine) ile servislerin ayrı crate'lerde izole geliştirilmesi.
@@ -192,7 +192,7 @@
     adapter[&quot;adapter · Binance WS client&quot;]
     core[&quot;core · simdjson parser + validator&quot;]
     ring1[&quot;/dev/shm GenerationalRingBuffer&quot;]
-    db[&quot;data-engine · SQLite WAL&quot;]
+    db[&quot;data-engine · TimescaleDB&quot;]
     pf[&quot;price-feed :3004&quot;]
     dm[&quot;detect-ms :3002&quot;]
     bs[&quot;breakout-strategy&quot;]
@@ -388,7 +388,7 @@
 
     subgraph depo[&quot;Veri Kaydı&quot;]
         cold[&quot;cold-storage&quot;]
-        data[&quot;data-engine/data · SQLite&quot;]
+        data[&quot;data-engine/data · TimescaleDB&quot;]
     end
 
     subgraph unused[&quot;unused_services · workspace'ten exclude&quot;]
@@ -477,7 +477,7 @@ flume        = &quot;0.11&quot;
 parking_lot  = &quot;0.12&quot;
 clap         = { version = &quot;4.6&quot;, features = [&quot;derive&quot;, &quot;env&quot;] }
 chrono       = &quot;0.4&quot;
-rusqlite     = { version = &quot;0.31.0&quot;, features = [&quot;bundled&quot;] }
+sqlx     = { version = &quot;0.31.0&quot;, features = [&quot;bundled&quot;] }
 libc         = &quot;0.2&quot;
 memmap2      = &quot;0.9&quot;
 core_affinity = &quot;0.8&quot;
@@ -542,7 +542,7 @@ Ana akış:
 </code></pre>
 <p>Binance Futures WS
    → adapter (binance WS client)
-   → core (parser + validator + SQLite yazıcı)
+   → core (parser + validator + TimescaleDB yazıcı)
    → /dev/shm ring buffer (IPC)
    → detect-ms (Market Structure Multi-Protocol, 7 katman)
    → breakout-strategy (kırılım sinyali: sembol + yön)</p>
@@ -604,7 +604,7 @@ Ana akış:
 | **1 — Transport (IPC)** | `cycle-engine/transport` | `/dev/shm` GenerationalRingBuffer + OrderRingBuffer (torn-read korumalı) |
 | **2 — Çekirdek Motor** | `cycle-engine/core` | simdjson parser, validator, TitaniumOrchestrator (spin-loop), RiskEngine, LOB sim, TscTimer (RDTSC) |
 | **2 — Açılış Ekranı** | `cycle-engine/splash` | FIGlet ASCII animasyonu (CYCLE FINANCE, harf harf) |
-| **3 — Veri** | `data-engine` | SQLite yazımı, soğuk depolama, WAL |
+| **3 — Veri** | `data-engine` | TimescaleDB yazımı, soğuk depolama |
 | **4 — Analiz** | `services-engine/detect-ms` | 7 katmanlı piyasa yapısı analizi |
 | **5 — Strateji** | `strategies-engine` | Kırılım sinyali üretimi |
 | **6 — Yürütme** | `execution-engine` + `paper-service` | Emir yürütme (paper) |
@@ -616,7 +616,7 @@ Ana akış:
 <p>Binance WS (adapter) → flume queue → EventParser (simdjson)
   → DataValidator (stale ≤ 200ms, crossed book, circuit breaker)
   → wire::encode → GenerationalRingBuffer (/dev/shm/cycle_finance_ring)
-  → SQLite batch writer (data-engine/data/market_data.db)</p>
+  → TimescaleDB batch writer (market_data hypertable'ları)</p>
 <p>price-feed (:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
 detect-ms (:3002)  ← BinanceClient (ohlcv-engine)
 breakout-strategy  → SINYAL (sembol + yön)</p>
@@ -886,10 +886,9 @@ cargo test -p execution-engine --test mock_binance
 <h2 id="veri-kayd">💾 Veri Kaydı<a class="headerlink" href="#veri-kayd" title="Permanent link">&para;</a></h2>
 <p>Tüm veriler merkezi olarak <code>data-engine/data/</code> altında tutulur:</p>
 <pre><code>data-engine/data/
-├── market_data.db     # Ana tick/OHLCV SQLite (WAL modu)
-├── paper_live.db      # Paper-service çalışma veritabanı
-└── paper_wal/         # Paper event store (sled)
+└── paper_wal/         # DiskBuffer (mmap) tampon segmentleri (conf + snap.*)
 </code></pre>
+<p>Market tick/OHLCV verileri ise TimescaleDB hypertable'larında tutulur (<code>TIMESCALEDB_URL</code>).</p>
 <p>Herhangi bir servis veri yazarsa buraya yazar. <code>.gitignore</code> ile git dışı tutulur.</p>
 <hr />
 <h2 id="kurulum">🔧 Kurulum<a class="headerlink" href="#kurulum" title="Permanent link">&para;</a></h2>
@@ -1163,7 +1162,7 @@ exec-console-stop
 <li><strong>Pre-fault bellek</strong>: <code>hal::memory::allocate_huge_buffer</code> — çalışma anında page fault yok</li>
 <li><strong>TSC timer</strong>: <code>timer/tsc.rs</code> — <code>RDTSC</code> tabanlı yüksek çözünürlüklü zamanlama</li>
 <li><strong>simdjson</strong>: zero-copy JSON parsing</li>
-<li><strong>SQLite WAL + batch</strong>: 10k yazma/1sn batching</li>
+<li><strong>TimescaleDB + batch</strong>: 10k yazma/1sn batching</li>
 </ul>
 <h3 id="risk-yonetimi">Risk Yönetimi<a class="headerlink" href="#risk-yonetimi" title="Permanent link">&para;</a></h3>
 <ul>

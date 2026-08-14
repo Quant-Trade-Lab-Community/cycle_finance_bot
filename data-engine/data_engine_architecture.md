@@ -2,12 +2,12 @@
 
 ## Genel Bakış
 
-**data-engine**, Cycle Finance'in **data katmanını** (disk tamponu, Ring Buffer, SQLite) oluşturur.
+**data-engine**, Cycle Finance'in **data katmanını** (disk tamponu, Ring Buffer, TimescaleDB) oluşturur.
 
-- **Data Engine** (veri akışı): 2 tablo ve veri kaynağında (Market data, paper orders) okuyan, yazar ve yöneten bir kütüphane.
+- **Data Engine** (veri akışı): Zaman serisi kalıcılığını (TimescaleDB) ve Ring Buffer veri kaynağını okuyan, yazar ve yöneten kütüphaneler.
 - **Disk Buffer** (`cold-storage`): `memmap2` ile mmap disk tamponu; low-latency veri okuma/yazma.
-- **Cold Starter** (`cold-starter`): Soğuk başlatma rutini — indikatör geçmişi yüklemek, disk tamponu paper mode'da replay, canlı moda geçiş.
-- **Veri Formatları:** SQLite (WAL modu), sled 0.34 segment store (paper_wal/), POSIX shm ring (data/).
+- **Cold Starter** (`cold-starter`): Soğuk başlatma rutini — TimescaleDB'den indikatör geçmişi (200 EMA) hesaplamak, canlı moda geçiş.
+- **Veri Formatları:** TimescaleDB (PostgreSQL uzantısı), POSIX shm ring (data/).
 
 ---
 
@@ -15,12 +15,10 @@
 
 | Katman | Modül | Sorumluluk |
 |:---|:---|:---|
-| **Cold Starter** | `cold-starter/src/main.rs` | Soğuk başlatma orkestrasyonu; `CatchupRoutines` (3 fazlı kurtarma) |
-| **Cold Starter** | `cold-starter/src/catchup.rs` | 3 aşama: fetch_200_ema → replay_buffer_in_paper_mode → transition_to_live |
+| **Cold Starter** | `cold-starter/src/main.rs` | Soğuk başlatma orkestrasyonu; `CatchupRoutines` (kurtarma) |
+| **Cold Starter** | `cold-starter/src/catchup.rs` | 2 aşama: fetch_200_ema → transition_to_live |
 | **Cold Storage** | `cold-storage/src/lib.rs` | `DiskBuffer` struct (mmap disk tamponu; `write_slice`, `set_len`) |
-| **Data Store** | `data/market_data.db` | SQLite WAL modu — 709M, 8 tablo, 1.7M kayıt (trades tablosu) |
-| **Data Store** | `data/paper_live.db` | SQLite WAL modu — 4KB (paper işlem logları) |
-| **Data Store** | `data/paper_wal/` | sled 0.34 segment store (paper order data) |
+| **Data Store** | TimescaleDB `market_data` DB | Hypertable'lar: trades, orderbooks, liquidations, funding_rates, markprices, lastprices, indexprices, open_interests |
 
 ---
 
@@ -30,12 +28,9 @@
 
 | Adım | İşlem | Kod |
 |:---|:---|:---|
-| 1 | `cold-starter` → `CatchupRoutines` (kurtarma orkestrasyonu) (main.rs:3-9) | 2. |
-| 2 | `fetch_200_ema()` — 200 EMA geçmişi `market_data.db`'den çekme (mock: 50000.0) (catchup.rs:6-10) | 3. |
-| 3 | `replay_buffer_in_paper_mode()` — mmap buffer'ı paper mode'nda replay (mock) (catchup.rs:14-17) | 4. |
-| 4 | `transition_to_live()` — buffer temizle, canlı moda geç (mock) (catchup.rs:20-22) | 5. |
-
-> ⚠️ Tüm adımlar iskelet seviyesindedir; gerçek I/O yapılmaz.
+| 1 | `cold-starter` → `CatchupRoutines` (kurtarma orkestrasyonu) (main.rs) | 2. |
+| 2 | `fetch_200_ema()` — 200 EMA geçmişi TimescaleDB `trades` hypertable'ından çekilir ve hesaplanır (catchup.rs) | 3. |
+| 3 | `transition_to_live()` — buffer temizle, canlı moda geç (catchup.rs) | 4. |
 
 ### Cold Storage (mmap disk tamponu)
 
@@ -51,41 +46,23 @@ write_slice(offset, data)
 
 ## Veri Formatları ve Şema
 
-### Market Data DB (`market_data.db` — SQLite WAL)
+### TimescaleDB `market_data` (zaman serisi kalıcılığı)
 
-**Şema (8 tablo):**
+Kalıcılık, `cycle-engine/persistence` tarafından TimescaleDB (PostgreSQL) hypertable'larına yazılır. Şema:
 
-| Tablo | Kolonlar | Kaynak satır | Mevcut kayıt |
-|:---|:---|:---|:---|
-| `trades` | id, symbol, price, quantity, timestamp | `db.rs:21-29` | 1.740.244 |
-| `orderbooks` | id, symbol, bids TEXT, asks TEXT | `db.rs:31-39` | 939.303 |
-| `liquidations` | id, symbol, side, price, quantity, timestamp | `db.rs:41-51` | 0 |
-| `funding_rates` | id, symbol, mark_price, index_price, funding_rate, next_funding_time | `db.rs:53-63` | 0 |
-| `booktickers` | id, symbol, best_bid_price/qty, best_ask_price/qty | `db.rs:65-75` | 0 |
-| `open_interests` | id, symbol, open_interest, timestamp | `db.rs:77-85` | 0 |
-| `opportunities` | id, symbol, score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps, verdict, timestamp | `db.rs:87-101` | 0 |
-| `symbol_metrics` | id, symbol, score, efficiency, price_bps_per_s, price_ticks_per_s, ob_changes_per_s, spread_bps, timestamp | `db.rs:103-116` | 0 |
-
-- PRAGMA: `journal_mode=WAL; synchronous=NORMAL; cache_size=-64000` (`db.rs:13-17`)
-- Batch commit: 10.000 kayıt veya 1 sn (`db.rs:118-121`)
-
-### Paper DB (`paper_live.db` — SQLite WAL)
-
-**Şema (2 tablo):**
-
-| Tablo | Kolonlar | Kaynak satır |
+| Tablo | Kolonlar | Kaynak |
 |:---|:---|:---|
-| `paper_open_orders` | order_id TEXT PK, symbol, side, price, open_quantity, original_quantity, locked_balances_json | `sqlite_projection.rs:36` (INSERT OR REPLACE) |
-| `paper_trades` | id, order_id, symbol, side, price, quantity, fee, timestamp | `sqlite_projection.rs:26` (INSERT) |
+| `trades` | symbol, price, quantity, is_buyer_maker, timestamp | `persistence/src/timescaledb.rs:60` |
+| `orderbooks` | symbol, bids JSONB, asks JSONB, timestamp | `persistence/src/timescaledb.rs:61` |
+| `liquidations` | symbol, side, price, quantity, timestamp | `persistence/src/timescaledb.rs:62` |
+| `funding_rates` | symbol, mark_price, index_price, funding_rate, next_funding_time, timestamp | `persistence/src/timescaledb.rs:63` |
+| `open_interests` | symbol, open_interest, timestamp | `persistence/src/timescaledb.rs:64` |
+| `markprices` | symbol, price, timestamp | `persistence/src/timescaledb.rs:65` |
+| `indexprices` | symbol, price, timestamp | `persistence/src/timescaledb.rs:66` |
+| `lastprices` | symbol, price, timestamp | `persistence/src/timescaledb.rs:67` |
 
-Her iki tablo da şu an **boş**. DB yolu `PAPER_DB_PATH` env var ile seçilir (`execution-engine/src/paper/config.rs:58-59`).
-
-### Sled 0.34 Segment Store (`paper_wal/`)
-
-- `conf` dosyası: `segment_size: 524288 / use_compression: false / version: 0.34`
-- `paper_service` (SledEventStore) — `sled::open(path)` (`events.rs:50`), `append` (`:65-71`), `replay` (`:73-91`)
-- Default yol: `PAPER_SLED_PATH` env var (`:101-103` → `./data-engine/data/paper_wal`)
-- Dosya: 524.287 byte; `snap.0000000000000060` sled anlık görüntüsü; `blobs/` boş
+- Bağlantı: `TIMESCALEDB_URL` (varsayılan `postgres://cycle:cycle@localhost:5432/market_data`)
+- Batch commit: 1000 kayıt veya 1 sn (`persistence/src/timescaledb.rs:109`)
 
 ---
 
@@ -98,8 +75,8 @@ Her iki tablo da şu an **boş**. DB yolu `PAPER_DB_PATH` env var ile seçilir (
 
 ### İlgili (dış) thread yapısı
 
-- `cycle-engine/engine/src/main.rs:16-18` — `thread::spawn` ile `start_db_writer` ayrı thread'de; `flume::bounded(1_000_000)` kanalıyla event alır.
-- `cycle-engine/engine/src/main.rs:24-27` — RT priority (99) ile ayrı bir tüketim thread'i (LockFreeDispatcher consumer).
+- `cycle-engine/engine/src/main.rs` — `thread::spawn` ile `start_db_writer` ayrı thread'de; `flume::bounded(1_000_000)` kanalıyla event alır.
+- `cycle-engine/engine/src/main.rs` — RT priority (99) ile ayrı bir tüketim thread'i (LockFreeDispatcher consumer).
 
 ---
 
@@ -108,8 +85,8 @@ Her iki tablo da şu an **boş**. DB yolu `PAPER_DB_PATH` env var ile seçilir (
 | Bağımlılık | Kaynak | Kullanım |
 |:---|:---|:---|
 | `memmap2` | workspace (`memmap2 = "0.9"`) | Cold storage disk tamponu (`cold-storage/src/lib.rs:7`) |
-| `sqlite3` | Cargo built-in | `db.rs` tablo oluşturma ve okuma |
-| `crate` (sadece) | workspace | `cold-starter` ve `cold-storage` bağımlılıkları boş veya workspace içi |
+| `sqlx` | workspace (postgres, runtime-tokio) | Cold starter — TimescaleDB sorguları |
+| `crate` (sadece) | workspace | `cold-starter` ve `cold-storage` bağımlılıkları workspace içi |
 | `rust_decimal` | workspace | Para aritmetik, serde |
 
 ---
@@ -118,30 +95,25 @@ Her iki tablo da şu an **boş**. DB yolu `PAPER_DB_PATH` env var ile seçilir (
 
 | Dosya | Satır |
 |:---|:---|
-| `cold-starter/src/main.rs` | 9 |
-| `cold-starter/src/catchup.rs` | 23 |
-| `cold-starter/Cargo.toml` | 5 |
-| `cold-starter toplam` | **37** |
+| `cold-starter/src/main.rs` | 18 |
+| `cold-starter/src/catchup.rs` | 42 |
+| `cold-starter/Cargo.toml` | 8 |
+| `cold-starter toplam` | **68** |
 | `cold-storage/src/lib.rs` | 35 |
 | `cold-storage/Cargo.toml` | 6 |
 | `cold-storage toplam` | **41** |
-| **data-engine Rust + manifest toplamı** | **78** |
+| **data-engine Rust + manifest toplamı** | **109** |
 
 ---
 
 ## Veri Akış
 
 ```
-Market Data DB (market_data.db) ──► start_db_writer (thread) ──► flume kanalı ──► (sanal) data akışı
-                                                        │
-                                                        ▼
-paper_live.db ──► paper_service ──► event-sourcing projection ──► SQLite
-                                    │
-paper_wal (sled 0.34) ──► paper_service ──► event-sourcing
+TimescaleDB (market_data hypertable'ları) ──► start_tsdb_writer (thread) ──► flume kanalı ──► flow ring'leri
 ```
 
 ---
 
 ## Sonuç
 
-data-engine şu an sadece iskelet aşamasında. Cold-starter (mock) ve cold-storage (mmap) bu yapıyı sunar. Gerçek veri akışı `db.rs` (SQLite) ve `paper_service` (Sled WAL + SQLite) tarafından sağlanır.
+data-engine; cold-starter (TimescaleDB'den 200 EMA) ve cold-storage (mmap) yapılarını sunar. Gerçek zaman serisi kalıcılığı TimescaleDB (`persistence`) tarafından sağlanır.

@@ -1,8 +1,8 @@
 graph TD
-    A([Başlangıç: test_replay_rebuilds_positions_and_cash]) --> B["PaperConfig::load_from_env() (HEDGE, CROSSED, 500 USDT)"]
+    A([Başlangıç: test_replay_rebuilds_positions_and_cash]) --> B["Config::load_from_env()"]
     B --> C["OrderFilled event hazırla: BUY 100 USDT @ 50000, komisyon 0.05, marj 5, leverage 20"]
 
-    C --> D["PaperEngineActor::new_with_events(config, None, &events)"]
+    C --> D["EngineActor::new_with_events(config, None, &events)"]
     D --> E["AccountState + RiskManager kurulur"]
     E --> F{replay_events boş değil}
     F -- Evet --> G["rebuild_from_events(events)"]

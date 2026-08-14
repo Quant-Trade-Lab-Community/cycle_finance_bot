@@ -1,7 +1,7 @@
 # 🏛️ Cycle-Engine — 6 Katmanlı Mimari ve Geliştirme Planı
 
 > [!NOTE]
-> **Güncelleme (2026-08-11):** Bu belge, yeniden yapılandırma **öncesi** yapıyı (`contracts`, `adapter`, `core`, `transport`) anlatan tarihî bir plan dokümanıdır. Güncel mimari için **cycle_engine_architecture.md** ve **cycle_engine_processes.md**'ye bakınız. Son değişiklikler: `flows` crate'i (8 bağımsız veri akışı süreci), `gateway::rate_gate` (prosesler arası API rate kapısı), SQLite → TimescaleDB geçişi.
+> **Güncelleme (2026-08-11):** Bu belge, yeniden yapılandırma **öncesi** yapıyı (`contracts`, `adapter`, `core`, `transport`) anlatan tarihî bir plan dokümanıdır. Güncel mimari için **cycle_engine_architecture.md** ve **cycle_engine_processes.md**'ye bakınız. Son değişiklikler: `flows` crate'i (8 bağımsız veri akışı süreci), `gateway::rate_gate` (prosesler arası API rate kapısı), TimescaleDB → TimescaleDB geçişi.
 
 > **Kapsam**: Yalnızca `cycle-engine/` alt dizini — 5 crate, 37 kaynak dosyası, ~80.000 satır derlenmiş kod.
 > **Kural**: Hiçbir mevcut dosya değiştirilmeyecek. Bu plan salt-okunur analiz ve doğrulamadır.
@@ -459,7 +459,7 @@ flowchart LR
 
 ## Katman 5 — Depolama ve Veri Gölü
 
-### 5.1 SQLite WAL Batch Writer
+### 5.1 TimescaleDB Batch Writer
 
 **Dosya**: [db.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/db.rs) (203 satır)
 
@@ -511,7 +511,7 @@ flowchart LR
     Q --> PARSER["EventParser"]
     PARSER --> RING["Ring Buffer"]
     PARSER --> DB_Q["flume::bounded(1M)<br/><i>db_tx/db_rx</i>"]
-    DB_Q -->|"ayrı thread"| DB["SQLite Writer"]
+    DB_Q -->|"ayrı thread"| DB["TimescaleDB Writer"]
     
     style DB fill:#922B21,stroke:#C0392B
     style RING fill:#1A5276,stroke:#2980B9
@@ -680,7 +680,7 @@ flowchart TB
 
     subgraph "Katman 5 — Depolama"
         DBQ["flume::bounded(1M)"]
-        DB["SQLite WAL Writer<br/>10K batch / 1s commit"]
+        DB["TimescaleDB Writer<br/>10K batch / 1s commit"]
     end
 
     subgraph "Katman 6 — Donanım"
@@ -716,8 +716,7 @@ flowchart TB
 
 | RUN_MODE | Açıklama | Giriş Noktası |
 |----------|---------|---------------|
-| `DATA` | Canlı market data toplama + ring yazma + SQLite kayıt | `start_binance_ws_client(tx)` |
-| `PAPER` | Kağıt ticaret simülasyonu | `start_paper_cli()` |
+| `DATA` | Canlı market data toplama + ring yazma + TimescaleDB kayıt | `start_binance_ws_client(tx)` |
 | `STRATEGY` | Strateji konsolu | `start_strategy_cli()` |
 | `BACKTEST` | CSV'den geçmiş veri ile geri test | `start_backtester(&csv_path)` |
 | `CORRELATION` | Korelasyon analiz konsolu | `start_correlation_cli()` |
@@ -822,7 +821,7 @@ cargo test -p contracts -p transport --no-run 2>&1 | tail -5
 | [orchestrator.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/engine/orchestrator.rs) | 184 | 6.6 KB | Spin-loop karar motoru |
 | [tick.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/tick.rs) | 88 | 4.5 KB | simd_json parser |
 | [validator.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/validator.rs) | 94 | 3.8 KB | Veri doğrulama + circuit breaker |
-| [db.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/db.rs) | 203 | 9.1 KB | SQLite WAL batch writer |
+| [db.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/db.rs) | 203 | 9.1 KB | TimescaleDB batch writer |
 | [detector_bridge.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/bridge/detector_bridge.rs) | 145 | 5.3 KB | Scout→Strateji köprüsü |
 | [state.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/state.rs) | 32 | 1.0 KB | Bakiye durum yönetimi |
 | [queue.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/queue.rs) | 28 | 654 B | Lock-free dispatcher |
@@ -832,7 +831,6 @@ cargo test -p contracts -p transport --no-run 2>&1 | tail -5
 | [pii.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/pii.rs) | 28 | 951 B | PII maskeleme |
 | [backtester.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/engine/backtester.rs) | 55 | 2.1 KB | CSV backtester |
 | [correlation_cli.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/cli/correlation_cli.rs) | ~300 | 11.5 KB | Korelasyon CLI |
-| [paper_cli.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/cli/paper_cli.rs) | ~150 | 5.5 KB | Paper trade CLI |
 | [strategy_cli.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/src/cli/strategy_cli.rs) | ~100 | 3.7 KB | Strateji CLI |
 | [tick_benchmark.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/core/benches/tick_benchmark.rs) | ~60 | 2.3 KB | Criterion benchmark |
 
@@ -853,7 +851,7 @@ cargo test -p contracts -p transport --no-run 2>&1 | tail -5
 | **Torn-read koruması** | Seq-last-write + Release fence + double-read (Market/Calc/Stream ring'leri) |
 | **Panik izolasyonu** | `catch_unwind(AssertUnwindSafe)` ile strateji çökmesi sistemi durdurmaz |
 | **Geri basınç kontrolü** | `flume::bounded` kuyruklar — RAM taşması yapısal olarak imkânsız |
-| **DB yalıtımı** | Ayrı thread + `try_send` — SQLite ana hattı **asla** bloke etmez |
+| **DB yalıtımı** | Ayrı thread + `try_send` — TimescaleDB ana hattı **asla** bloke etmez |
 | **Donanım yakınlığı** | RT öncelik (99), CPU pin, RDTSC timer, page pre-fault |
 | **Güvenlik katmanı** | Vault anahtar rotasyonu, Redis idempotency (NX), PII maskeleme |
 

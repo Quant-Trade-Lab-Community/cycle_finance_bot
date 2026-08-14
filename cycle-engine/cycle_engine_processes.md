@@ -215,7 +215,6 @@ Her akış kendi ring'ine yazar; diğer bağımsız OS süreçleri o ring'leri *
 |:---|:---|:---|
 | `breakout-strategy` | `/cycle_finance_trades` | Kırılım stratejisi fiyatı (event-driven) |
 | `alert-service` | `/cycle_finance_trades` | Sesli fiyat uyarısı |
-| `paper-service` | `/cycle_finance_trades` | Mark price güncellemesi (dolum/likidasyon) |
 | `stream-ohlcv` | `/cycle_finance_lastprice` | Canlı mum güncellemesi |
 | `risk-worker` | `/cycle_finance_markprice` | Risk parametreleri (VaR/korelasyon) |
 | `calc-ind` | `/cycle_finance_calc` | İndikatör hesaplama (:3007) |

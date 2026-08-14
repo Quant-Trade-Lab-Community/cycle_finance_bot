@@ -35,7 +35,6 @@ graph TD
     I -- Hayır --> AA[start_binance_ws_client(tx).await]
     AA --> AB[return]
 
-    C -- PAPER --> AC[paper_cli::start_paper_cli]
     C -- STRATEGY --> AD[spawn_detector_bridge_watcher]
     AD --> AE[strategy_cli::start_strategy_cli]
     C -- BACKTEST --> AF[backtester::start_backtester(csv_path)]

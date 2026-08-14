@@ -1,7 +1,7 @@
 //! Emir domain modeli — Binance USDT-M Futures emir türleri ve istek/yanıt.
 //!
-//! Mevcut varyantlar (paper-service uyumluluğu için) korunur; canlı borsaya
-//! gönderimde `binance_str()` ile kanonik emir tipi üretilir.
+//! Mevcut varyantlar canlı borsaya gönderimde `binance_str()` ile kanonik emir
+//! tipine çevrilir.
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -26,8 +26,8 @@ impl OrderSide {
 ///
 /// Kanonik borsa tipleri: `LIMIT, MARKET, STOP, STOP_MARKET, TAKE_PROFIT,
 /// TAKE_PROFIT_MARKET, TRAILING_STOP_MARKET, LIMIT_MAKER`.
-/// Eski `StopLoss*/TakeProfit*` varyantları paper katmanı uyumu için korunur;
-/// canlıya `binance_str()` ile kanonik değere çevrilir.
+/// Eski `StopLoss*/TakeProfit*` varyantları canlıya `binance_str()` ile kanonik
+/// değere çevrilir.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum OrderType {

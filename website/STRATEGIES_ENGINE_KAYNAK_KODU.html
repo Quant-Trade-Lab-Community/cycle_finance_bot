@@ -101,7 +101,7 @@
 <hr />
 <h2 id="klasor-ve-dosya-sozlugu">📖 Klasör ve Dosya Sözlüğü<a class="headerlink" href="#klasor-ve-dosya-sozlugu" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><code>strategies-engine/</code> — <strong>Genel amaç:</strong> Strateji katmanı. <code>trait_def.rs</code>'te strateji sözleşmesi, <code>breakout-strategy</code> ise ilk canlı strateji: price-feed ring'inden fiyat okur, detect-ms'ten seviye alır, kırılım kontrolü yapar ve sinyal üretir.
+<p><code>strategies-engine/</code> — <strong>Genel amaç:</strong> Strateji katmanı. <code>trait_def.rs</code>'te strateji sözleşmesi, <code>breakout-strategy</code> ise ilk canlı strateji: ring'inden fiyat okur, detect-ms'ten seviye alır, kırılım kontrolü yapar ve sinyal üretir.
 | Klasör / Dosya | Anlamı |
 |---|---|
 | <code>strategies-engine/</code> | Strateji katmanının kök workspace lib kutusu; <code>Strategy</code> trait arayüzünü tanımlar |
@@ -109,13 +109,13 @@
 | <code>strategies-engine/mod.rs</code> | Lib kök modülü; <code>trait_def</code> modülünü dışa açar (tek satırlık modül ağacı) |
 | <code>strategies-engine/trait_def.rs</code> | <code>Signal</code>, <code>FillReport</code> veri tipleri ile tüm stratejilerin uygulaması gereken <code>Strategy</code> trait'ini tanımlar |
 | <code>breakout-strategy/</code> | Kırılım stratejisinin bağımsız binary kutusu; sinyal üretici + metrik/korelasyon/alarm/risk yardımcı araçları |
-| <code>breakout-strategy/Cargo.toml</code> | Binary manifesti; main, listener, alerts, risk_analysis hedeflerini tanımlar ve çalışma zamanı bağımlılıklarını (tokio, reqwest, serde, rusqlite, contracts, transport) ilan eder |
+| <code>breakout-strategy/Cargo.toml</code> | Binary manifesti; main, listener, alerts, risk_analysis hedeflerini tanımlar ve çalışma zamanı bağımlılıklarını (tokio, reqwest, serde, sqlx, contracts, transport) ilan eder |
 | <code>breakout-strategy/src/lib.rs</code> | Kutunun lib kökü; <code>metrics</code> mikro-yapı metrik çekirdeğini modül olarak açar |
 | <code>breakout-strategy/src/main.rs</code> | Event-driven kırılım stratejisi: ring'den fiyat okur, detect-ms'ten seviye alır, kırılımı değerlendirir ve BUY/SELL sinyali üretir |
 | <code>breakout-strategy/src/metrics.rs</code> | Kurumsal tick-by-tick mikro-yapı metrik çekirdeği: Lee-Ready, WLOBI, EffDelta, Absorption, aVPIN, Hasbrouck VAR, EfP ve Alpha Basket sinyali |
-| <code>breakout-strategy/src/bin/listener.rs</code> | Veri merkezi izleyicisi: mikro-yapı metrik tablosu + price-feed fiyat korelasyonu + DATA trade hacim korelasyonu, JSON çıktılı |
+| <code>breakout-strategy/src/bin/listener.rs</code> | Veri merkezi izleyicisi: mikro-yapı metrik tablosu + fiyat korelasyonu + DATA trade hacim korelasyonu, JSON çıktılı |
 | <code>breakout-strategy/src/bin/alerts.rs</code> | <code>alerts.toml</code> yönetim CLI'ı: alarm bloklarını listele/ekle/güncelle/sil (toml el-ayrıştırıcılı) |
-| <code>breakout-strategy/src/bin/risk_analysis.rs</code> | <code>market_data.db</code>'deki trades tablosunu SQL ile özetleyen risk/hacim/volatilite raporlayıcı (watch modlu) |</p>
+| <code>breakout-strategy/src/bin/risk_analysis.rs</code> | <code>TIMESCALEDB_URL</code>'deki trades tablosunu SQL ile özetleyen risk/hacim/volatilite raporlayıcı (watch modlu) |</p>
 </blockquote>
 <hr />
 <h2 id="detayl-analiz-mermaid">🔬 Detaylı Analiz (mermaid)<a class="headerlink" href="#detayl-analiz-mermaid" title="Permanent link">&para;</a></h2>
@@ -153,8 +153,8 @@
     K --&gt; C
 </pre>
 <h3 id="breakout-strategy-cargo-toml"><code>breakout-strategy/Cargo.toml</code><a class="headerlink" href="#breakout-strategy-cargo-toml" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> <code>breakout-strategy</code> binary kutusunun manifestidir; <code>src/main.rs</code> ana binary (<code>breakout-strategy</code>), diğer yardımcı araçlar (<code>listener.rs</code>, <code>alerts.rs</code>, <code>risk_analysis.rs</code>) <code>src/bin/</code> altında otomatik binary hedefleri olarak derlenir. Bağımlılık seti iki gruba ayrılır: çalışma zamanı servis katmanı (<code>tokio</code>, <code>reqwest</code>, <code>serde</code>, <code>serde_json</code>, <code>chrono</code>, <code>rusqlite</code>) ve çekirdek sözleşmeler (<code>contracts</code> = event/wire kodlama, <code>transport</code> = ring buffer okuma, <code>rust_decimal</code> = hassas fiyat). <code>contracts</code> ve <code>transport</code> workspace path'leriyle (<code>../../cycle-engine/</code>) katmanlar arası bağ kurulur.
-<strong>Neden kullandık:</strong> Çekirdek event tiplerini (<code>contracts::events</code>) ve wire decode'u transport'tan ayrı bir sözleşme katmanına taşımak; tokio async döngü + reqwest REST + rusqlite raporlama ihtiyacını tek kutuda karşılamak; bin'lerin ortak kütüphane (<code>metrics.rs</code>) paylaşımını sağlamak.</p>
+<p><strong>Detaylı açıklama:</strong> <code>breakout-strategy</code> binary kutusunun manifestidir; <code>src/main.rs</code> ana binary (<code>breakout-strategy</code>), diğer yardımcı araçlar (<code>listener.rs</code>, <code>alerts.rs</code>, <code>risk_analysis.rs</code>) <code>src/bin/</code> altında otomatik binary hedefleri olarak derlenir. Bağımlılık seti iki gruba ayrılır: çalışma zamanı servis katmanı (<code>tokio</code>, <code>reqwest</code>, <code>serde</code>, <code>serde_json</code>, <code>chrono</code>, <code>sqlx</code>) ve çekirdek sözleşmeler (<code>contracts</code> = event/wire kodlama, <code>transport</code> = ring buffer okuma, <code>rust_decimal</code> = hassas fiyat). <code>contracts</code> ve <code>transport</code> workspace path'leriyle (<code>../../cycle-engine/</code>) katmanlar arası bağ kurulur.
+<strong>Neden kullandık:</strong> Çekirdek event tiplerini (<code>contracts::events</code>) ve wire decode'u transport'tan ayrı bir sözleşme katmanına taşımak; tokio async döngü + reqwest REST + sqlx raporlama ihtiyacını tek kutuda karşılamak; bin'lerin ortak kütüphane (<code>metrics.rs</code>) paylaşımını sağlamak.</p>
 <pre class="mermaid">flowchart LR
     A[&quot;breakout-strategy&quot;] --&gt; B[&quot;main.rs&lt;br&gt;kırılım sinyali&quot;]
     A --&gt; C[&quot;listener.rs&lt;br&gt;metrik + korelasyon&quot;]
@@ -162,14 +162,14 @@
     A --&gt; E[&quot;risk_analysis.rs&lt;br&gt;SQL risk&quot;]
     A --&gt; F[&quot;contracts&lt;br&gt;events + wire&quot;]
     A --&gt; G[&quot;transport&lt;br&gt;GenerationalRingBuffer&quot;]
-    A --&gt; H[&quot;tokio / reqwest / serde / rusqlite / chrono / rust_decimal&quot;]
+    A --&gt; H[&quot;tokio / reqwest / serde / sqlx / chrono / rust_decimal&quot;]
 </pre>
 <h3 id="breakout-strategy-src-main-rs"><code>breakout-strategy/src/main.rs</code><a class="headerlink" href="#breakout-strategy-src-main-rs" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> Event-driven kırılım stratejisinin ana binary'sidir. Bir std thread (<code>spawn_price_reader</code>) paylaşımlı bellekteki price-feed ring'ini (<code>/cycle_finance_pricefeed</code>) sürekli okur, <code>wire::decode</code> ile event'i çözüp sembol eşleşmesi yapar, <code>event_price</code> ile tek fiyatı (Trade→ask öncelikli BookTicker→mark) çıkarır ve mpsc unbounded kanala basar. Tokio actor döngüsü fiyatları 500 ms zaman aşımıyla alır (fiyat daima anlık), beklenen <code>wait_sec</code> (varsayılan 20 dk, <code>/tmp/breakout_wait_sec.txt</code> ile dinamik) dolduğunda <code>analyze_once</code> çağırır: detect-ms (<code>:3002/api/ms</code>) seviyelerini alır, fiyat kaynağını ring→REST price-feed→detect-ms <code>current_price</code> önceliğiyle seçer, <code>evaluate</code> ile kırılımı değerlendirir. <code>evaluate</code> ATS işaretine bakar: ATS&gt;0 iken en yüksek skorlu <code>SH</code> (direnç) seviyesi <code>price &gt; SH</code> ise BUY, ATS&lt;0 iken <code>SL</code> (destek) seviyesi <code>price &lt; SL</code> ise SELL sinyali üretir. <code>--once</code> modu tek değerlendirme yapar; normal modda döngü sonsuzdur. Kod şu an <strong>sinyal üreticidir</strong>: emir açmaz, sadece sembol + yön bilgisini konsola basar; kararın emire dönüşmesi execution/paper-service katmanının işidir.
+<p><strong>Detaylı açıklama:</strong> Event-driven kırılım stratejisinin ana binary'sidir. Bir std thread (<code>spawn_price_reader</code>) paylaşımlı bellekteki ring'ini (<code>/cycle_finance_pricefeed</code>) sürekli okur, <code>wire::decode</code> ile event'i çözüp sembol eşleşmesi yapar, <code>event_price</code> ile tek fiyatı (Trade→ask öncelikli BookTicker→mark) çıkarır ve mpsc unbounded kanala basar. Tokio actor döngüsü fiyatları 500 ms zaman aşımıyla alır (fiyat daima anlık), beklenen <code>wait_sec</code> (varsayılan 20 dk, <code>/tmp/breakout_wait_sec.txt</code> ile dinamik) dolduğunda <code>analyze_once</code> çağırır: detect-ms (<code>:3002/api/ms</code>) seviyelerini alır, fiyat kaynağını ring→REST→detect-ms <code>current_price</code> önceliğiyle seçer, <code>evaluate</code> ile kırılımı değerlendirir. <code>evaluate</code> ATS işaretine bakar: ATS&gt;0 iken en yüksek skorlu <code>SH</code> (direnç) seviyesi <code>price &gt; SH</code> ise BUY, ATS&lt;0 iken <code>SL</code> (destek) seviyesi <code>price &lt; SL</code> ise SELL sinyali üretir. <code>--once</code> modu tek değerlendirme yapar; normal modda döngü sonsuzdur. Kod şu an <strong>sinyal üreticidir</strong>: emir açmaz, sadece sembol + yön bilgisini konsola basar; kararın emire dönüşmesi execution/paper-service katmanının işidir.
 <strong>Neden kullandık:</strong> Polling yerine ring'den event-by-event fiyat alarak gecikmeyi düşürmek; fiyat kaynağını üçlü öncelikle (ring→REST→detect-ms) dayanıklı hale getirmek; kırılım mantığını saf test edilebilir <code>evaluate</code> fonksiyonuna ayırarak seviye seçimini (<code>best_level</code>) skorla yapmak; bekleme süresini dosya üzerinden çalışırken değiştirilebilir kılmak.</p>
 <pre class="mermaid">flowchart TD
     subgraph K2[&quot;Katman 2: Ring Okuyucu (std thread)&quot;]
-        A[&quot;price-feed ring&lt;br&gt;/cycle_finance_pricefeed&quot;] --&gt; B[&quot;read_slot + get_head&quot;]
+        A[&quot;ring&lt;br&gt;/cycle_finance_pricefeed&quot;] --&gt; B[&quot;read_slot + get_head&quot;]
         B --&gt; C[&quot;wire::decode&quot;]
         C --&gt; D{&quot;sembol eşleşti mi?&quot;}
         D --&gt;|&quot;hayır&quot;| B
@@ -184,7 +184,7 @@
     end
     subgraph SERV[&quot;Servis Katmanı&quot;]
         K[&quot;detect-ms :3002&lt;br&gt;/api/ms?symbol+interval&quot;] --&gt; L[&quot;seviyeler + ATS + trend&quot;]
-        M[&quot;price-feed :3004&lt;br&gt;/api/lastprice (REST)&quot;] --&gt; N[&quot;fiyat seçimi&lt;br&gt;ring öncelikli&quot;]
+        M[&quot;:3004&lt;br&gt;/api/lastprice (REST)&quot;] --&gt; N[&quot;fiyat seçimi&lt;br&gt;ring öncelikli&quot;]
         L --&gt; O[&quot;evaluate&quot;]
         N --&gt; O
     end
@@ -246,7 +246,7 @@
 <pre class="mermaid">flowchart TD
     subgraph A[&quot;Veri Kaynakları&quot;]
         B[&quot;DATA ring&lt;br&gt;/dev/shm/cycle_finance_ring&quot;] --&gt; C[&quot;read_slot + wire::decode&quot;]
-        D[&quot;price-feed :3004&lt;br&gt;lastprice&quot;] --&gt; E[&quot;spawn_price_corr_thread&lt;br&gt;200ms periyot&quot;]
+        D[&quot;:3004&lt;br&gt;lastprice&quot;] --&gt; E[&quot;spawn_price_corr_thread&lt;br&gt;200ms periyot&quot;]
     end
     C --&gt; F{&quot;Event türü?&quot;}
     F --&gt;|&quot;Trade&quot;| G[&quot;process_tick&lt;br&gt;Lee-Ready → tüm metrikler&quot;]
@@ -283,7 +283,7 @@
     F --&gt; K
 </pre>
 <h3 id="breakout-strategy-src-bin-risk-analysis-rs"><code>breakout-strategy/src/bin/risk_analysis.rs</code><a class="headerlink" href="#breakout-strategy-src-bin-risk-analysis-rs" title="Permanent link">&para;</a></h3>
-<p><strong>Detaylı açıklama:</strong> <code>data-engine/data/market_data.db</code> (rusqlite) içindeki <code>trades</code> tablosunu tek SQL ile özetler: sembol bazında işlem sayısı, hacim (Σ price×qty), min/max fiyat; <code>cnt &gt; 50</code> filtresiyle en çok işlem gören 15 pariteyi hacme göre sıralı gösterir. Volatilite yüzdesi <code>(max−min)/min×100</code> formülüyle hesaplanır ve en yüksek riskli 10 parite ayrı tabloda listelenir. <code>--watch</code> modunda ekran temizlenmeden imleç başa alınarak <code>WATCH_SEC</code> (varsayılan 5 sn) periyodla yenilenir (tmux RISK paneli için titreşimsiz).
+<p><strong>Detaylı açıklama:</strong> TimescaleDB (<code>sqlx</code>) içindeki <code>trades</code> tablosunu tek SQL ile özetler: sembol bazında işlem sayısı, hacim (Σ price×qty), min/max fiyat; <code>COUNT(*) &gt; 50</code> filtresiyle en çok işlem gören 15 pariteyi hacme göre sıralı gösterir. Volatilite yüzdesi <code>(max−min)/min×100</code> formülüyle hesaplanır ve en yüksek riskli 10 parite ayrı tabloda listelenir. <code>--watch</code> modunda ekran temizlenmeden imleç başa alınarak <code>WATCH_SEC</code> (varsayılan 5 sn) periyodla yenilenir (tmux RISK paneli için titreşimsiz). Bağlantı <code>TIMESCALEDB_URL</code> (varsayılan <code>postgres://cycle:cycle@localhost:5432/market_data</code>) üzerinden <code>sqlx::postgres::PgPool</code> ile yapılır.
 <strong>Neden kullandık:</strong> Ham trade verisini SQL toplamıyla hızlı özetleyip risk dağılımını tablolaştırmak; <code>--watch</code> ile tmux'ta canlı panel olarak kullanmak; veri yetersizse sessizce uyarı verip uygulamayı çökertmemek.</p>
 <pre class="mermaid">flowchart TD
     A[&quot;main&quot;] --&gt; B{&quot;--watch mı?&quot;}
@@ -367,7 +367,7 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
-rusqlite = { workspace = true }
+sqlx = { workspace = true }
 contracts = { path = &quot;../../cycle-engine/contracts&quot; }
 transport = { path = &quot;../../cycle-engine/transport&quot; }
 rust_decimal = { workspace = true }
@@ -381,7 +381,7 @@ pub mod metrics;
 <pre><code class="language-rust">//! BREAKOUT Kırılım Stratejisi (Rust) — Event-Driven Sürüm
 //!
 //! Mimari (Katman 5: Strateji): **Actor + olay güdümlü**. Eski sürüm 20 dakikada
-//! bir REST polling ile uyanıyordu; bu sürüm fiyatı price-feed ring'inden
+//! bir REST polling ile uyanıyordu; bu sürüm fiyatı ring'inden
 //! **event-by-event** alır, değerlendirmeyi bekleme aralığında otomatik daya
 //! (varsayılan 20 dakika, `/tmp/breakout_wait_sec.txt` ile dinamik).
 //!
@@ -390,7 +390,7 @@ pub mod metrics;
 //!
 //! Akış:
 //! ```text
-//! price-feed ring (/cycle_finance_pricefeed)
+//! ring (/cycle_finance_pricefeed)
 //!   → ring okuyucu std thread (fiyat event'leri)
 //!   → mpsc UnboundedChannel → [actor döngüsü]
 //!                                ├─ fiyat anlık güncel (bekleme aralığında bile)
@@ -471,7 +471,7 @@ async fn fetch_price_feed(client: &amp;reqwest::Client, cfg: &amp;Config) -&gt; 
             }
         }
     }
-    (None, Some(&quot;price-feed'te fiyat yok&quot;.to_string()))
+    (None, Some(&quot;'te fiyat yok&quot;.to_string()))
 }
 
 // ── Seviye seçimi ────────────────────────────────────────────
@@ -636,7 +636,7 @@ async fn main() {
     let cfg = load_config();
     println!(&quot;══════════════════════════════════════════════════&quot;);
     println!(&quot;  🎯 BREAKOUT KIRILIM STRATEJİSİ — EVENT-DRIVEN  ({} {})&quot;, cfg.symbol, cfg.interval);
-    println!(&quot;  Pencere: {} | Bekleme: {} sn | Kaynak: price-feed ring&quot;, cfg.limit, cfg.wait_sec);
+    println!(&quot;  Pencere: {} | Bekleme: {} sn | Kaynak: ring&quot;, cfg.limit, cfg.wait_sec);
     println!(&quot;  detect-ms: {DETECT_MS_URL}&quot;);
     println!(&quot;  📡 MOD: Sinyal üretici (sembol + yön, emir AÇILMAZ)&quot;);
     println!(&quot;══════════════════════════════════════════════════&quot;);
@@ -690,7 +690,7 @@ fn timestamp() -&gt; String {
 <h3 id="strategies-engine-breakout-strategy-src-metrics-rs"><code>strategies-engine/breakout-strategy/src/metrics.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-metrics-rs" title="Permanent link">&para;</a></h3>
 <pre><code class="language-rust">//! Microstructure Metrics — kurumsal tick-by-tick metrik çekirdeği.
 //!
-//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/cycle_finance_ring`). price-feed KULLANILMAZ.
+//! Veri kaynağı: DATA MERKEZİ (`/dev/shm/cycle_finance_ring`). KULLANILMAZ.
 //!
 //! Aşamalar:
 //!   0. Lee-Ready Signing (trade yönü)
@@ -1503,7 +1503,7 @@ fn main() {
 //!
 //! Ekran:
 //!   1. Mikro-yapı metrik tablosu (TPS, WLOBI, EffΔ, aVPIN, Hasbrouck, EfP, sinyal)
-//!   2. Fiyat korelasyon tablosu (price-feed lastprice, N sn pencere, normalize 0-1)
+//!   2. Fiyat korelasyon tablosu (lastprice, N sn pencere, normalize 0-1)
 //!   3. Hacim korelasyon tablosu (DATA trade hacmi, N sn pencere, normalize 0-1)
 //!
 //! Pencere süreleri shell'den ayarlanabilir (listenconfig-set):
@@ -1530,7 +1530,7 @@ fn decode_symbol(buf: &amp;[u8; 16]) -&gt; String {
     String::from_utf8_lossy(&amp;buf[..len]).to_string().to_uppercase()
 }
 
-/// price-feed'ten periyodik lastprice çeker ve CorrSeries'e yazar.
+///'ten periyodik lastprice çeker ve CorrSeries'e yazar.
 fn spawn_price_corr_thread(symbols: Vec&lt;String&gt;, series: Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt;) {
     std::thread::spawn(move || {
         let client = reqwest::blocking::Client::builder()
@@ -1577,7 +1577,7 @@ fn main() {
 
     let known: Vec&lt;String&gt; = load_symbols();
 
-    // Fiyat korelasyon serileri (price-feed)
+    // Fiyat korelasyon serileri ()
     let price_series: Arc&lt;Mutex&lt;HashMap&lt;String, CorrSeries&gt;&gt;&gt; = Arc::new(Mutex::new(HashMap::new()));
     spawn_price_corr_thread(known.clone(), price_series.clone());
 
@@ -1710,7 +1710,7 @@ fn render(symbols: &amp;HashMap&lt;String, SymbolMetrics&gt;,
     print!(&quot;\x1b[2J\x1b[H&quot;);
     println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
     println!(&quot;  🛰️  LISTENER — MİKRO-YAPI METRİKLERİ + KORELASYON&quot;);
-    println!(&quot;  DATA tick/s: {ticks} | depth/s: {depth} | price-feed: :3004&quot;);
+    println!(&quot;  DATA tick/s: {ticks} | depth/s: {depth} |: :3004&quot;);
     println!(&quot;{}&quot;, &quot;═&quot;.repeat(96));
 
     if symbols.is_empty() {
@@ -1738,13 +1738,13 @@ fn render(symbols: &amp;HashMap&lt;String, SymbolMetrics&gt;,
     }
     println!();
 
-    // ── Fiyat korelasyonu (price-feed lastprice) ──
+    // ── Fiyat korelasyonu (lastprice) ──
     let sym_list: Vec&lt;String&gt; = {
         let mut v: Vec&lt;String&gt; = symbols.keys().cloned().collect();
         v.sort();
         v
     };
-    render_corr(&amp;format!(&quot;📈 FİYAT KORELASYONU (price-feed lastprice)&quot;),
+    render_corr(&amp;format!(&quot;📈 FİYAT KORELASYONU (lastprice)&quot;),
                 &amp;sym_list, price_series);
     render_corr(&amp;format!(&quot;📊 HACİM KORELASYONU (DATA trade hacmi)&quot;),
                 &amp;sym_list, vol_series);
@@ -1779,17 +1779,20 @@ fn render(symbols: &amp;HashMap&lt;String, SymbolMetrics&gt;,
 }
 </code></pre>
 <h3 id="strategies-engine-breakout-strategy-src-bin-risk-analysis-rs"><code>strategies-engine/breakout-strategy/src/bin/risk_analysis.rs</code><a class="headerlink" href="#strategies-engine-breakout-strategy-src-bin-risk-analysis-rs" title="Permanent link">&para;</a></h3>
-<pre><code class="language-rust">//! Risk analizi (Rust) — market_data.db'deki trades tablosunu SQL ile özetler.
+<pre><code class="language-rust">//! Risk analizi (Rust) — TimescaleDB'deki trades tablosunu SQL ile özetler.
 //!
 //! --watch  : sabit ekranda her N sn'de yenilenir (tmux RISK paneli için).
 //!           clear YAPILMAZ; imleç başa alınıp üzerine yazılır (titreşimsiz).
 //! WATCH_SEC: yenileme süresi (varsayılan 5 sn).
+//!
+//! Bağlantı: `TIMESCALEDB_URL` (varsayılan postgres://cycle:cycle@localhost:5432/market_data)
 
-use rusqlite::Connection;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::Row;
 use std::time::Duration;
 
 #[derive(Debug)]
-struct Row {
+struct SymbolRow {
     symbol: String,
     count: i64,
     volume: f64,
@@ -1797,9 +1800,14 @@ struct Row {
     max: f64,
 }
 
-fn render() {
-    let conn = match Connection::open(&quot;data-engine/data/market_data.db&quot;) {
-        Ok(c) =&gt; c,
+fn db_url() -&gt; String {
+    std::env::var(&quot;TIMESCALEDB_URL&quot;)
+        .unwrap_or_else(|_| &quot;postgres://cycle:cycle@localhost:5432/market_data&quot;.into())
+}
+
+async fn render() {
+    let pool = match PgPoolOptions::new().max_connections(2).connect(&amp;db_url()).await {
+        Ok(p) =&gt; p,
         Err(e) =&gt; {
             eprintln!(&quot;❌ Veritabanı açılamadı: {e}&quot;);
             return;
@@ -1813,29 +1821,28 @@ fn render() {
                MAX(price) as max_p
         FROM trades
         GROUP BY symbol
-        HAVING cnt &gt; 50
+        HAVING COUNT(*) &gt; 50
         ORDER BY volume DESC
     &quot;;
 
-    let mut stmt = match conn.prepare(query) {
-        Ok(s) =&gt; s,
+    let rows: Vec&lt;SymbolRow&gt; = match sqlx::query(query)
+        .fetch_all(&amp;pool)
+        .await
+    {
+        Ok(rows) =&gt; rows
+            .iter()
+            .map(|r| SymbolRow {
+                symbol: r.get(&quot;symbol&quot;),
+                count: r.get(&quot;cnt&quot;),
+                volume: r.get(&quot;volume&quot;),
+                min: r.get(&quot;min_p&quot;),
+                max: r.get(&quot;max_p&quot;),
+            })
+            .collect(),
         Err(_) =&gt; {
             println!(&quot;Yeterli veri bulunamadı.&quot;);
             return;
         }
-    };
-
-    let rows: Vec&lt;Row&gt; = match stmt.query_map([], |r| {
-        Ok(Row {
-            symbol: r.get(0)?,
-            count: r.get(1)?,
-            volume: r.get(2)?,
-            min: r.get(3)?,
-            max: r.get(4)?,
-        })
-    }) {
-        Ok(iter) =&gt; iter.filter_map(|x| x.ok()).collect(),
-        Err(_) =&gt; vec![],
     };
 
     if rows.is_empty() {
@@ -1843,7 +1850,7 @@ fn render() {
         return;
     }
 
-    let rows: Vec&lt;(Row, f64)&gt; = rows
+    let rows: Vec&lt;(SymbolRow, f64)&gt; = rows
         .into_iter()
         .map(|r| {
             let vol = if r.min &gt; 0.0 { ((r.max - r.min) / r.min) * 100.0 } else { 0.0 };
@@ -1860,7 +1867,7 @@ fn render() {
         );
     }
 
-    let mut sorted: Vec&lt;&amp;(Row, f64)&gt; = rows.iter().collect();
+    let mut sorted: Vec&lt;&amp;(SymbolRow, f64)&gt; = rows.iter().collect();
     sorted.sort_by(|a, b| b.1.partial_cmp(&amp;a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     println!(&quot;\n=== ⚠️ EN YÜKSEK RİSK / VOLATİLİTE İÇEREN 10 PARİTE ===&quot;);
@@ -1870,7 +1877,8 @@ fn render() {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let watch = std::env::args().any(|a| a == &quot;--watch&quot;);
     let watch_sec: u64 = std::env::var(&quot;WATCH_SEC&quot;)
         .ok()
@@ -1878,17 +1886,17 @@ fn main() {
         .unwrap_or(5);
 
     if !watch {
-        render();
+        render().await;
         return;
     }
 
     // Sabit ekran: ilk render tam boyutla çizilir; sonrakiler imleç başa alınır.
     print!(&quot;\x1b[2J\x1b[H&quot;); // başta bir kez temizle
-    render();
+    render().await;
     loop {
-        std::thread::sleep(Duration::from_secs(watch_sec));
+        tokio::time::sleep(Duration::from_secs(watch_sec)).await;
         print!(&quot;\x1b[H&quot;); // imleç en üste
-        render();
+        render().await;
     }
 }
 </code></pre>

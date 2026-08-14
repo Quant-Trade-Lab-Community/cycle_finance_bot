@@ -14,34 +14,27 @@ flowchart TB
         RING["GenerationalRingBuffer<br/>/dev/shm · 160k slot<br/>torn-read korumalı"]
         ORING["OrderRingBuffer<br/>/dev/shm (STRATEGY→EXECUTION)"]
         PRING["PriceFeed ring<br/>/dev/shm/cycle_finance_pricefeed"]
-        SCRING["Scout ring<br/>/dev/shm/cycle_finance_scout"]
     end
 
     subgraph K2["Katman 2 — core motor"]
         PARSER["EventParser (simdjson · zero-copy)"]
         VALID["DataValidator<br/>stale ≤ 200ms · crossed book · circuit breaker"]
-        DBW["SQLite batch writer<br/>(10k / 1sn · market_data.db)"]
+        DBW["TimescaleDB batch writer<br/>(10k / 1sn · trades hypertable)"]
         ORCH["TitaniumOrchestrator (spin-loop)"]
         RISKC["RiskEngine + LOB simülasyonu"]
         TSC["TscTimer (RDTSC) + RT prio 99"]
     end
 
     subgraph DET["Analiz Servisleri"]
-        DETSR["detect-sr (stdout)"]
-        DETTR["detect-trend :3001"]
         DETMS["detect-ms :3002 (SMC 7 katman)"]
-        DETLQ["detect-liquidity :3003"]
-        DETPT["detect-pattern :3004"]
-        DETWK["detect-wyckoff :3005"]
-        DETTB["detect-trb :3006 (CFD çözücü)"]
+        CALC["calc-ind :3003"]
+        DBQ["db-query (TimescaleDB panel)"]
     end
 
     subgraph TRADE["Strateji & Yürütme"]
-        PRICEF["price-feed daemon :3004"]
-        SCOUT["scout-service (fırsat radarı)"]
-        HEI["velvetusdt (breakout stratejisi)"]
-        PAPER["paper-service REST :8080<br/>JWT · actor · event store"]
-        EXEC["execution-engine<br/>PAPER actor / LIVE"]
+        PRICEF["daemon :3004"]
+        HEI["strategies-engine (kırılım stratejisi)"]
+        EXEC["execution-engine<br/>LIVE actor"]
         OHLCV["ohlcv-engine (klines client)"]
     end
 
@@ -55,35 +48,25 @@ flowchart TB
     BINWS -->|"raw JSON trade+depth20"| PARSER
     BINREST -->|"klines REST"| OHLCV
     BINWS -->|"raw JSON"| PRICEF
-    BINWS -->|"bookTicker+depth10"| SCOUT
 
     PARSER --> VALID
     VALID --> C_WIRE
     C_WIRE --> DBW
     C_WIRE --> RING
     RING --> ORCH
-    ORCH --> STRAT["strateji binary'leri (heusdt …)"]
+    ORCH --> STRAT["strateji binary'leri (strategies-engine)"]
     STRAT --> RISKC
     RISKC --> ORING
     ORING --> EXEC
     EXEC -.->|"LIVE mod"| BINORD
 
-    OHLCV --> DETSR
-    OHLCV --> DETTR
     OHLCV --> DETMS
-    OHLCV --> DETLQ
-    OHLCV --> DETPT
-    OHLCV --> DETWK
-    RING --> DETTB
-    DBW --> DETTB
+    OHLCV --> CALC
+    OHLCV --> DBQ
 
-    SCOUT --> SCRING
     PRICEF --> PRING
     PRING --> HEI
     PRING --> ALERT
-    PRING --> PAPER
-RING --> ALPS
     HEI -->|"detect-ms seviyeleri"| DETMS
-    HEI -->|"MARKET emir + JWT"| PAPER
 
     OPS -->|"planlanan"| TRADE

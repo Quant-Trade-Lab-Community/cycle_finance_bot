@@ -66,7 +66,7 @@ setup_dirs() {
 copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
-    paper-service paper-cli alert-service detect-ms
+    alert-service detect-ms
     risk-worker cold-starter strategies-engine listener alerts risk_analysis
     calc-ind exec-console stream-ohlcv db-query telegram-bot
     trade-ohlcv
@@ -94,7 +94,7 @@ copy_assets() {
   cp "$ROOT/ai.toml"              "$CONFIG_DIR/" 2>/dev/null || warn "ai.toml yok"
   cp "$ROOT/additional-services/config/"config_*.toml  "$CONFIG_DIR/" 2>/dev/null || true
 
-  for s in cycle_tmux.sh cycle_env.sh monitor.sh start_paper.sh stop_paper.sh tmux_clipboard_paste.sh; do
+  for s in cycle_tmux.sh cycle_env.sh monitor.sh tmux_clipboard_paste.sh; do
     [ -f "$ROOT/additional-services/scripts/$s" ] && cp "$ROOT/additional-services/scripts/$s" "$SCRIPTS_DIR/" || warn "scripts/$s yok"
   done
 

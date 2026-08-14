@@ -48,7 +48,7 @@ ai-engine/
 | `src/main.rs` | Daemon girişi; HTTP status API (127.0.0.1:3110) ve sembol bazlı ana karar döngüsü (`run_cycle`). |
 | `src/lib.rs` | Ortak veri tipleri: `Action`, `PriceSnapshot`, `MarketContext`, `SignalOutput`, `RiskOutput`, `SentimentOutput`, `FinalDecision`. |
 | `src/config.rs` | `ai.toml` yükleme ve varsayılanlar; providers, schedule, execution, risk, context bölümleri. |
-| `src/context.rs` | `ContextBuilder` — price-feed, calc-ind, detect-ms, paper hesabı ve haber kaynağından `MarketContext` üretir. |
+| `src/context.rs` | `ContextBuilder` —, calc-ind, detect-ms, paper hesabı ve haber kaynağından `MarketContext` üretir. |
 | `src/gates.rs` | `RiskGate` — RiskEngine politikası + agent veto + deterministik boyut sınırı; onaylanan kararı executor'a iletir. |
 | `src/agents/mod.rs` | Ajan arayüzü (`Agent` trait), `AgentRole`, `AgentOutput` tipleri ve ortak ayrıştırma yardımcıları. |
 | `src/agents/signal.rs` | Strateji/sinyal ajanı — LLM'den BUY/SELL/HOLD yönü, güven ve miktar üretir. |
@@ -156,7 +156,7 @@ flowchart TD
 ```
 
 ### `src/context.rs`
-**Detaylı açıklama:** `ContextBuilder`, sembol başına `MarketContext` üretir. Fiyatı price-feed :3004 `GET /api/lastprice/{symbol}`'den; indikatörleri calc-ind :3007'den (rsi, macd, bbands, vwap, atr her biri ayrı async task; ring sonucu 64MB stack'li ayrı thread ile okunur); piyasa yapısını detect-ms :3002'den alır. Hesap durumunu paper :8080'e JWT ile login olup balance/positions uçlarından çeker; opsiyonel `news_feed_url`'den haber başlıklarını toplar. Fiyat ve yapı paralel (`tokio::join!`) getirilir; hata durumlarında boş/varsayılan snapshot döner (asla panik).
+**Detaylı açıklama:** `ContextBuilder`, sembol başına `MarketContext` üretir. Fiyatı :3004 `GET /api/lastprice/{symbol}`'den; indikatörleri calc-ind :3007'den (rsi, macd, bbands, vwap, atr her biri ayrı async task; ring sonucu 64MB stack'li ayrı thread ile okunur); piyasa yapısını detect-ms :3002'den alır. Hesap durumunu paper :8080'e JWT ile login olup balance/positions uçlarından çeker; opsiyonel `news_feed_url`'den haber başlıklarını toplar. Fiyat ve yapı paralel (`tokio::join!`) getirilir; hata durumlarında boş/varsayılan snapshot döner (asla panik).
 **Neden kullandık:**
 - Mevcut ring + REST altyapısını tek bağlam paketine birleştirir (ajanlara tek JSON satırı).
 - `tokio::join!` ve paralel spawn ile gecikme minimize edilir (HFT bağlamı).
@@ -738,7 +738,7 @@ anomaly_veto = true
 //! birleşik `MarketContext` üretir.
 //!
 //! Kaynaklar:
-//!   - fiyat    : price-feed :3004  `GET /api/lastprice/{symbol}`
+//!   - fiyat    : :3004  `GET /api/lastprice/{symbol}`
 //!   - indik.   : calc-ind   :3007  `POST /api/calc` + `/cycle_finance_calc` ring okuma
 //!   - yapı     : detect-ms  :3002  `GET /api/ms?symbol=&interval=&limit=`
 //!   - hesap    : paper      :8080  (JWT) `GET /api/v1/account/{balance,positions}`
@@ -1225,7 +1225,7 @@ impl Action {
     }
 }
 
-/// Anlık fiyat anlık görüntüsü (price-feed kaynağı).
+/// Anlık fiyat anlık görüntüsü (kaynağı).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PriceSnapshot {
     pub symbol: String,
@@ -1563,7 +1563,7 @@ async fn run_cycle(
         let ctx = context_builder.build(symbol, &cfg.schedule.symbols).await;
 
         if !ctx.is_healthy() {
-            println!("⚠️  {symbol}: fiyat kaynağı sağlıksız — atlandı (price-feed çalışıyor mu?)");
+            println!("⚠️  {symbol}: fiyat kaynağı sağlıksız — atlandı (çalışıyor mu?)");
             continue;
         }
 

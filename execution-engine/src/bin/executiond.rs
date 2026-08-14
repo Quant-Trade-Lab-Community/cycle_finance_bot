@@ -38,11 +38,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         config.dry_run = false;
     }
 
-    if config.mode.as_str() == "PAPER" {
-        println!("EXEC_MODE=PAPER — lütfen paper-service kullanın (bu daemon yalnızca LIVE).");
-        std::process::exit(1);
-    }
-
     println!("========================================");
     println!("🛡️ EXECUTION ENGINE v1.0 (Canlı Binance Futures)");
     println!("========================================");

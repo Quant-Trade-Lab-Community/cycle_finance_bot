@@ -17,16 +17,13 @@ symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "VELVETUSDT"]
 approval_wait_secs = 60
 
 [execution]
-# paper | live | both | none
-mode = "paper"
+# live | none
+mode = "live"
 # auto | human (human = /tmp/ai_approve.txt onayı beklenir)
 approval = "auto"
 execd_url = "http://127.0.0.1:3010"
 execd_user = "admin"
 execd_password = "changeme123"
-paper_url = "http://127.0.0.1:8080"
-paper_admin_user = "admin"
-paper_admin_pass = "changeme123"
 # Deterministik emir boyutu üst sınırı (USDT) — LLM'den bağımsız güvenlik ağı.
 max_notional_usdt = 1000
 

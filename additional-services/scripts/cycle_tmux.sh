@@ -268,7 +268,7 @@ cd $ROOT && \
 tmux new-window -t "$SESSION:6" -n "⚠️ RISK"
 tmux send-keys -t "$SESSION:6" "
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '⚠️   RİSK ANALİZİ  (market_data.db)'
+echo '⚠️   RİSK ANALİZİ  (TimescaleDB)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
 cd $ROOT && $BIN/risk_analysis --watch

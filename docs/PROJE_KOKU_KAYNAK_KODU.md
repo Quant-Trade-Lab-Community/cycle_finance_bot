@@ -55,7 +55,7 @@ PROJE/
 > Her dosyanın **detaylı açıklaması**, **algoritmik akış diyagramı** (mermaid) ve **"neden kullandık"** gerekçesi. Mermaid diyagramları HTML'de otomatik çizilir. Tarih: 2026-08-09
 
 ### `Cargo.toml`
-**Detaylı açıklama:** Workspace, 21 crate üyesini katmanlı bir monorepo altında toplar: cycle-engine (5: contracts, transport, core, adapter, splash), data-engine (2: cold-storage, cold-starter), execution-engine (1), risk-engine (1), strategies-engine (2), services-engine (8), ai-engine (1) ve additional-services/os-utils (1). `resolver = "2"` ile modern özellik çözümü kullanılır; `tests/` ve `unused_services/` `exclude` listesiyle workspace'ten çıkarılmıştır (derlenmez). `[workspace.dependencies]` bölümü ~45 ortak bağımlılığı (tokio, axum, rust_decimal, ndarray, ferro_ta_core, rusqlite, rtrb, redis, sled vb.) **tek sürümle** ilan eder; üyeler path'li kendi crates'leri ve `workspace = true` bağımlılıkları kullandığından sürüm kayması yaşanmaz. Sürüm kilidi `Cargo.lock` ile tutulur; `cargo build --workspace` / `cargo test --workspace` tek komutla tüm çatıyı işler.
+**Detaylı açıklama:** Workspace, 21 crate üyesini katmanlı bir monorepo altında toplar: cycle-engine (5: contracts, transport, core, adapter, splash), data-engine (2: cold-storage, cold-starter), execution-engine (1), risk-engine (1), strategies-engine (2), services-engine (8), ai-engine (1) ve additional-services/os-utils (1). `resolver = "2"` ile modern özellik çözümü kullanılır; `tests/` ve `unused_services/` `exclude` listesiyle workspace'ten çıkarılmıştır (derlenmez). `[workspace.dependencies]` bölümü ~45 ortak bağımlılığı (tokio, axum, rust_decimal, ndarray, ferro_ta_core, sqlx, rtrb, redis, sled vb.) **tek sürümle** ilan eder; üyeler path'li kendi crates'leri ve `workspace = true` bağımlılıkları kullandığından sürüm kayması yaşanmaz. Sürüm kilidi `Cargo.lock` ile tutulur; `cargo build --workspace` / `cargo test --workspace` tek komutla tüm çatıyı işler.
 
 **Neden kullandık:**
 - Tek sürüm kaynağı: 21 crate aynı bağımlılık sürümlerini kullanır, crate içi drift olmaz.
@@ -77,7 +77,7 @@ flowchart TD
         d2["cold-starter"]
     end
     subgraph kat04["Katman 4 · services-engine"]
-        s1["price-feed"]
+        s1[""]
         s2["detect-ms"]
         s3["calc-ind"]
         s4["ohlcv-engine"]
@@ -133,8 +133,8 @@ flowchart LR
     adapter["adapter · Binance WS client"]
     core["core · simdjson parser + validator"]
     ring1["/dev/shm GenerationalRingBuffer"]
-    db["data-engine · SQLite WAL"]
-    pf["price-feed :3004"]
+    db["data-engine · TimescaleDB"]
+    pf[":3004"]
     dm["detect-ms :3002"]
     bs["breakout-strategy"]
     paper["paper-service :8080"]
@@ -181,7 +181,7 @@ flowchart TD
 ```
 
 ### `ai.toml`
-**Detaylı açıklama:** AI engine katmanının tüm ayarlarını tutar: `[providers]` (openai / anthropic / none — `none` fail-safe HOLD), `[schedule]` (60 sn periyot, 4 sembol), `[execution]` (mode: paper/live/both/none, approval: auto/human), `[risk]` (veto, `max_notional_usdt=1000` deterministik boyut tavanı) ve `[context]` (price-feed/detect-ms/calc-ind REST URL'leri). API anahtarları burada değil `.env`'de tutulur. Varsayılan `provider = "none"` + `mode = "paper"` sayesinde boru hattı LLM olmadan test edilebilir; canlıya geçiş bilinçli yapılır.
+**Detaylı açıklama:** AI engine katmanının tüm ayarlarını tutar: `[providers]` (openai / anthropic / none — `none` fail-safe HOLD), `[schedule]` (60 sn periyot, 4 sembol), `[execution]` (mode: paper/live/both/none, approval: auto/human), `[risk]` (veto, `max_notional_usdt=1000` deterministik boyut tavanı) ve `[context]` (/detect-ms/calc-ind REST URL'leri). API anahtarları burada değil `.env`'de tutulur. Varsayılan `provider = "none"` + `mode = "paper"` sayesinde boru hattı LLM olmadan test edilebilir; canlıya geçiş bilinçli yapılır.
 
 **Neden kullandık:**
 - Deterministik güvenlik ağı: `max_notional_usdt` ve risk veto LLM çıktısından bağımsızdır.
@@ -327,7 +327,7 @@ flowchart LR
 
 ## Proje Genel Mimarisi (Uçtan Uca)
 
-**Uçtan uca veri akışı:** Binance Futures WebSocket'ten gelen fiyatlar `adapter` (WS client) ile alınır, `core` (simdjson parser + validator) tarafından doğrulanıp binary `wire` koduna çevrilir ve `/dev/shm` ring buffer'larına yazılır. Ring'lerden `price-feed` kendi ring'ini besler; `detect-ms` (piyasa yapısı), `calc-ind` (ferro_ta_core indikatörleri) ve `ai-engine` (LLM agent'ları) fiyat/indikatör bağlamını ring + REST üzerinden tüketir. Üretilen sinyaller `risk-engine`'in 13 adımlı pre-trade kapısından geçerek `execution-engine` (canlı, :3010) veya `paper-service` (sanal, :8080) üzerinden icra edilir; fill geri beslemesi riske döner ve tüm veriler `data-engine` üzerinden soğuk depolamaya yazılır. `unused_services` içindeki 5 deaktive servis workspace'ten çıkarıldığı için ayrı bir subgraph olarak gösterilmiştir (derlenmez, ağa bağlanmaz).
+**Uçtan uca veri akışı:** Binance Futures WebSocket'ten gelen fiyatlar `adapter` (WS client) ile alınır, `core` (simdjson parser + validator) tarafından doğrulanıp binary `wire` koduna çevrilir ve `/dev/shm` ring buffer'larına yazılır. Ring'lerden `` kendi ring'ini besler; `detect-ms` (piyasa yapısı), `calc-ind` (ferro_ta_core indikatörleri) ve `ai-engine` (LLM agent'ları) fiyat/indikatör bağlamını ring + REST üzerinden tüketir. Üretilen sinyaller `risk-engine`'in 13 adımlı pre-trade kapısından geçerek `execution-engine` (canlı, :3010) veya `paper-service` (sanal, :8080) üzerinden icra edilir; fill geri beslemesi riske döner ve tüm veriler `data-engine` üzerinden soğuk depolamaya yazılır. `unused_services` içindeki 5 deaktive servis workspace'ten çıkarıldığı için ayrı bir subgraph olarak gösterilmiştir (derlenmez, ağa bağlanmaz).
 
 ```mermaid
 flowchart TD
@@ -366,7 +366,7 @@ flowchart TD
 
     subgraph depo["Veri Kaydı"]
         cold["cold-storage"]
-        data["data-engine/data · SQLite"]
+        data["data-engine/data · TimescaleDB"]
     end
 
     subgraph unused["unused_services · workspace'ten exclude"]
@@ -430,7 +430,7 @@ members = [
     "services-engine/detect-ms",
     "services-engine/paper-service",
     "services-engine/alert-service",
-    "services-engine/price-feed",
+    "services-engine/",
     "services-engine/exec-console",
     "ai-engine",
 ]
@@ -460,7 +460,7 @@ flume        = "0.11"
 parking_lot  = "0.12"
 clap         = { version = "4.6", features = ["derive", "env"] }
 chrono       = "0.4"
-rusqlite     = { version = "0.31.0", features = ["bundled"] }
+sqlx     = { version = "0.31.0", features = ["bundled"] }
 libc         = "0.2"
 memmap2      = "0.9"
 core_affinity = "0.8"
@@ -528,7 +528,7 @@ Ana akış:
 ```
 Binance Futures WS
    → adapter (binance WS client)
-   → core (parser + validator + SQLite yazıcı)
+   → core (parser + validator + TimescaleDB yazıcı)
    → /dev/shm ring buffer (IPC)
    → detect-ms (Market Structure Multi-Protocol, 7 katman)
    → breakout-strategy (kırılım sinyali: sembol + yön)
@@ -567,7 +567,7 @@ PROJE/
 │   ├── detect-ms/         #   Market Structure Multi-Protocol (:3002)
 │   ├── ohlcv-engine/      #   Klines istemcisi (kütüphane + API)
 │   ├── paper-service/     #   Paper trading REST API (:8080)
-│   └── price-feed/        #   Fiyat akışı daemon'u (:3004)
+│   └──/        #   Fiyat akışı daemon'u (:3004)
 │
 ├── strategies-engine/     # Stratejiler
 │   ├── breakout-strategy/ #   Kırılım stratejisi (sinyal üretici)
@@ -592,7 +592,7 @@ PROJE/
 | **1 — Transport (IPC)** | `cycle-engine/transport` | `/dev/shm` GenerationalRingBuffer + OrderRingBuffer (torn-read korumalı) |
 | **2 — Çekirdek Motor** | `cycle-engine/core` | simdjson parser, validator, TitaniumOrchestrator (spin-loop), RiskEngine, LOB sim, TscTimer (RDTSC) |
 | **2 — Açılış Ekranı** | `cycle-engine/splash` | FIGlet ASCII animasyonu (CYCLE FINANCE, harf harf) |
-| **3 — Veri** | `data-engine` | SQLite yazımı, soğuk depolama, WAL |
+| **3 — Veri** | `data-engine` | TimescaleDB yazımı, soğuk depolama |
 | **4 — Analiz** | `services-engine/detect-ms` | 7 katmanlı piyasa yapısı analizi |
 | **5 — Strateji** | `strategies-engine` | Kırılım sinyali üretimi |
 | **6 — Yürütme** | `execution-engine` + `paper-service` | Emir yürütme (paper) |
@@ -604,9 +604,9 @@ PROJE/
 Binance WS (adapter) → flume queue → EventParser (simdjson)
   → DataValidator (stale ≤ 200ms, crossed book, circuit breaker)
   → wire::encode → GenerationalRingBuffer (/dev/shm/cycle_finance_ring)
-  → SQLite batch writer (data-engine/data/market_data.db)
+  → TimescaleDB batch writer (market_data hypertable'ları)
 
-price-feed (:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
+(:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
 detect-ms (:3002)  ← BinanceClient (ohlcv-engine)
 breakout-strategy  → SINYAL (sembol + yön)
 ```
@@ -619,7 +619,7 @@ breakout-strategy  → SINYAL (sembol + yön)
 |---|---|---|
 | **core** (DATA modu) | — | Binance WS → parse → ring → DB |
 | **detect-ms** | `:3002` | 7 katmanlı piyasa yapısı analizi (pivot, trend, seviye, likidite, FVG, naratif) |
-| **price-feed** | `:3004` | WS → EventParser → kendi ring'i + REST `/api/lastprice/{symbol}` |
+| **** | `:3004` | WS → EventParser → kendi ring'i + REST `/api/lastprice/{symbol}` |
 | **paper-service** | `:8080` | REST API, JWT auth, actor + event store (sled WAL), pozisyon/PnL |
 | **alert-service** | — | `alerts.toml` koşullarına göre sesli uyarı |
 | **breakout-strategy** | — | Kırılım sinyali üretici (emir açmaz) |
@@ -631,7 +631,7 @@ breakout-strategy  → SINYAL (sembol + yön)
 
 ### Aktif Workspace Üyeleri (19)
 
-`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service, price-feed, splash`
+`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service,, splash`
 
 ---
 
@@ -668,8 +668,8 @@ detect-ms raporundan:
 
 ### Fiyat kaynağı (öncelik sırası)
 
-1. `price-feed` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
-2. `price-feed` REST `:3004`
+1. `` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
+2. `` REST `:3004`
 3. `detect-ms` `current_price`
 
 ### Çıktı
@@ -851,10 +851,10 @@ Tüm veriler merkezi olarak `data-engine/data/` altında tutulur:
 
 ```
 data-engine/data/
-├── market_data.db     # Ana tick/OHLCV SQLite (WAL modu)
-├── paper_live.db      # Paper-service çalışma veritabanı
-└── paper_wal/         # Paper event store (sled)
+└── paper_wal/         # DiskBuffer (mmap) tampon segmentleri (conf + snap.*)
 ```
+
+Market tick/OHLCV verileri ise TimescaleDB hypertable'larında tutulur (`TIMESCALEDB_URL`).
 
 Herhangi bir servis veri yazarsa buraya yazar. `.gitignore` ile git dışı tutulur.
 
@@ -891,7 +891,7 @@ cd PROJE && RUN_MODE=DATA ./target/debug/core
 
 ```bash
 ./target/debug/detect-ms        # :3002  analiz motoru
-./target/debug/price-feed       # :3004  fiyat akışı
+./target/debug/      # :3004  fiyat akışı
 ./target/debug/paper-service     # :8080  paper API
 ./target/debug/alert-service     # sesli uyarı
 ./target/debug/breakout-strategy # kırılım sinyali
@@ -976,7 +976,7 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-st
 Rust-native `ai-engine` servisi, mevcut veri/yürütme altyapısını kullanarak çoklu LLM agent'ı çalıştırır:
 
 ```
-ring'ler + REST (price-feed/detect-ms/calc-ind/paper) → context.rs → agent'lar
+ring'ler + REST (/detect-ms/calc-ind/paper) → context.rs → agent'lar
         🧠 SIGNAL → ⚠️ RISK → 📰 SENTIMENT → 🤝 COORDINATOR → risk gate → icra
         icra: paper (order ring :8080) ve/veya canlı (executiond :3010)
 ```
@@ -1011,7 +1011,7 @@ ai-status     # durum + son döngü (http://127.0.0.1:3110/api/status)
 ai-stop
 ```
 
-Bağımlılık: `price-feed` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) ve `paper-service` (:8080) çalışıyor olmalı.
+Bağımlılık: `` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) ve `paper-service` (:8080) çalışıyor olmalı.
 
 ### Güvenlik (canlı mod)
 
@@ -1081,7 +1081,7 @@ cargo test --workspace
 - **Pre-fault bellek**: `hal::memory::allocate_huge_buffer` — çalışma anında page fault yok
 - **TSC timer**: `timer/tsc.rs` — `RDTSC` tabanlı yüksek çözünürlüklü zamanlama
 - **simdjson**: zero-copy JSON parsing
-- **SQLite WAL + batch**: 10k yazma/1sn batching
+- **TimescaleDB + batch**: 10k yazma/1sn batching
 
 ### Risk Yönetimi
 
@@ -1188,7 +1188,7 @@ copy_bins() {
   say "Binary'ler kopyalanıyor → $BIN_DIR"
   local bins=(
     core paper-service paper-cli alert-service detect-ms
-    risk-worker cold-starter price-feed breakout-strategy listener alerts risk_analysis
+    risk-worker cold-starter breakout-strategy listener alerts risk_analysis
     calc-ind ai-engine exec-console stream-ohlcv cycle-splash
   )
   local n=0

@@ -3,7 +3,7 @@ flowchart TB
         R1["ring /cycle_finance_ring (160k)"]
         R2["pricefeed ring (20k)"]
         BIN["doğrudan Binance WS (köprüsüz)"]
-        PFAPI["price-feed REST :3004"]
+        PFAPI["REST :3004"]
     end
 
     subgraph ALERT["alert-service"]
@@ -22,7 +22,6 @@ flowchart TB
 
     subgraph COLD["Soğuk Başlangıç"]
         CLS["cold-start buffer (mmap disk)"]
-        RPL["replay_buffer_in_paper_mode()"]
         TOLIVE["transition_to_live()"]
         EMA["fetch_200_ema()"]
     end
@@ -46,6 +45,3 @@ flowchart TB
 
     EMA --> EMA
     EMA400 --> EMA200
-    R2 --> RPL
-
-    D1[core] --> S2[core]

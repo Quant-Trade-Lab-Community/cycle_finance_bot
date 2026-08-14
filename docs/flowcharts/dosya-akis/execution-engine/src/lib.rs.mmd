@@ -1,23 +1,9 @@
 graph TD
     A([Başlangıç]) --> B[TRADING_MODE ortam değişkenini oku]
-    B --> C{TRADING_MODE == "PAPER"?}
+    B --> N["TradingMode::try_from(...)"]
 
-    C -- Evet --> D["PaperConfig::load_from_env()"]
-    D --> E["PaperEngineActor::new(config)"]
-    E --> F["mpsc::unbounded_channel() oluştur"]
-    F --> G["tokio::spawn: actor.run(cmd_rx)"]
-    G --> H[flume rx'den emir bekle]
-
-    H --> I{order_req geldi mi?}
-    I -- Evet --> J[oneshot channel oluştur]
-    J --> K["cmd_tx.send(SubmitOrder{order, response_tx})"]
-    K --> L{resp_rx.await sonucu?}
-    L -- Ok --> M["Paper Order Response logla"]
-    M --> H
-    L -- Hata --> H
-    I -- Hayır --> Z1([Bitiş: PAPER modu döner])
-
-    C -- Hayır --> N["BinanceSigner::new(api_key, secret_key)"]
+    N --> D["Config::load_from_env()"]
+    N -- Diğer --> ["BinanceSigner::new(api_key, secret_key)"]
     N --> O["connect_async(ws_url)"]
     O --> P{bağlantı başarılı?}
 

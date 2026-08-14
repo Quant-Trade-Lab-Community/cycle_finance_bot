@@ -2,7 +2,7 @@
 
 ## Giriş
 
-Tek binary (`executiond`), CLI (`exec-cli`). `EXEC_MODE=LIVE|PAPER` kullanılır. `EXEC_DRY_RUN=true` varsayılan (güvenlik önlemi). `executiond` yalnızca LIVE kabul eder.
+Tek binary (`executiond`), CLI (`exec-cli`). `EXEC_MODE=LIVE` kullanılır. `EXEC_DRY_RUN=true` varsayılan (güvenlik önlemi).
 
 **Başlatma:**
 - `cargo run -p execution-engine` (kök workspace üyesi)

@@ -93,7 +93,7 @@ pub struct AppState {
     pub engine: EngineHandle,
     pub auth: Arc<AuthState>,
     pub metrics: Arc<Metrics>,
-    /// Salt-okunur borsa sorguları için (paper modda None).
+    /// Salt-okunur borsa sorguları için (yapılandırılmamışsa None).
     pub client: Option<Arc<BinanceClient>>,
 }
 
@@ -495,7 +495,7 @@ pub struct ClosePositionsRequest {
 
 async fn close_positions(State(state): State<Arc<AppState>>, Json(req): Json<ClosePositionsRequest>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda pozisyon kapatma kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — pozisyon kapatma kapalı");
     };
     let symbol = req.symbol.as_deref().map(|s| s.to_uppercase());
     let positions = match client.position_risk(symbol.as_deref()).await {
@@ -563,7 +563,7 @@ pub struct IncomeParams {
 
 async fn get_income(State(state): State<Arc<AppState>>, Query(q): Query<IncomeParams>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda income kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — income kapalı");
     };
     match client
         .income(
@@ -582,7 +582,7 @@ async fn get_income(State(state): State<Arc<AppState>>, Query(q): Query<IncomePa
 
 async fn get_funding(State(state): State<Arc<AppState>>, Query(q): Query<OrderQueryParams>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda funding kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — funding kapalı");
     };
     let symbol = q.symbol.clone().unwrap_or_default();
     if symbol.is_empty() {
@@ -596,7 +596,7 @@ async fn get_funding(State(state): State<Arc<AppState>>, Query(q): Query<OrderQu
 
 async fn get_force_orders(State(state): State<Arc<AppState>>, Query(q): Query<OrderQueryParams>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda forceOrders kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — forceOrders kapalı");
     };
     match client.force_orders(q.symbol.as_deref()).await {
         Ok(v) => (StatusCode::OK, Json(v)).into_response(),
@@ -606,7 +606,7 @@ async fn get_force_orders(State(state): State<Arc<AppState>>, Query(q): Query<Or
 
 async fn get_commission_rate(State(state): State<Arc<AppState>>, Path(symbol): Path<String>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda commissionRate kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — commissionRate kapalı");
     };
     match client.commission_rate(&symbol).await {
         Ok(v) => (StatusCode::OK, Json(v)).into_response(),
@@ -616,7 +616,7 @@ async fn get_commission_rate(State(state): State<Arc<AppState>>, Path(symbol): P
 
 async fn get_adl(State(state): State<Arc<AppState>>, Path(symbol): Path<String>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda ADL kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — ADL kapalı");
     };
     match client.position_adl_quantile(Some(&symbol)).await {
         Ok(v) => (StatusCode::OK, Json(v)).into_response(),
@@ -626,7 +626,7 @@ async fn get_adl(State(state): State<Arc<AppState>>, Path(symbol): Path<String>)
 
 async fn get_trading_status(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda apiTradingStatus kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — apiTradingStatus kapalı");
     };
     match client.api_trading_status().await {
         Ok(v) => (StatusCode::OK, Json(v)).into_response(),
@@ -636,7 +636,7 @@ async fn get_trading_status(State(state): State<Arc<AppState>>) -> impl IntoResp
 
 async fn get_exchange_info(State(state): State<Arc<AppState>>, Path(symbol): Path<String>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda exchangeInfo kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — exchangeInfo kapalı");
     };
     match client.exchange_info().await {
         Ok(info) => {
@@ -726,7 +726,7 @@ async fn set_multi_assets(State(state): State<Arc<AppState>>, Json(req): Json<Mu
 
 async fn get_multi_assets(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let Some(client) = &state.client else {
-        return api_err(StatusCode::SERVICE_UNAVAILABLE, "paper modda multiAssets kapalı");
+        return api_err(StatusCode::SERVICE_UNAVAILABLE, "istemci yapılandırılmamış — multiAssets kapalı");
     };
     match client.get_multi_assets().await {
         Ok(v) => (StatusCode::OK, Json(serde_json::json!({ "multi_assets_margin": v }))).into_response(),

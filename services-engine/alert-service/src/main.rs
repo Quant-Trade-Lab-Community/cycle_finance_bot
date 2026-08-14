@@ -65,7 +65,7 @@ async fn main() {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
             }
         });
-    } else if config.data_source == "flows" || config.data_source == "pricefeed" {
+    } else if config.data_source == "flows" {
         if !source::is_ring_alive() {
             println!("⚠️ trade flow ring boş — flow-trade akışı çalışıyor mu? (flows-start)");
         }

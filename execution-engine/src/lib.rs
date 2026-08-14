@@ -26,7 +26,6 @@ pub mod execution;
 pub mod gateway;
 pub mod metrics;
 pub mod order;
-pub mod paper;
 pub mod risk;
 pub mod service;
 pub mod signer;
@@ -36,7 +35,7 @@ pub mod user_data;
 
 pub use config::{ExecConfig, TradingMode};
 pub use error::{ExecError, Result};
-pub use gateway::{EngineHandle, Gateway, LiveGateway, PaperGateway};
+pub use gateway::{EngineHandle, Gateway, LiveGateway};
 
 use crate::client::BinanceClient;
 use crate::execution::actor::ExecutionActor;
@@ -62,12 +61,6 @@ pub struct ExecutionEngine {
 impl ExecutionEngine {
     /// Motoru başlat: ilk saat senkronu, actor, user-data stream.
     pub async fn start(config: ExecConfig) -> Result<Arc<Self>> {
-        if config.mode == TradingMode::Paper {
-            return Err(ExecError::Config(
-                "EXEC_MODE=PAPER desteklenmez — paper-service kullanın (EXEC_MODE=LIVE)".into(),
-            ));
-        }
-
         let client = BinanceClient::new(&config)?;
         client.http.sync_server_time().await?;
         info!("Sunucu saati senkronize edildi");

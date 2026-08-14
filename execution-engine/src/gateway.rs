@@ -1,7 +1,7 @@
-//! Gateway yüzeyi: stratejiler PAPER/LIVE farkını bilmeden emir verir.
+//! Gateway yüzeyi: stratejiler canlı borsaya emir verir.
 //!
-//! `LiveGateway` (canlı binance) ve `PaperGateway` (mevcut paper actor) aynı
-//! trait'i uygular; `EngineHandle` tüm yazma/okuma işlemleri için tek kol.
+//! `LiveGateway` (canlı binance) `Gateway` trait'ini uygular; `EngineHandle`
+//! tüm yazma/okuma işlemleri için tek kol.
 
 use crate::config::TradingMode;
 use crate::metrics::Metrics;
@@ -315,57 +315,6 @@ impl Gateway for LiveGateway {
 
     fn mode(&self) -> TradingMode {
         self.handle.mode()
-    }
-}
-
-/// Paper gateway — mevcut event-sourcing actor'ünü sarar.
-pub struct PaperGateway {
-    cmd_tx: mpsc::UnboundedSender<crate::paper::actor::ActorCommand>,
-}
-
-impl PaperGateway {
-    pub fn new(cmd_tx: mpsc::UnboundedSender<crate::paper::actor::ActorCommand>) -> Self {
-        Self { cmd_tx }
-    }
-}
-
-#[async_trait]
-impl Gateway for PaperGateway {
-    async fn submit_order(&self, order: OrderRequest) -> Result<OrderAck, String> {
-        use crate::paper::actor::{ActorCommand, OrderRejectReason};
-        let (tx, rx) = oneshot::channel();
-        self.cmd_tx
-            .send(ActorCommand::SubmitOrder { order, response_tx: tx })
-            .map_err(|_| "paper actor kanalı kapalı".to_string())?;
-        match rx.await.map_err(|_| "paper yanıt kanalı kapandı".to_string())? {
-            Ok(ack) => Ok(OrderAck {
-                order_id: ack.order_id,
-                client_order_id: String::new(),
-                symbol: String::new(),
-                status: if ack.executed_qty > Decimal::ZERO { "FILLED".into() } else { "NEW".into() },
-                avg_price: ack.avg_price,
-                executed_qty: ack.executed_qty,
-                cum_quote: Decimal::ZERO,
-                reduce_only: false,
-            }),
-            Err(reason) => Err(match reason {
-                OrderRejectReason::InsufficientFunds => "insufficient funds".into(),
-                OrderRejectReason::MarketUnavailable => "market unavailable".into(),
-                OrderRejectReason::InsufficientDepth => "insufficient depth".into(),
-                OrderRejectReason::RiskRejected(m) => m,
-            }),
-        }
-    }
-
-    fn snapshot(&self) -> AccountSnapshot {
-        AccountSnapshot {
-            ready: true,
-            ..Default::default()
-        }
-    }
-
-    fn mode(&self) -> TradingMode {
-        TradingMode::Paper
     }
 }
 

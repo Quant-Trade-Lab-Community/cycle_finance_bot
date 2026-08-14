@@ -3219,7 +3219,7 @@ pub fn apply_suggestions(policy: &amp;mut RiskPolicy, params: &amp;RiskParameter
 <pre><code class="language-rust">//! risk-worker — bağımsız risk parametre üretici daemon (cold path).
 //!
 //! Her çevrimde (varsayılan 60s):
-//!   1. `/tmp/price_feed.json` (price-feed çıktısı) veya HTTP'den mark fiyatları okur
+//!   1. `/tmp/price_feed.json` (çıktısı) veya HTTP'den mark fiyatları okur
 //!   2. Sembol getiri serilerini toplar
 //!   3. Korelasyon → Tikhonov → EWMA vol → parametrik VaR → konsantrasyon hesaplar
 //!   4. Önerilen limitleri `RiskCache` + `/cycle_finance_risk_params` ring + `/tmp/risk_params.json`'a yazar

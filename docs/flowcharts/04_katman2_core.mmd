@@ -2,7 +2,6 @@ flowchart TB
     subgraph MODE["core/main.rs — RUN_MODE router"]
         RUN["RUN_MODE env"]
         RUN -->|"DATA"| DATABLK
-        RUN -->|"PAPER"| PAPERCLI["paper_cli REPL<br/>10k USD · %20 drawdown"]
         RUN -->|"STRATEGY"| STRATCLI["strategy_cli<br/>strateji binary spawn/restart"]
         RUN -->|"BACKTEST"| BT["backtester<br/>CSV → mock stream → ring"]
         RUN -->|"CORRELATION"| CORR["correlation_cli v5<br/>emilim / sığ pump / ayı tuzağı"]
@@ -16,7 +15,7 @@ flowchart TB
         CB["Circuit Breaker<br/>(100+ hatalı/sn → durdur)"]
         ENC["wire::encode → typed frame"]
         RING2["GenerationalRingBuffer push"]
-        DB2["SQLite batch writer<br/>(flume 1M · batch 10k/1sn)"]
+        DB2["TimescaleDB batch writer<br/>(flume 1M · batch 10k/1sn)"]
     end
 
     subgraph ORCH["TitaniumOrchestrator (spin-loop)"]
@@ -32,7 +31,7 @@ flowchart TB
         TRAIT["trait Strategy<br/>on_market_data · on_timer · on_fill"]
         LOB["LOB simulate (fixed point)"]
         PORT2["Portfolio: PnL · komisyon · drawdown"]
-        STRATS["heusdt · scout · wyckoff"]
+        STRATS["strategies-engine kırılım stratejisi"]
     end
 
     WS --> QUEUE

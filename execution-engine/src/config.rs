@@ -12,14 +12,12 @@ use std::str::FromStr;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TradingMode {
     Live,
-    Paper,
 }
 
 impl TradingMode {
     pub fn as_str(&self) -> &'static str {
         match self {
             TradingMode::Live => "LIVE",
-            TradingMode::Paper => "PAPER",
         }
     }
 }
@@ -68,7 +66,6 @@ pub struct ExecConfig {
 impl ExecConfig {
     pub fn load_from_env() -> Self {
         let mode = match env::var("EXEC_MODE").unwrap_or_else(|_| "LIVE".into()).to_uppercase().as_str() {
-            "PAPER" => TradingMode::Paper,
             _ => TradingMode::Live,
         };
         // Canlı modda bile varsayılan DRY_RUN güvenliğidir.

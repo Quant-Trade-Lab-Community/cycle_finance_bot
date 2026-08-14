@@ -35,13 +35,13 @@ Ana akış:
 ```
 Binance Futures WS
    → adapter (binance WS client)
-   → core (parser + validator + SQLite yazıcı)
+   → core (parser + validator + TimescaleDB yazıcı)
    → /dev/shm ring buffer (IPC)
    → detect-ms (Market Structure Multi-Protocol, 7 katman)
    → breakout-strategy (kırılım sinyali: sembol + yön)
 ```
 
-**Not:** Bu sistem şu an **paper-trading** modundadır. `breakout-strategy` yalnızca **sembol + yön** sinyali üretir, emir açmaz. `paper-service` sanal emir yürütme sağlar.
+**Not:** Bu sistem canlı (LIVE) Binance Futures icrasına yapılandırılmıştır. `breakout-strategy` yalnızca **sembol + yön** sinyali üretir; emirler `execution-engine` (executiond) üzerinden işlenir.
 
 > 🛡️ **`execution-engine` artık canlı (LIVE) Binance Futures emir altyapısına sahiptir** (REST + user-data WS, idempotency, preflight, kill switch). Varsayılan `EXEC_DRY_RUN=true`'dır — gerçek emir için **bilinçli onay** gerekir. Detaylar: [Execution Engine (Canlı)](#-execution-engine-canlı).
 
@@ -73,14 +73,13 @@ PROJE/
 │   ├── alert-service/     #   Sesli koşul uyarıları
 │   ├── detect-ms/         #   Market Structure Multi-Protocol (:3002)
 │   ├── ohlcv-engine/      #   Klines istemcisi (kütüphane + API)
-│   ├── paper-service/     #   Paper trading REST API (:8080)
-│   └── price-feed/        #   Fiyat akışı daemon'u (:3004)
+│   └──/        #   Fiyat akışı daemon'u (:3004)
 │
 ├── strategies-engine/     # Stratejiler
 │   ├── breakout-strategy/ #   Kırılım stratejisi (sinyal üretici)
 │   └── trait_def.rs       #   Strateji trait tanımları (Signal, FillReport)
 │
-├── execution-engine/      # Emir yürütme (PAPER / LIVE) — kütüphane
+├── execution-engine/      # Emir yürütme (LIVE) — kütüphane
 ├── risk-engine/           # Risk çekirdeği (pre-trade kapısı, muhasebe, VaR) + risk-worker daemon
 ├── risk.toml              # Risk limitleri (hot-reload)
 ├── unused_services/       # Deaktive edilmiş servisler (arşiv)
@@ -99,10 +98,10 @@ PROJE/
 | **1 — Transport (IPC)** | `cycle-engine/transport` | `/dev/shm` GenerationalRingBuffer + OrderRingBuffer (torn-read korumalı) |
 | **2 — Çekirdek Motor** | `cycle-engine/core` | simdjson parser, validator, TitaniumOrchestrator (spin-loop), RiskEngine, LOB sim, TscTimer (RDTSC) |
 | **2 — Açılış Ekranı** | `cycle-engine/splash` | FIGlet ASCII animasyonu (CYCLE FINANCE, harf harf) |
-| **3 — Veri** | `data-engine` | SQLite yazımı, soğuk depolama, WAL |
+| **3 — Veri** | `data-engine` | TimescaleDB yazımı, soğuk depolama |
 | **4 — Analiz** | `services-engine/detect-ms` | 7 katmanlı piyasa yapısı analizi |
 | **5 — Strateji** | `strategies-engine` | Kırılım sinyali üretimi |
-| **6 — Yürütme** | `execution-engine` + `paper-service` | Emir yürütme (paper) |
+| **6 — Yürütme** | `execution-engine` | Canlı emir yürütme |
 | **Ops** | `additional-services` | Ortam, betikler, k8s, TLA+ |
 
 ### Veri Akışı
@@ -111,9 +110,9 @@ PROJE/
 Binance WS (adapter) → flume queue → EventParser (simdjson)
   → DataValidator (stale ≤ 200ms, crossed book, circuit breaker)
   → wire::encode → GenerationalRingBuffer (/dev/shm/cycle_finance_ring)
-  → SQLite batch writer (data-engine/data/market_data.db)
+  → TimescaleDB batch writer (market_data hypertable'ları)
 
-price-feed (:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
+(:3004) → /dev/shm/cycle_finance_pricefeed → breakout-strategy
 detect-ms (:3002)  ← BinanceClient (ohlcv-engine)
 breakout-strategy  → SINYAL (sembol + yön)
 ```
@@ -126,8 +125,7 @@ breakout-strategy  → SINYAL (sembol + yön)
 |---|---|---|
 | **core** (DATA modu) | — | Binance WS → parse → ring → DB |
 | **detect-ms** | `:3002` | 7 katmanlı piyasa yapısı analizi (pivot, trend, seviye, likidite, FVG, naratif) |
-| **price-feed** | `:3004` | WS → EventParser → kendi ring'i + REST `/api/lastprice/{symbol}` |
-| **paper-service** | `:8080` | REST API, JWT auth, actor + event store (sled WAL), pozisyon/PnL |
+| **** | `:3004` | WS → EventParser → kendi ring'i + REST `/api/lastprice/{symbol}` |
 | **alert-service** | — | `alerts.toml` koşullarına göre sesli uyarı |
 | **breakout-strategy** | — | Kırılım sinyali üretici (emir açmaz) |
 | **ohlcv-engine** | `:3000` | Klines istemcisi (kütüphane + `cli`/`server` bin) |
@@ -136,9 +134,9 @@ breakout-strategy  → SINYAL (sembol + yön)
 | **exec-cli** | — | Execution yönetim CLI (emir/kaldıraç/margin/hedge) |
 | **risk-worker** | `:3011` | Soğuk yol risk parametre üretici (korelasyon, VaR, konsantrasyon, 60s) |
 
-### Aktif Workspace Üyeleri (19)
+### Aktif Workspace Üyeleri
 
-`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, paper-service, alert-service, price-feed, splash`
+`contracts, transport, core, adapter, os-utils, cold-storage, cold-starter, execution-engine, risk-engine, strategies-engine, breakout-strategy, ohlcv-engine, calc-ind, detect-ms, alert-service,, splash`
 
 ---
 
@@ -175,8 +173,8 @@ detect-ms raporundan:
 
 ### Fiyat kaynağı (öncelik sırası)
 
-1. `price-feed` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
-2. `price-feed` REST `:3004`
+1. `` ring'i (`/dev/shm/cycle_finance_pricefeed`) — event-by-event
+2. `` REST `:3004`
 3. `detect-ms` `current_price`
 
 ### Çıktı
@@ -331,7 +329,7 @@ curl -s -X POST http://127.0.0.1:3010/api/v1/positions/close \
 
 | Değişken | Varsayılan | Açıklama |
 |---|---|---|
-| `EXEC_MODE` | `LIVE` | `PAPER` ise `paper-service` kullanılır |
+| `EXEC_MODE` | `LIVE` | Yalnızca canlı mod desteklenir |
 | `EXEC_DRY_RUN` | `true` | `false` = gerçek emir (açık onay) |
 | `EXEC_BASE_URL` | `https://fapi.binance.com` | Testnet: `https://testnet.binancefuture.com` |
 | `EXEC_WS_URL` | `wss://fstream.binance.com` | Testnet: `wss://stream.binancefuture.com` |
@@ -354,16 +352,19 @@ cargo test -p execution-engine --test mock_binance
 
 ## 💾 Veri Kaydı
 
-Tüm veriler merkezi olarak `data-engine/data/` altında tutulur:
+Zaman serisi verileri **TimescaleDB** (PostgreSQL uzantısı) içinde tutulur:
 
 ```
-data-engine/data/
-├── market_data.db     # Ana tick/OHLCV SQLite (WAL modu)
-├── paper_live.db      # Paper-service çalışma veritabanı
-└── paper_wal/         # Paper event store (sled)
+TimescaleDB market_data (postgres://cycle:cycle@localhost:5432/market_data)
+├── trades        # İşlemler (symbol, price, quantity, is_buyer_maker, timestamp)
+├── orderbooks    # Derinlik anlık görüntüleri (JSONB)
+├── liquidations  # Likidasyonlar
+├── funding_rates # Fonlama oranları
+├── markprices / indexprices / lastprices  # Fiyat akışları
+└── open_interests # Açık pozisyonlar
 ```
 
-Herhangi bir servis veri yazarsa buraya yazar. `.gitignore` ile git dışı tutulur.
+`cycle-engine/persistence` her akışı kendi hypertable'ına batch'li yazar. `.gitignore` ile bağlantı bilgisi git dışı tutulur.
 
 ---
 
@@ -398,8 +399,7 @@ cd PROJE && RUN_MODE=DATA ./target/debug/core
 
 ```bash
 ./target/debug/detect-ms        # :3002  analiz motoru
-./target/debug/price-feed       # :3004  fiyat akışı
-./target/debug/paper-service     # :8080  paper API
+./target/debug/      # :3004  fiyat akışı
 ./target/debug/alert-service     # sesli uyarı
 ./target/debug/breakout-strategy # kırılım sinyali
 ./target/debug/calc-ind          # :3007  indikatör hesaplama motoru
@@ -453,7 +453,7 @@ source additional-services/scripts/cycle_env.sh
 help-cycle   # komut listesi
 ```
 
-Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `paper-start`, `alert-start`, `listener-start`, `risk-start`, `risk-worker-start`, `monitor-start`, `ai-start`.
+Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-start`, `alert-start`, `listener-start`, `risk-start`, `risk-worker-start`, `monitor-start`, `ai-start`.
 
 ---
 
@@ -467,7 +467,6 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-st
 | 3 — SHELL | Ortam fonksiyonları (help-cycle) |
 | 4 — DATA | Binance WS veri terminali |
 | 5 — ALERT | Sesli uyarı servisi |
-| 6 — PAPER | Paper REST API |
 | 7 — Monitor | CPU/RAM/GPU izleme |
 | 8 — DETECT-MS | Analiz motoru |
 | 9 — BREAKOUT | Kırılım stratejisi |
@@ -483,9 +482,9 @@ Yaygın komutlar: `data-live`, `detect-ms-start`, `calc-ind-start`, `breakout-st
 Rust-native `ai-engine` servisi, mevcut veri/yürütme altyapısını kullanarak çoklu LLM agent'ı çalıştırır:
 
 ```
-ring'ler + REST (price-feed/detect-ms/calc-ind/paper) → context.rs → agent'lar
+ring'ler + REST (/detect-ms/calc-ind) → context.rs → agent'lar
         🧠 SIGNAL → ⚠️ RISK → 📰 SENTIMENT → 🤝 COORDINATOR → risk gate → icra
-        icra: paper (order ring :8080) ve/veya canlı (executiond :3010)
+        icra: canlı (executiond :3010)
 ```
 
 ### Agent'lar
@@ -505,9 +504,8 @@ ring'ler + REST (price-feed/detect-ms/calc-ind/paper) → context.rs → agent'l
 
 ### İcra modları
 
-- `mode = "paper"` (varsayılan): emir `/cycle_finance_orders` ring'ine yazılır → paper-service icra eder.
 - `mode = "live"`: executiond :3010 üzerinden (JWT + `POST /api/v1/orders`).
-- `mode = "both"`: ikisine de gönderir; `none`: sadece izler.
+- `mode = "none"`: sadece izler.
 - `approval = "human"`: emir gönderilmeden önce `ai-approve` / `ai-reject` ile insan onayı bekler.
 
 ### Çalıştırma
@@ -518,7 +516,7 @@ ai-status     # durum + son döngü (http://127.0.0.1:3110/api/status)
 ai-stop
 ```
 
-Bağımlılık: `price-feed` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) ve `paper-service` (:8080) çalışıyor olmalı.
+Bağımlılık: `` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) çalışıyor olmalı.
 
 ### Güvenlik (canlı mod)
 
@@ -526,7 +524,7 @@ Bağımlılık: `price-feed` (:3004), `detect-ms` (:3002), `calc-ind` (:3007) ve
 - `max_notional_usdt` deterministik boyut tavanı LLM çıktısından bağımsızdır.
 - Risk agent'ı `veto` veya `risk_score ≥ 0.8` → emir otomatik red.
 - `RiskEngine` (risk.toml) gate'i: notional/exposure/daily-loss/kill-switch.
-- Varsayılan `mode="paper"`; canlıya geçiş `ai.toml` ile bilinçli yapılır.
+- Varsayılan `mode="live"`; emir gönderimi `ai.toml` ile bilinçli yapılır.
 
 ---
 
@@ -588,7 +586,7 @@ cargo test --workspace
 - **Pre-fault bellek**: `hal::memory::allocate_huge_buffer` — çalışma anında page fault yok
 - **TSC timer**: `timer/tsc.rs` — `RDTSC` tabanlı yüksek çözünürlüklü zamanlama
 - **simdjson**: zero-copy JSON parsing
-- **SQLite WAL + batch**: 10k yazma/1sn batching
+- **TimescaleDB + batch**: 1000 yazma/1sn batching
 
 ### Risk Yönetimi
 
@@ -608,7 +606,7 @@ cargo test --workspace
 ### Güvenlik
 
 - `execution-engine/src/signer.rs` — Binance imzalama (HMAC-SHA256) altyapısı
-- `paper-service` — JWT auth (argon2 şifre hash)
+- `execution-engine/src/service/api.rs` — JWT auth (argon2 şifre hash)
 - `adapter/vault` — HashiCorp Vault entegrasyon taslağı (anahtar rotasyonu)
 - `.env` repodan hariç tutulur (`BINANCE_API_KEY`, `BINANCE_SECRET_KEY`)
 
@@ -616,7 +614,7 @@ cargo test --workspace
 
 ## 📜 Lisans / Not
 
-Bu proje özel bir araştırma/geliştirme projesidir. Canlı para ile kullanım risk içerir; sistem yalnızca paper-trading için yapılandırılmıştır.
+Bu proje özel bir araştırma/geliştirme projesidir. Canlı para ile kullanım risk içerir; sistem varsayılan olarak `EXEC_DRY_RUN=true` güvenlik moduyla yapılandırılmıştır.
 
 ---
 

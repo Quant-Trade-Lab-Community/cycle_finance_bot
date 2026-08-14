@@ -1181,12 +1181,12 @@ listener-set() { listenconfig-set &quot;$@&quot;; }
 # ── PRICE-FEED (WS → ring buffer, anlık last/mark/index price) ──
 pricefeed-start() {
   _start_guard
-  if pgrep -x &quot;price-feed&quot; &amp;&gt;/dev/null; then
-    echo &quot;⚠️  price-feed zaten çalışıyor (pid: $(pgrep -x price-feed | head -1))&quot;
+  if pgrep -x &quot;&quot; &amp;&gt;/dev/null; then
+    echo &quot;⚠️  zaten çalışıyor (pid: $(pgrep -x | head -1))&quot;
     return 1
   fi
-  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p price-feed 2&gt;&amp;1 | tail -1
-  setsid nohup &quot;$CYCLE_ROOT/target/debug/price-feed&quot; &gt; /tmp/price_feed.log 2&gt;&amp;1 &lt; /dev/null &amp;
+  cd &quot;$CYCLE_ROOT&quot; &amp;&amp; cargo build -p 2&gt;&amp;1 | tail -1
+  setsid nohup &quot;$CYCLE_ROOT/target/debug/&quot; &gt; /tmp/price_feed.log 2&gt;&amp;1 &lt; /dev/null &amp;
   sleep 3
   if curl -s -m 2 http://127.0.0.1:3004/health &gt;/dev/null 2&gt;&amp;1; then
     echo &quot;✅ PRICE-FEED başlatıldı → http://127.0.0.1:3004/api/lastprice&quot;
@@ -1196,12 +1196,12 @@ pricefeed-start() {
 }
 pricefeed-stop() {
   _start_guard
-  local p; p=$(pgrep -x &quot;price-feed&quot; 2&gt;/dev/null | head -1 || true)
-  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ price-feed durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  price-feed çalışmıyor&quot;; fi
+  local p; p=$(pgrep -x &quot;&quot; 2&gt;/dev/null | head -1 || true)
+  if [ -n &quot;$p&quot; ]; then kill -TERM &quot;$p&quot; 2&gt;/dev/null; sleep 1; kill -0 &quot;$p&quot; 2&gt;/dev/null &amp;&amp; kill -KILL &quot;$p&quot; 2&gt;/dev/null; echo &quot;✅ durduruldu [pid:$p]&quot;; else echo &quot;ℹ️  çalışmıyor&quot;; fi
 }
 pricefeed-status() {
   _start_guard
-  local p; p=$(pgrep -x &quot;price-feed&quot; 2&gt;/dev/null | head -1 || true)
+  local p; p=$(pgrep -x &quot;&quot; 2&gt;/dev/null | head -1 || true)
   if [ -n &quot;$p&quot; ]; then
     local cpu mem
     cpu=$(ps -p &quot;$p&quot; -o pcpu= 2&gt;/dev/null | tr -d ' ')
@@ -1399,12 +1399,16 @@ monitor-start() {
 #  VERİTABANI
 # ============================================================
 db-trades() {
-  sqlite3 &quot;$CYCLE_ROOT/data-engine/data/market_data.db&quot; \
-    &quot;SELECT id,symbol,side,entry_price,exit_price,pnl FROM trades ORDER BY id DESC LIMIT 20;&quot; \
+  local url=&quot;${TIMESCALEDB_URL:-postgres://cycle:cycle@localhost:5432/market_data}&quot;
+  psql &quot;$url&quot; -c \
+    &quot;SELECT symbol, price, quantity, timestamp FROM trades ORDER BY timestamp DESC LIMIT 20;&quot; \
     2&gt;/dev/null || echo &quot;DB boş veya bulunamadı.&quot;
 }
 db-size() {
-  du -sh &quot;$CYCLE_ROOT/data-engine/data/market_data.db&quot; 2&gt;/dev/null
+  local url=&quot;${TIMESCALEDB_URL:-postgres://cycle:cycle@localhost:5432/market_data}&quot;
+  psql &quot;$url&quot; -c \
+    &quot;SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size;&quot; \
+    2&gt;/dev/null || echo &quot;DB bağlanılamadı.&quot;
 }
 
 # ============================================================
@@ -1512,7 +1516,7 @@ calc-ind-status() {
 
 # ============================================================
 #  AI ENGINE (LLM Agent Katmanı — ai.toml + OpenAI/Anthropic)
-#  Bağımlılık: price-feed (:3004), detect-ms (:3002), calc-ind (:3007), paper (:8080)
+#  Bağımlılık: (:3004), detect-ms (:3002), calc-ind (:3007), paper (:8080)
 # ============================================================
 AI_ADDR=&quot;${AI_ADDR:-127.0.0.1:3110}&quot;
 
@@ -2056,7 +2060,7 @@ cd $ROOT &amp;&amp; $BIN/listener
 tmux new-window -t &quot;$SESSION:2&quot; -n &quot;⚠️  RISK&quot;
 tmux send-keys -t &quot;$SESSION:2&quot; &quot;
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo '⚠️   RİSK ANALİZİ  (market_data.db)'
+echo '⚠️   RİSK ANALİZİ  (TimescaleDB)'
 echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 sleep 4
 cd $ROOT &amp;&amp; $BIN/risk_analysis --watch

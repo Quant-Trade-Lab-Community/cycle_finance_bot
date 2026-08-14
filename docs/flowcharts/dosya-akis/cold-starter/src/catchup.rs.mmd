@@ -1,11 +1,10 @@
 graph TD
     A([Başlangıç]) --> B[CatchupRoutines oluştur]
 
-    B --> C[fetch_200_ema: ClickHouse'tan 200 EMA baz değeri çek]
-    C --> D[EMA değerini döndür]
-
-    D --> E[replay_buffer_in_paper_mode: mmap buffer'ı Paper Mode'da oynat]
-    E --> F[disk buffer'dan oku, lock-free kuyruğa aktar]
+    B --> C[fetch_200_ema: TimescaleDB trades hypertable'ından son 200 fiyatı çek]
+    C --> D{veri var mı?}
+    D -->|hayır| E[hata döndür]
+    D -->|evet| F[200 EMA hesapla]
 
     F --> G[transition_to_live: buffer temizle, canlı moda geç]
     G --> Z([Bitiş])

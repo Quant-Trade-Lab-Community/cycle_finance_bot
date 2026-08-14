@@ -377,7 +377,7 @@ pub fn run_strategy_console()   // sonsuz döngü: komut kuyruğu + stdin + tick
 
 **Modüller:** [timescaledb.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/persistence/src/timescaledb.rs) · [clickhouse.rs](file:///home/smhvz/Desktop/PROJE/cycle-engine/persistence/src/clickhouse.rs)
 
-> **SQLite kaldırıldı.** Zaman serisi kalıcılığı artık **TimescaleDB** (PostgreSQL uzantısı) ile yapılır. Eski `db.rs` (rusqlite) silinmiştir.
+> **TimescaleDB kaldırıldı.** Zaman serisi kalıcılığı artık **TimescaleDB** (PostgreSQL uzantısı) ile yapılır. Eski `db.rs` (sqlx) silinmiştir.
 
 > **Kurulum (PC'ye native — Docker değil):** PostgreSQL 18 (PGDG repo) + TimescaleDB 2.x (`timescale/timescaledb` packagecloud repo), `timescaledb-tune` ile `shared_preload_libraries='timescaledb'`, `CREATE EXTENSION timescaledb`. Kullanıcı `cycle` / şifre `cycle`, DB `market_data`. Bağlantı `TIMESCALEDB_URL` (varsayılan `postgres://cycle:cycle@localhost:5432/market_data`).
 
@@ -600,7 +600,6 @@ graph TD
     EE["execution-engine"]
     
     AS["alert-service"]
-    PS["paper-service"]
     CI["calc-ind"]
     SO["stream-ohlcv"]
 
@@ -689,7 +688,6 @@ graph LR
     subgraph "Tüketiciler (flow ring'lerini RAM'den okur)"
         C1["breakout-strategy"] -->|read| R1
         C2["alert-service"] -->|read| R1
-        C4["paper-service"] -->|read| R1
         C5["stream-ohlcv"] -->|read| R7
         C6["risk-worker"] -->|read| R6
     end

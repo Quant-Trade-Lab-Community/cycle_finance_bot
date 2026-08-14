@@ -2,8 +2,11 @@ graph TD
     A([Başlangıç]) --> B[Cold Starter başlatma mesajı yazdır]
     B --> C[CatchupRoutines oluştur]
 
-    C --> D[fetch_200_ema: ClickHouse'tan 200 EMA çek]
-    D --> E[replay_buffer_in_paper_mode: mmap buffer'ı Paper Mode'da oynat]
-    E --> F[transition_to_live: canlı moda geç]
+    C --> D[fetch_200_ema: TimescaleDB trades'ten 200 EMA hesapla]
+    D --> E{Ok mu?}
+    E -->|hayır| F[200 EMA alınamadı: hata yazdır + çık]
+    E -->|evet| G[200 EMA değerini yazdır]
 
-    F --> Z([Bitiş])
+    G --> H[transition_to_live: canlı moda geç]
+
+    H --> Z([Bitiş])

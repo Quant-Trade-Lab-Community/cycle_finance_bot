@@ -173,10 +173,10 @@ ana thread: ring okuma döngüsü (94-159) — 50 µs sleep; 2 sn'de bir render 
 | Bağımlılık | Kaynak | Kullanım |
 |:---|:---|:---|
 | tokio | workspace (1.0 full) | async main, mpsc, timeout |
-| reqwest | workspace (0.11, blocking özellikli) | detect-ms/price-feed REST çağrıları |
+| reqwest | workspace (0.11, blocking özellikli) | detect-ms/REST çağrıları |
 | serde / serde_json | workspace | JSON parse/serialize |
 | chrono | workspace (0.4) | zaman damgası |
-| rusqlite | workspace (0.31 bundled) | market_data.db SQL sorguları (risk_analysis) |
+| sqlx | workspace (postgres, runtime-tokio) | TimescaleDB trades sorguları (risk_analysis) |
 | transport | path: ../../../cycle-engine/transport | ring_buffer, events, wire |
 | rust_decimal | workspace | fiyat dönüşümleri |
 
